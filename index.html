@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PitchIQ – football analysis</title>
+<style>
+:root{--bg:#EDF3EC;--panel:#FFFFFF;--ink:#14281E;--mute:#5A6E62;--line:#CBD9CE;--home:#B7860B;--away:#1F6FA8;--draw:#8A9A90;--ok:#1E7A46;--no:#9A3B2E;--live:#C0392B}
+@media (prefers-color-scheme:dark){:root{--bg:#0C2019;--panel:#14352A;--ink:#EEF3EA;--mute:#9DB5A8;--line:#2B5642;--home:#E8B33A;--away:#6FB7E9;--draw:#6F8A7B;--ok:#6FD39A;--no:#F08C7B;--live:#FF6B5B;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px 16px 56px}
+header{display:flex;align-items:baseline;justify-content:space-between;margin:4px 0 12px}
+h1{font:700 34px/1 'Arial Narrow',Impact,sans-serif;margin:0}
+h1 span{color:var(--home)}
+h2{font:700 22px/1.1 'Arial Narrow',Impact,sans-serif;margin:0 0 10px}
+.tag{color:var(--mute);font-size:13px;text-align:right}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tabs button{flex:1;font:inherit;font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 0;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--home);border-color:var(--home);color:#14281E}
+select{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:12px}
+.day{font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 6px}
+.card{display:block;width:100%;text-align:left;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--home);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;font:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--away);outline-offset:2px}
+.comp{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.tm{font:700 20px/1.1 'Arial Narrow',Impact,sans-serif;flex:1}
+.tm.r{text-align:right}
+.ko{font-size:15px;color:var(--away);text-align:center;min-width:64px;font-weight:600}
+.pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin-top:6px;border:1px solid var(--line);color:var(--ok);border-color:var(--ok)}
+.pill.live{color:var(--live);border-color:var(--live)}
+.mini{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:8px}
+.mini i{display:block}
+.back{font:inherit;font-size:15px;color:var(--ink);background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;margin-bottom:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cols h3{font:700 19px 'Arial Narrow',Impact,sans-serif;margin:0 0 4px;padding-bottom:4px;border-bottom:3px solid var(--c)}
+label{display:block;font-size:13px;color:var(--mute);margin:8px 0 2px}
+input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px}
+.bar{display:flex;height:44px;border-radius:6px;overflow:hidden;font:700 20px/44px 'Arial Narrow',Impact,sans-serif;color:#fff}
+.bar div{text-align:center;overflow:hidden}
+.legend{display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin:6px 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.stat{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0}
+.stat b{font:700 19px 'Arial Narrow',Impact,sans-serif}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:6px;text-align:left;border-bottom:1px solid var(--line)}
+.ok{color:var(--ok);font-weight:600}.no{color:var(--no)}
+.note{font-size:13px;color:var(--mute)}
+ol{margin:6px 0 0;padding-left:22px}
+</style>
+</head>
+<body>
+<main id="app"><p class="note">Loading matches…</p></main>
+<script>
+const $=s=>document.querySelector(s);
+let D=null,tab='up',comp='all',sel=null;
+const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
+const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
+const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
+const pct=x=>(x*100).toFixed(1)+'%';
+function model(s){
+ const H=s.h,A=s.a,LH=Math.max(+s.lh||1.5,.3),LA=Math.max(+s.la||1.2,.3);
+ let lh=H.gf*A.ga/LH,la=A.gf*H.ga/LA;const e=(H.elo-A.elo)/400;
+ lh*=Math.pow(1.15,e)*(1+(ppg(H.form)-1.5)*.04)*(1-.04*H.out);
+ la*=Math.pow(1.15,-e)*(1+(ppg(A.form)-1.5)*.04)*(1-.04*A.out);
+ lh=Math.max(lh,.05);la=Math.max(la,.05);
+ const N=8,m=[];let t=0;
+ for(let i=0;i<N;i++){m[i]=[];for(let j=0;j<N;j++){m[i][j]=pois(lh,i)*pois(la,j)*tau(i,j,lh,la,-.1);t+=m[i][j]}}
+ let ph=0,pd=0,pa=0,o25=0,bt=0;const all=[];
+ for(let i=0;i<N;i++)for(let j=0;j<N;j++){const p=m[i][j]/=t;
+  if(i>j)ph+=p;else if(i==j)pd+=p;else pa+=p;if(i+j>2)o25+=p;if(i&&j)bt+=p;all.push([i,j,p])}
+ all.sort((x,y)=>y[2]-x[2]);
+ return{lh,la,ph,pd,pa,o25,bt,cs0:m[0][0],top:all.slice(0,5)};
+}
+const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
+const tm=m=>new Date(m.utc).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+const dy=m=>new Date(m.utc).toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'});
+function list(){
+ const ms=D.matches.filter(m=>(comp=='all'||m.code==comp)&&(tab=='up'?m.status!='FINISHED':m.status=='FINISHED'));
+ if(tab!='up')ms.reverse();
+ const codes=[...new Map(D.matches.map(m=>[m.code,m.comp]))];
+ let html='',last='';
+ for(const m of ms){
+  const d=dy(m);if(d!=last){html+=`<div class="day">${d}</div>`;last=d}
+  const r=model(m.s);
+  const mid=m.score?`${m.score[0]} – ${m.score[1]}`:tm(m);
+  html+=`<button class="card" data-id="${m.id}"><div class="comp">${m.comp}${live(m)?' · <b style="color:var(--live)">LIVE</b>':''}</div>
+  <div class="row"><span class="tm">${m.h}</span><span class="ko">${mid}</span><span class="tm r">${m.a}</span></div>
+  <div class="mini"><i style="width:${r.ph*100}%;background:var(--home)"></i><i style="width:${r.pd*100}%;background:var(--draw)"></i><i style="width:${r.pa*100}%;background:var(--away)"></i></div>
+  <span class="pill">${Math.round(r.ph*100)} / ${Math.round(r.pd*100)} / ${Math.round(r.pa*100)}</span></button>`;
+ }
+ const mins=Math.round((Date.now()-new Date(D.updated))/60000);
+ $('#app').innerHTML=`<header><h1>Pitch<span>IQ</span></h1><span class="tag">Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>
+ <div class="tabs"><button data-t="up" aria-pressed="${tab=='up'}">Upcoming</button><button data-t="done" aria-pressed="${tab=='done'}">Results</button></div>
+ <select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${n}</option>`).join('')}</select>
+ ${html||'<p class="note">No matches here right now.</p>'}`;
+ document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
+ $('#cf').onchange=e=>{comp=e.target.value;list()};
+ document.querySelectorAll('.card').forEach(b=>b.onclick=()=>{sel=D.matches.find(x=>x.id==b.dataset.id);sel.odds=sel.odds||null;detail()});
+}
+const fld=[['gf','Goals scored / game'],['ga','Goals conceded / game'],['elo','Rating (Elo)'],['form','Last 5 (W D L)'],['out','Key players out']];
+function detail(){
+ const f=sel,s=f.s;
+ const col=(k,n,c)=>`<div style="--c:${c}"><h3>${n}</h3>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${s[k][x]}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
+ $('#app').innerHTML=`<button class="back" id="bk">← Matches</button>
+ <div class="comp">${f.comp} · ${dy(f)} ${tm(f)}</div><h2>${f.h} vs ${f.a}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
+ <div id="res"></div>
+ <div class="panel"><p class="note" style="margin-top:0">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust anything you know better, such as injuries.</p>
+ <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
+ <label>Decimal odds: home / draw / away (optional)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input data-k="o0" inputmode="decimal"><input data-k="o1" inputmode="decimal"><input data-k="o2" inputmode="decimal"></div></div>`;
+ $('#bk').onclick=()=>{sel=null;list()};
+ document.querySelectorAll('input').forEach(i=>i.oninput=()=>{
+  const k=i.dataset.k,v=i.value;
+  if(k[0]=='o'){s.odds=s.odds||[0,0,0];f.odds=f.odds||[0,0,0];f.odds[+k[1]]=parseFloat(v)||0}
+  else{const[t,x]=k.split('.');s[t][x]=x=='form'?v:(parseFloat(v)||0)}
+  res()});
+ res();
+}
+function res(){
+ const f=sel,s=f.s,r=model(s);let v='';
+ if(f.odds&&f.odds.every(x=>x>1)){
+  const inv=f.odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],mp=[r.ph,r.pd,r.pa],nm=[f.h,'Draw',f.a];
+  v=`<div class="panel"><h2>Value check</h2><table><tr><th>Pick</th><th>Model</th><th>Market</th><th>Edge</th></tr>${f.odds.map((x,i)=>{const e=mp[i]*x-1;return`<tr><td>${nm[i]}</td><td>${pct(mp[i])}</td><td>${pct(inv[i]/sum)}</td><td class="${e>=.05?'ok':'no'}">${(e*100).toFixed(1)}%</td></tr>`}).join('')}</table>
+  <p class="note">If the model and the market differ a lot, trust the market more. It knows lineups and news this model doesn’t.</p></div>`;
+ }
+ const st=(k,x)=>`<div class="stat"><span>${k}</span><b>${x}</b></div>`;
+ $('#res').innerHTML=`<div class="panel"><h2>Forecast</h2>
+ <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
+ <div class="legend"><span>${f.h}</span><span>Draw</span><span>${f.a}</span></div>
+ <div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
+ <h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${f.h} ${x[0]}–${x[1]} ${f.a} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
+ <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
+}
+fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{D=d;list()}).catch(()=>{
+ $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
+});
+</script>
+</body>
+</html>
