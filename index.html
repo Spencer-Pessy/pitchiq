@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PitchIQ – football analysis</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0C2019">
+<meta name="theme-color" content="#000000">
 <link rel="icon" href="icon-192.png">
 <script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js")</script>
 <style>
-:root{--bg:#EDF3EC;--panel:#FFFFFF;--ink:#14281E;--mute:#5A6E62;--line:#CBD9CE;--home:#B7860B;--away:#1F6FA8;--draw:#8A9A90;--ok:#1E7A46;--no:#9A3B2E;--live:#C0392B}
-@media (prefers-color-scheme:dark){:root{--bg:#0C2019;--panel:#14352A;--ink:#EEF3EA;--mute:#9DB5A8;--line:#2B5642;--home:#E8B33A;--away:#6FB7E9;--draw:#6F8A7B;--ok:#6FD39A;--no:#F08C7B;--live:#FF6B5B;color-scheme:dark}}
+:root{--bg:#000000;--panel:#121212;--ink:#F4F4F4;--mute:#9C9C9C;--line:#2B2B2B;--home:#E10600;--away:#E6E6E6;--draw:#5A5A5A;--ok:#3DDC84;--no:#FF6B6B;--live:#FF4D4D;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:720px;margin:0 auto;padding:16px 16px 56px}
@@ -21,7 +20,7 @@ h2{font:700 22px/1.1 'Arial Narrow',Impact,sans-serif;margin:0 0 10px}
 .tag{color:var(--mute);font-size:13px;text-align:right}
 .tabs{display:flex;gap:8px;margin-bottom:10px}
 .tabs button{flex:1;font:inherit;font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 0;cursor:pointer}
-.tabs button[aria-pressed="true"]{background:var(--home);border-color:var(--home);color:#14281E}
+.tabs button[aria-pressed="true"]{background:var(--home);border-color:var(--home);color:#fff}
 select{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:12px}
 .day{font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 6px}
 .card{display:block;width:100%;text-align:left;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--home);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;font:inherit}
@@ -30,8 +29,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
 .tm{font:700 20px/1.1 'Arial Narrow',Impact,sans-serif;flex:1}
 .tm.r{text-align:right}
-.ko{font-size:15px;color:var(--away);text-align:center;min-width:64px;font-weight:600}
-.pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin-top:6px;border:1px solid var(--line);color:var(--ok);border-color:var(--ok)}
+.ko{font-size:15px;color:var(--ink);text-align:center;min-width:64px;font-weight:600}
+.pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin-top:6px;border:1px solid var(--line);color:var(--ink)}
 .pill.live{color:var(--live);border-color:var(--live)}
 .mini{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:8px}
 .mini i{display:block}
@@ -41,7 +40,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .cols h3{font:700 19px 'Arial Narrow',Impact,sans-serif;margin:0 0 4px;padding-bottom:4px;border-bottom:3px solid var(--c)}
 label{display:block;font-size:13px;color:var(--mute);margin:8px 0 2px}
 input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px}
-.bar{display:flex;height:44px;border-radius:6px;overflow:hidden;font:700 20px/44px 'Arial Narrow',Impact,sans-serif;color:#fff}
+.bar{display:flex;height:44px;border-radius:6px;overflow:hidden;font:700 20px/44px 'Arial Narrow',Impact,sans-serif;color:#fff}.bar div:last-child{color:#000}
 .bar div{text-align:center;overflow:hidden}
 .legend{display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin:6px 0 12px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
@@ -52,16 +51,20 @@ th,td{padding:6px;text-align:left;border-bottom:1px solid var(--line)}
 .ok{color:var(--ok);font-weight:600}.no{color:var(--no)}
 .note{font-size:13px;color:var(--mute)}
 ol{margin:6px 0 0;padding-left:22px}
- h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:10px;vertical-align:-9px;border-radius:50%;background:url(icon-192.png) center/cover}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.big div{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--home);border-radius:10px;padding:10px 12px}
+.big b{display:block;font:700 30px/1.1 'Arial Narrow',Impact,sans-serif}
+.big span{font-size:13px;color:var(--mute)}
+h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:10px;vertical-align:-9px;border-radius:50%;background:url(icon-192.png) center/cover}
 </style>
 </head>
 <body>
- <div id="splash" style="position:fixed;inset:0;z-index:99;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .6s"><img src="logo-banner-512.png" alt="PitchIQ" style="width:min(80vw,420px);height:auto"></div>
+<div id="splash" style="position:fixed;inset:0;z-index:99;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .6s"><img src="logo-banner-512.png" alt="PitchIQ" style="width:min(80vw,420px);height:auto"></div>
 <script>(function(){var s=document.getElementById("splash");try{if(sessionStorage.getItem("seen")){s.remove();return}sessionStorage.setItem("seen","1")}catch(e){}function go(){s.style.opacity=0;setTimeout(function(){s.remove()},600)}s.onclick=go;setTimeout(go,1800)})()</script>
 <main id="app"><p class="note">Loading matches…</p></main>
 <script>
 const $=s=>document.querySelector(s);
-let D=null,tab='up',comp='all',sel=null;
+let D=null,P={},tab='up',comp='all',sel=null;
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
 const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
@@ -83,7 +86,30 @@ function model(s){
 const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
 const tm=m=>new Date(m.utc).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 const dy=m=>new Date(m.utc).toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'});
+function record(){
+ const all=Object.values(P),done=all.filter(p=>p.final),open=all.length-done.length;
+ let hit=0,hc=0,hch=0,o=0,oh=0,b=0,bh=0,br=0;
+ const rows=done.map(p=>{const q=p.p,v=[q.ph,q.pd,q.pa],pick=v.indexOf(Math.max(...v)),[hg,ag]=p.final,act=hg>ag?0:hg==ag?1:2,ok=pick==act;
+  if(ok)hit++;if(v[pick]>=.6){hc++;if(ok)hch++}
+  o++;if((q.o25>=.5)==(hg+ag>2))oh++;b++;if((q.bt>=.5)==(hg>0&&ag>0))bh++;
+  br+=v.reduce((t,x,i)=>t+Math.pow(x-(i==act?1:0),2),0);
+  return{p,pick,v,ok,t:new Date(p.utc)}}).sort((x,y)=>y.t-x.t);
+ const n=done.length,f=(a,c)=>c?Math.round(a/c*100)+'%':'–';
+ const nm=['home win','draw','away win'];
+ $('#app').innerHTML=head()+tabsHtml()+(n?`<div class="big"><div><b>${f(hit,n)}</b><span>Correct results · ${hit} of ${n}</span></div><div><b>${f(hch,hc)}</b><span>When 60%+ confident · ${hch} of ${hc}</span></div><div><b>${f(oh,o)}</b><span>Over/under 2.5 right</span></div><div><b>${f(bh,b)}</b><span>Both-teams-to-score right</span></div></div>
+ <p class="note">Probability score (Brier): ${(br/n).toFixed(3)}. Lower is better, and 0.667 is what blind guessing scores. Every prediction was saved before kickoff and can’t be changed afterwards. ${open} more are waiting for their match.</p>
+ <div class="day">Recent</div>${rows.slice(0,25).map(r=>`<div class="card"><div class="comp">${r.p.comp} · ${r.t.toLocaleDateString([],{day:'numeric',month:'short'})}</div><div class="row"><span class="tm">${r.p.h}</span><span class="ko">${r.p.final[0]} – ${r.p.final[1]}</span><span class="tm r">${r.p.a}</span></div><span class="pill" style="color:var(${r.ok?'--ok':'--no'})">${r.ok?'✓':'✗'} Predicted ${nm[r.pick]} (${Math.round(r.v[r.pick]*100)}%)</span></div>`).join('')}`
+ :`<div class="panel"><h2>Record starts today</h2><p class="note" style="margin:0">Predictions are saved before kickoff and scored after full time. ${open} are saved and waiting for their matches. Come back after they finish to see the first results.</p></div>`);
+ bind();
+}
+function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000);
+ return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`}
+function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['done','Results'],['rec','Record']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
+function bind(){document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
+ const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
+ document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{sel=D.matches.find(x=>x.id==b.dataset.id);sel.odds=sel.odds||null;detail()});}
 function list(){
+ if(tab=='rec')return record();
  const ms=D.matches.filter(m=>(comp=='all'||m.code==comp)&&(tab=='up'?m.status!='FINISHED':m.status=='FINISHED'));
  if(tab!='up')ms.reverse();
  const codes=[...new Map(D.matches.map(m=>[m.code,m.comp]))];
@@ -97,14 +123,9 @@ function list(){
   <div class="mini"><i style="width:${r.ph*100}%;background:var(--home)"></i><i style="width:${r.pd*100}%;background:var(--draw)"></i><i style="width:${r.pa*100}%;background:var(--away)"></i></div>
   <span class="pill">${Math.round(r.ph*100)} / ${Math.round(r.pd*100)} / ${Math.round(r.pa*100)}</span></button>`;
  }
- const mins=Math.round((Date.now()-new Date(D.updated))/60000);
- $('#app').innerHTML=`<header><h1>Pitch<span>IQ</span></h1><span class="tag">Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>
- <div class="tabs"><button data-t="up" aria-pressed="${tab=='up'}">Upcoming</button><button data-t="done" aria-pressed="${tab=='done'}">Results</button></div>
- <select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${n}</option>`).join('')}</select>
+ $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${n}</option>`).join('')}</select>
  ${html||'<p class="note">No matches here right now.</p>'}`;
- document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
- $('#cf').onchange=e=>{comp=e.target.value;list()};
- document.querySelectorAll('.card').forEach(b=>b.onclick=()=>{sel=D.matches.find(x=>x.id==b.dataset.id);sel.odds=sel.odds||null;detail()});
+ bind();
 }
 const fld=[['gf','Goals scored / game'],['ga','Goals conceded / game'],['elo','Rating (Elo)'],['form','Last 5 (W D L)'],['out','Key players out']];
 function detail(){
@@ -139,7 +160,7 @@ function res(){
  <h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${f.h} ${x[0]}–${x[1]} ${f.a} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
  <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
 }
-fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{D=d;list()}).catch(()=>{
+Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
 </script>
