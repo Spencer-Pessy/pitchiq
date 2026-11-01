@@ -238,7 +238,26 @@ for x in out:
         if any(same(ev["home"], n) for n in hn) and any(same(ev["away"], n) for n in an):
             x["odds"] = ev["odds"]
             break
+# Injuries (from injuries.json, refreshed by a separate workflow)
+try:
+    with open("injuries.json") as f:
+        inj_data = json.load(f)
+except Exception:
+    inj_data = {"updated": None, "items": []}
 
+for x in out:
+    if x["status"] not in ("SCHEDULED", "TIMED") or not inj_data["items"]:
+        continue
+    m = mid[x["id"]]
+    when = datetime.fromisoformat(x["utc"].replace("Z", "+00:00"))
+    res = {}
+    for side, key in (("h", "homeTeam"), ("a", "awayTeam")):
+        names = [m[key].get("name"), tname(m[key])]
+        res[side] = [{"n": i["player"], "r": i["reason"]} for i in inj_data["items"]
+                     if abs((datetime.fromisoformat(i["date"].replace("Z", "+00:00")) - when).total_seconds()) < 36 * 3600
+                     and any(same(i["team"], n) for n in names)][:8]
+    if res["h"] or res["a"]:
+        x["inj"] = res
 with open("data.json", "w") as f:
     json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "matches": out, "tables": tables}, f, ensure_ascii=False)
 print("matches written:", len(out))
