@@ -108,14 +108,21 @@ function record(){
 function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000);
  return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`}
 function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
-function bind(){document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
+function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
+ document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
  document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{sel=D.matches.find(x=>x.id==b.dataset.id);sel.odds=sel.odds||null;detail()});}
+let pk='conf';
 function picks(){
  const lim=Date.now()+36*3600e3;
- const ms=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));return{m,r,i,c:v[i]}}).sort((a,b)=>b.c-a.c);
  const nm=m=>['Home win: '+m.h,'Draw','Away win: '+m.a];
- $('#app').innerHTML=head()+tabsHtml()+`<p class="note">Matches in the next 36 hours, ranked by how sure the model is. Odds aren’t loaded yet, so there’s no market comparison. Sure doesn’t mean certain.</p>`+(ms.map((x,k)=>`<button class="card" data-id="${x.m.id}"><div class="pk"><span class="rk">${k+1}</span><div><div class="comp">${x.m.comp} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${x.m.h} vs ${x.m.a}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span></div></div></button>`).join('')||'<p class="note">No matches in the next 36 hours.</p>');
+ const ms=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{
+  const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));let g=null,gi=-1;
+  if(m.odds&&m.odds.every(x=>x>1)){const inv=m.odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*m.odds[k]-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
+  return{m,r,i,c:v[i],g,gi}}).sort((a,b)=>pk=='gap'?((b.g?b.g.e:-9)-(a.g?a.g.e:-9)):b.c-a.c);
+ const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null;
+ $('#app').innerHTML=head()+tabsHtml()+`<div class="tabs"><button data-p="conf" aria-pressed="${pk=='conf'}">Most confident</button><button data-p="gap" aria-pressed="${pk=='gap'}">Biggest gap vs market</button></div>
+ <p class="note">Matches in the next 36 hours. ${oh===null?'Odds aren’t loaded yet.':'Odds updated '+oh+' h ago, averaged across bookmakers.'} If the model and the market disagree a lot, trust the market more. Sure doesn’t mean certain.</p>`+(ms.map((x,k)=>`<button class="card" data-id="${x.m.id}"><div class="pk"><span class="rk">${k+1}</span><div><div class="comp">${x.m.comp} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${x.m.h} vs ${x.m.a}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span>${x.g?`<div class="note" style="margin-top:4px">Best value: <b class="${x.g.e>=.05?'ok':'no'}">${nm(x.m)[x.gi]} (${x.g.e>0?'+':''}${(x.g.e*100).toFixed(1)}%)</b> · market ${Math.round(x.g.mk*100)}%</div>`:''}</div></div></button>`).join('')||'<p class="note">No matches in the next 36 hours.</p>');
  bind();
 }
 function tables(){
@@ -124,7 +131,7 @@ function tables(){
  if(!T[comp])comp=ks[0];
  const t=T[comp];
  $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${T[k].name}</option>`).join('')}</select>
- <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${r.team}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>`;
+ <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${r.team}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>${t.scorers&&t.scorers.length?`<h2>Top scorers</h2><div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Player</th><th>Team</th><th>G</th><th>A</th><th>Pen</th></tr>${t.scorers.map((p,i)=>`<tr><td>${i+1}</td><td>${p.name}</td><td>${p.team}</td><td><b>${p.g??'–'}</b></td><td>${p.a??'–'}</td><td>${p.pen??'–'}</td></tr>`).join('')}</table></div>`:''}`;
  bind();
 }
 function list(){
@@ -158,7 +165,7 @@ function detail(){
  <div id="res"></div>
  <div class="panel"><p class="note" style="margin-top:0">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust anything you know better, such as injuries.</p>
  <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
- <label>Decimal odds: home / draw / away (optional)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input data-k="o0" inputmode="decimal"><input data-k="o1" inputmode="decimal"><input data-k="o2" inputmode="decimal"></div></div>`;
+ <label>Decimal odds: home / draw / away (filled in automatically when available)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input data-k="o0" value="${f.odds?f.odds[0]:''}" inputmode="decimal"><input data-k="o1" value="${f.odds?f.odds[1]:''}" inputmode="decimal"><input data-k="o2" value="${f.odds?f.odds[2]:''}" inputmode="decimal"></div></div>`;
  $('#bk').onclick=()=>{sel=null;list()};
  document.querySelectorAll('input').forEach(i=>i.oninput=()=>{
   const k=i.dataset.k,v=i.value;
