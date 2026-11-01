@@ -56,6 +56,8 @@ ol{margin:6px 0 0;padding-left:22px}
 </style>
 </head>
 <body>
+ <div id="splash" style="position:fixed;inset:0;z-index:99;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .6s"><img src="logo-banner-512.png" alt="PitchIQ" style="width:min(80vw,420px);height:auto"></div>
+<script>(function(){var s=document.getElementById("splash");try{if(sessionStorage.getItem("seen")){s.remove();return}sessionStorage.setItem("seen","1")}catch(e){}function go(){s.style.opacity=0;setTimeout(function(){s.remove()},600)}s.onclick=go;setTimeout(go,1800)})()</script>
 <main id="app"><p class="note">Loading matches…</p></main>
 <script>
 const $=s=>document.querySelector(s);
