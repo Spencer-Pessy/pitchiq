@@ -1,4 +1,4 @@
-import json, math, os, time, urllib.request, urllib.error
+import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.error
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 
@@ -46,7 +46,7 @@ def goals(m):
     return ft["home"], ft["away"]
 
 
-# League tables
+# League tables and top scorers
 tables = {}
 for c in COMPS:
     time.sleep(7)
@@ -61,6 +61,13 @@ for c in COMPS:
                  "ga": r["goalsAgainst"], "gd": r["goalDifference"], "pts": r["points"]}
                 for r in st["table"]]}
             break
+    sc = get(f"/competitions/{c}/scorers?limit=10")
+    if sc and c in tables:
+        tables[c]["scorers"] = [
+            {"name": x["player"]["name"], "team": tname(x["team"]), "g": x.get("goals"),
+             "a": x.get("assists"), "pen": x.get("penalties"), "m": x.get("playedMatches")}
+            for x in sc.get("scorers", [])]
+    time.sleep(7)
 
 
 fin = sorted(
@@ -192,37 +199,48 @@ for m in matches:
 
 out.sort(key=lambda x: x["utc"])
 
-# Goal scorers and assists (only if the plan provides them)
+# Odds (from odds.json, refreshed by a separate workflow)
+STOP = {"fc", "cf", "afc", "ac", "as", "ssc", "sc", "sv", "vfb", "vfl", "fsv", "rb", "1", "de",
+        "the", "club", "calcio", "fk", "sk", "us", "ud", "cd", "rc", "rcd", "bsc", "tsg", "if"}
+
+
+def norm(s):
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    s = re.sub(r"[^a-z0-9 ]", " ", s)
+    return " ".join(w for w in s.split() if w not in STOP)
+
+
+def same(a, b):
+    a, b = norm(a), norm(b)
+    if not a or not b:
+        return False
+    return a == b or a in b or b in a or difflib.SequenceMatcher(None, a, b).ratio() >= 0.75
+
+
 try:
-    with open("details.json") as f:
-        details = json.load(f)
+    with open("odds.json") as f:
+        odds_data = json.load(f)
 except Exception:
-    details = {}
-supported, fetched = True, 0
+    odds_data = {"updated": None, "events": []}
+
+mid = {m["id"]: m for m in matches}
 for x in out:
-    if x["status"] != "FINISHED" or str(x["id"]) in details:
+    if x["status"] not in ("SCHEDULED", "TIMED"):
         continue
-    if fetched >= 8 or not supported:
-        break
-    time.sleep(7)
-    d = get(f"/matches/{x['id']}")
-    fetched += 1
-    if not d or "goals" not in d:
-        supported = False
-        print("goal details not available on this plan")
-        break
-    details[str(x["id"])] = [
-        {"min": g.get("minute"), "extra": g.get("injuryTime"), "team": tname(g.get("team") or {}),
-         "scorer": (g.get("scorer") or {}).get("name"), "assist": (g.get("assist") or {}).get("name")}
-        for g in d["goals"]]
-for x in out:
-    if str(x["id"]) in details:
-        x["goals"] = details[str(x["id"])]
-with open("details.json", "w") as f:
-    json.dump(details, f, ensure_ascii=False)
+    m = mid[x["id"]]
+    when = datetime.fromisoformat(x["utc"].replace("Z", "+00:00"))
+    hn = [m["homeTeam"].get("name"), tname(m["homeTeam"])]
+    an = [m["awayTeam"].get("name"), tname(m["awayTeam"])]
+    for ev in odds_data["events"]:
+        t = datetime.fromisoformat(ev["commence"].replace("Z", "+00:00"))
+        if abs((t - when).total_seconds()) > 6 * 3600:
+            continue
+        if any(same(ev["home"], n) for n in hn) and any(same(ev["away"], n) for n in an):
+            x["odds"] = ev["odds"]
+            break
 
 with open("data.json", "w") as f:
-    json.dump({"updated": now.isoformat(), "matches": out, "tables": tables}, f, ensure_ascii=False)
+    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "matches": out, "tables": tables}, f, ensure_ascii=False)
 print("matches written:", len(out))
 
 # Results tracker: save each prediction before kickoff, score it after full time
@@ -237,7 +255,7 @@ for x in out:
     if x["status"] in ("SCHEDULED", "TIMED") and start > now:
         preds[str(x["id"])] = {
             "id": x["id"], "comp": x["comp"], "code": x["code"], "utc": x["utc"],
-            "h": x["h"], "a": x["a"], "p": predict(x["s"]),
+            "h": x["h"], "a": x["a"], "p": predict(x["s"]), "odds": x.get("odds"),
             "final": None, "made": now.isoformat(),
         }
 
