@@ -46,6 +46,23 @@ def goals(m):
     return ft["home"], ft["away"]
 
 
+# League tables
+tables = {}
+for c in COMPS:
+    time.sleep(7)
+    d = get(f"/competitions/{c}/standings")
+    if not d:
+        continue
+    for st in d.get("standings", []):
+        if st.get("type") == "TOTAL":
+            tables[c] = {"name": d["competition"]["name"], "rows": [
+                {"pos": r["position"], "team": tname(r["team"]), "p": r["playedGames"],
+                 "w": r["won"], "d": r["draw"], "l": r["lost"], "gf": r["goalsFor"],
+                 "ga": r["goalsAgainst"], "gd": r["goalDifference"], "pts": r["points"]}
+                for r in st["table"]]}
+            break
+
+
 fin = sorted(
     [m for m in matches if m["status"] == "FINISHED" and goals(m)[0] is not None],
     key=lambda m: m["utcDate"],
@@ -174,8 +191,38 @@ for m in matches:
     })
 
 out.sort(key=lambda x: x["utc"])
+
+# Goal scorers and assists (only if the plan provides them)
+try:
+    with open("details.json") as f:
+        details = json.load(f)
+except Exception:
+    details = {}
+supported, fetched = True, 0
+for x in out:
+    if x["status"] != "FINISHED" or str(x["id"]) in details:
+        continue
+    if fetched >= 8 or not supported:
+        break
+    time.sleep(7)
+    d = get(f"/matches/{x['id']}")
+    fetched += 1
+    if not d or "goals" not in d:
+        supported = False
+        print("goal details not available on this plan")
+        break
+    details[str(x["id"])] = [
+        {"min": g.get("minute"), "extra": g.get("injuryTime"), "team": tname(g.get("team") or {}),
+         "scorer": (g.get("scorer") or {}).get("name"), "assist": (g.get("assist") or {}).get("name")}
+        for g in d["goals"]]
+for x in out:
+    if str(x["id"]) in details:
+        x["goals"] = details[str(x["id"])]
+with open("details.json", "w") as f:
+    json.dump(details, f, ensure_ascii=False)
+
 with open("data.json", "w") as f:
-    json.dump({"updated": now.isoformat(), "matches": out}, f, ensure_ascii=False)
+    json.dump({"updated": now.isoformat(), "matches": out, "tables": tables}, f, ensure_ascii=False)
 print("matches written:", len(out))
 
 # Results tracker: save each prediction before kickoff, score it after full time
