@@ -18,8 +18,8 @@ h1{font:700 34px/1 'Arial Narrow',Impact,sans-serif;margin:0}
 h1 span{color:var(--home)}
 h2{font:700 22px/1.1 'Arial Narrow',Impact,sans-serif;margin:0 0 10px}
 .tag{color:var(--mute);font-size:13px;text-align:right}
-.tabs{display:flex;gap:8px;margin-bottom:10px}
-.tabs button{flex:1;font:inherit;font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 0;cursor:pointer}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 0;cursor:pointer}
 .tabs button[aria-pressed="true"]{background:var(--home);border-color:var(--home);color:#fff}
 select{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:12px}
 .day{font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 6px}
@@ -55,6 +55,9 @@ ol{margin:6px 0 0;padding-left:22px}
 .big div{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--home);border-radius:10px;padding:10px 12px}
 .big b{display:block;font:700 30px/1.1 'Arial Narrow',Impact,sans-serif}
 .big span{font-size:13px;color:var(--mute)}
+table.lt{font-size:13px}.lt th,.lt td{padding:5px 3px;text-align:center}.lt td:nth-child(2),.lt th:nth-child(2){text-align:left;width:34%}.lt tr.top td:first-child{box-shadow:inset 3px 0 var(--home)}
+.rk{font:700 26px 'Arial Narrow',Impact,sans-serif;color:var(--home);min-width:30px}.pk{display:flex;align-items:center;gap:10px}.pk>div{flex:1}
+.gl{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:6px 0;font-size:14px}.gl span:last-child{color:var(--mute);text-align:right}
 h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:10px;vertical-align:-9px;border-radius:50%;background:url(icon-192.png) center/cover}
 </style>
 </head>
@@ -104,12 +107,30 @@ function record(){
 }
 function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000);
  return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`}
-function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['done','Results'],['rec','Record']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
+function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
 function bind(){document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
  document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{sel=D.matches.find(x=>x.id==b.dataset.id);sel.odds=sel.odds||null;detail()});}
+function picks(){
+ const lim=Date.now()+36*3600e3;
+ const ms=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));return{m,r,i,c:v[i]}}).sort((a,b)=>b.c-a.c);
+ const nm=m=>['Home win: '+m.h,'Draw','Away win: '+m.a];
+ $('#app').innerHTML=head()+tabsHtml()+`<p class="note">Matches in the next 36 hours, ranked by how sure the model is. Odds aren’t loaded yet, so there’s no market comparison. Sure doesn’t mean certain.</p>`+(ms.map((x,k)=>`<button class="card" data-id="${x.m.id}"><div class="pk"><span class="rk">${k+1}</span><div><div class="comp">${x.m.comp} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${x.m.h} vs ${x.m.a}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span></div></div></button>`).join('')||'<p class="note">No matches in the next 36 hours.</p>');
+ bind();
+}
+function tables(){
+ const T=D.tables||{},ks=Object.keys(T);
+ if(!ks.length){$('#app').innerHTML=head()+tabsHtml()+'<p class="note">No tables yet. They appear after the next data update.</p>';return bind()}
+ if(!T[comp])comp=ks[0];
+ const t=T[comp];
+ $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${T[k].name}</option>`).join('')}</select>
+ <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${r.team}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>`;
+ bind();
+}
 function list(){
  if(tab=='rec')return record();
+ if(tab=='pick')return picks();
+ if(tab=='tab')return tables();
  const ms=D.matches.filter(m=>(comp=='all'||m.code==comp)&&(tab=='up'?m.status!='FINISHED':m.status=='FINISHED'));
  if(tab!='up')ms.reverse();
  const codes=[...new Map(D.matches.map(m=>[m.code,m.comp]))];
@@ -133,6 +154,7 @@ function detail(){
  const col=(k,n,c)=>`<div style="--c:${c}"><h3>${n}</h3>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${s[k][x]}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
  $('#app').innerHTML=`<button class="back" id="bk">← Matches</button>
  <div class="comp">${f.comp} · ${dy(f)} ${tm(f)}</div><h2>${f.h} vs ${f.a}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
+ ${f.goals&&f.goals.length?`<div class="panel"><h2>Goals</h2>${f.goals.map(g=>`<div class="gl"><span>⚽ ${g.min?g.min+(g.extra?'+'+g.extra:'')+"′ ":''}${g.scorer||'Goal'}</span><span>${g.assist?'Assist: '+g.assist+' · ':''}${g.team}</span></div>`).join('')}</div>`:''}
  <div id="res"></div>
  <div class="panel"><p class="note" style="margin-top:0">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust anything you know better, such as injuries.</p>
  <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
