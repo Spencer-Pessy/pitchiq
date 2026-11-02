@@ -189,7 +189,52 @@ function res(){
  <h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${f.h} ${x[0]}–${x[1]} ${f.a} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
  <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
 }
-Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
+(function(){
+ const _p=picks;
+ picks=function(){
+  _p();
+  const t=document.querySelectorAll('.tabs')[1];
+  if(t){t.insertAdjacentHTML('afterend','<button class="back" id="t3" style="border-color:var(--home)">Share top 3 image</button>');$('#t3').onclick=shareTop3}
+ };
+})();
+async function shareTop3(){
+ const nm=m=>['Home win: '+m.h,'Draw','Away win: '+m.a];
+ const lim=Date.now()+36*3600e3;
+ const L=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{
+  const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));let g=null,gi=-1;
+  if(m.odds&&m.odds.every(o=>o>1)){const inv=m.odds.map(o=>1/o),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*m.odds[k]-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
+  return{m,i,c:v[i],g,gi}}).sort((a,b)=>pk=='gap'?((b.g?b.g.e:-9)-(a.g?a.g.e:-9)):b.c-a.c).slice(0,3);
+ if(!L.length){alert('No matches in the next 36 hours.');return}
+ const W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),FONT="'Arial Narrow',Impact,Arial,sans-serif";
+ x.fillStyle='#000';x.fillRect(0,0,W,H);
+ const gr=x.createLinearGradient(0,0,W,0);gr.addColorStop(0,'#E10600');gr.addColorStop(1,'#6b0000');x.fillStyle=gr;x.fillRect(0,0,W,16);x.fillRect(0,H-16,W,16);
+ const img=await new Promise(a=>{const i=new Image();i.onload=()=>a(i);i.onerror=()=>a(null);i.src='icon-192.png'});
+ x.textAlign='center';x.textBaseline='alphabetic';
+ if(img){x.save();x.beginPath();x.arc(W/2,150,80,0,7);x.clip();x.drawImage(img,W/2-80,70,160,160);x.restore()}
+ x.fillStyle='#F4F4F4';x.font=`700 56px ${FONT}`;x.fillText('PITCH',W/2-44,300);x.fillStyle='#E10600';x.fillText('IQ',W/2+72,300);
+ x.fillStyle='#F4F4F4';x.font=`700 84px ${FONT}`;x.fillText(pk=='gap'?'TOP 3 VALUE PICKS':'TOP 3 PICKS',W/2,410);
+ x.fillStyle='#9C9C9C';x.font=`400 34px ${FONT}`;x.fillText(new Date().toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'}).toUpperCase(),W/2,462);
+ const fit=(t,max,size)=>{t=t.toUpperCase();let z=size;do{x.font=`700 ${z}px ${FONT}`;z-=4}while(x.measureText(t).width>max&&z>28);return t};
+ L.forEach((p,k)=>{
+  const y=520+k*420;
+  x.fillStyle='#121212';x.fillRect(60,y,960,390);x.fillStyle='#E10600';x.fillRect(60,y,10,390);
+  x.textAlign='left';x.fillStyle='#E10600';x.font=`700 120px ${FONT}`;x.fillText(String(k+1),100,y+130);
+  x.fillStyle='#9C9C9C';x.font=`400 30px ${FONT}`;x.fillText((p.m.comp+' · '+tm(p.m)).toUpperCase(),210,y+60);
+  x.fillStyle='#F4F4F4';x.fillText(fit(p.m.h+' vs '+p.m.a,780,60),210,y+125);
+  x.fillStyle='#F4F4F4';x.font=`700 46px ${FONT}`;x.fillText(fit(nm(p.m)[p.i],600,46),100,y+230);
+  x.textAlign='right';x.fillStyle='#E10600';x.font=`700 110px ${FONT}`;x.fillText(Math.round(p.c*100)+'%',990,y+240);
+  x.textAlign='left';x.font=`400 32px ${FONT}`;
+  if(p.g){x.fillStyle='#9C9C9C';x.fillText('Market: '+nm(p.m)[p.gi]+' '+Math.round(p.g.mk*100)+'%',100,y+320);x.fillStyle=p.g.e>=.05?'#3DDC84':'#FF6B6B';x.fillText('Edge '+(p.g.e>0?'+':'')+(p.g.e*100).toFixed(1)+'%',100,y+362)}
+  else{x.fillStyle='#9C9C9C';x.fillText('Model confidence',100,y+320)}
+ });
+ x.textAlign='center';x.fillStyle='#F4F4F4';x.font=`700 42px ${FONT}`;x.fillText('spencer-pessy.github.io/pitchiq',W/2,1830);
+ x.fillStyle='#6f6f6f';x.font=`400 28px ${FONT}`;x.fillText('Model estimates, not guarantees. 18+ only.',W/2,1878);
+ const blob=await new Promise(a=>c.toBlob(a,'image/png'));
+ const file=new File([blob],'pitchiq-top3.png',{type:'image/png'});
+ try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PitchIQ top 3 picks'});return}}catch(e){if(e&&e.name=='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+}
+ Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
 </script>
