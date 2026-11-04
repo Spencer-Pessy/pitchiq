@@ -46,7 +46,7 @@ def goals(m):
     return ft["home"], ft["away"]
 
 
-# League tables and top scorers
+# League tables
 tables = {}
 for c in COMPS:
     time.sleep(7)
@@ -151,6 +151,8 @@ def predict(s):
     lh *= 1.15 ** e * (1 + (ppg(H["form"]) - 1.5) * .04)
     la *= 1.15 ** -e * (1 + (ppg(A["form"]) - 1.5) * .04)
     lh, la = max(lh, .05), max(la, .05)
+    rlh, rla = lh, la
+    lh, la = lh * CAL["kh"], la * CAL["ka"]
     N = 8
     m, t = {}, 0
     for i in range(N):
@@ -171,6 +173,7 @@ def predict(s):
         if i and j:
             r["bt"] += p
     r["lh"], r["la"] = lh, la
+    r["rlh"], r["rla"] = rlh, rla
     return {k: round(v, 4) for k, v in r.items()}
 
 
@@ -238,6 +241,25 @@ for x in out:
         if any(same(ev["home"], n) for n in hn) and any(same(ev["away"], n) for n in an):
             x["odds"] = ev["odds"]
             break
+
+# Self-calibration: compare past raw goal forecasts with real scores, adjust gently
+CAL = {"kh": 1.0, "ka": 1.0}
+try:
+    with open("predictions.json") as f:
+        _pp = [p for p in json.load(f).values() if p.get("final")]
+except Exception:
+    _pp = []
+if len(_pp) >= 10:
+    _n = len(_pp)
+    _w = _n / (_n + 120)  # trust the data more as it grows
+    _ph = sum(p["p"].get("rlh", p["p"]["lh"]) for p in _pp) / _n
+    _pa = sum(p["p"].get("rla", p["p"]["la"]) for p in _pp) / _n
+    _ah = sum(p["final"][0] for p in _pp) / _n
+    _aa = sum(p["final"][1] for p in _pp) / _n
+    CAL["kh"] = round(min(1.15, max(0.85, 1 + (_ah / _ph - 1) * _w)), 4)
+    CAL["ka"] = round(min(1.15, max(0.85, 1 + (_aa / _pa - 1) * _w)), 4)
+print("calibration:", CAL, "from", len(_pp), "results")
+
 # Injuries (from injuries.json, refreshed by a separate workflow)
 try:
     with open("injuries.json") as f:
@@ -258,8 +280,9 @@ for x in out:
                      and any(same(i["team"], n) for n in names)][:8]
     if res["h"] or res["a"]:
         x["inj"] = res
+
 with open("data.json", "w") as f:
-    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "matches": out, "tables": tables}, f, ensure_ascii=False)
+    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "calib": CAL, "matches": out, "tables": tables}, f, ensure_ascii=False)
 print("matches written:", len(out))
 
 # Results tracker: save each prediction before kickoff, score it after full time
