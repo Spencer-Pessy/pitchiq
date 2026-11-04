@@ -234,6 +234,79 @@ async function shareTop3(){
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PitchIQ top 3 picks'});return}}catch(e){if(e&&e.name=='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
 }
+ const FEEDBACK_URL='';   // paste your Google Form link between the quotes
+const GOATCOUNTER='';    // paste your GoatCounter code (like pitchiq) between the quotes
+if(GOATCOUNTER){const sc=document.createElement('script');sc.async=true;sc.dataset.goatcounter='https://'+GOATCOUNTER+'.goatcounter.com/count';sc.src='//gc.zgo.at/count.js';document.head.appendChild(sc)}
+function addFooter(){if(!FEEDBACK_URL||$('#fb'))return;$('#app').insertAdjacentHTML('beforeend','<p id="fb" style="text-align:center;margin-top:24px"><a href="'+FEEDBACK_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Send feedback</a></p>')}
+(function(){
+ const _l=list,_d=detail,_r=record;
+ list=function(){_l();addFooter()};
+ detail=function(){
+  _d();
+  const f=sel,s=f.s;let sv={};
+  try{sv=JSON.parse(localStorage.getItem('piq:'+f.id)||'{}')}catch(e){}
+  if(sv.out){['h','a'].forEach((k,i)=>{s[k].out=sv.out[i]||0;const el=document.querySelector('[data-k="'+k+'.out"]');if(el)el.value=s[k].out})}
+  $('#res').insertAdjacentHTML('beforebegin','<div class="panel"><h2>Your notes</h2><textarea id="nt" rows="3" placeholder="Lineup news, your read on the match… saved on this phone only" style="width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px"></textarea></div>');
+  $('#nt').value=sv.note||'';
+  const save=()=>{try{localStorage.setItem('piq:'+f.id,JSON.stringify({out:[+s.h.out||0,+s.a.out||0],note:$('#nt').value}))}catch(e){}};
+  $('#nt').addEventListener('input',save);
+  document.querySelectorAll('[data-k$=".out"]').forEach(i=>i.addEventListener('input',save));
+  res();addFooter();
+ };
+ record=function(){
+  _r();
+  const done=Object.values(P).filter(p=>p.final);
+  if(done.length){
+   const t=document.querySelector('.tabs');
+   if(t){t.insertAdjacentHTML('afterend','<button class="back" id="rs" style="border-color:var(--home)">Share record image</button>');$('#rs').onclick=shareRecord}
+  }
+  if(done.length>=10){
+   const n=done.length,act=p=>p.final[0]>p.final[1]?0:p.final[0]==p.final[1]?1:2;
+   const avg=a=>a.reduce((x,y)=>x+y,0)/a.length,pc=x=>Math.round(x*100)+'%';
+   const o=[0,1,2].map(k=>done.filter(p=>act(p)==k).length/n),m=[p=>p.p.ph,p=>p.p.pd,p=>p.p.pa].map(g=>avg(done.map(g)));
+   const bk=[['under 45%',0,.45],['45–60%',.45,.6],['60%+',.6,1.01]].map(([nmx,lo,hi])=>{const b=done.filter(p=>{const c=Math.max(p.p.ph,p.p.pd,p.p.pa);return c>=lo&&c<hi});const h=b.filter(p=>{const v=[p.p.ph,p.p.pd,p.p.pa];return v.indexOf(Math.max(...v))==act(p)}).length;return[nmx,b.length,b.length?avg(b.map(p=>Math.max(p.p.ph,p.p.pd,p.p.pa))):0,b.length?h/b.length:0]});
+   const eg=avg(done.map(p=>p.p.lh+p.p.la)),ag=avg(done.map(p=>p.final[0]+p.final[1]));
+   const row=(a,b,c)=>`<tr><td>${a}</td><td>${b}</td><td>${c}</td></tr>`;
+   $('#app').insertAdjacentHTML('beforeend',`<div class="panel"><h2>Model health</h2><p class="note" style="margin-top:0">Is the model over- or under-confident? Based on ${n} finished predictions.</p>
+   <table><tr><th>Outcome</th><th>Model said</th><th>Happened</th></tr>${row('Home win',pc(m[0]),pc(o[0]))}${row('Draw',pc(m[1]),pc(o[1]))}${row('Away win',pc(m[2]),pc(o[2]))}</table>
+   <table style="margin-top:12px"><tr><th>When confidence was</th><th>Matches</th><th>Model said</th><th>Right</th></tr>${bk.map(b=>`<tr><td>${b[0]}</td><td>${b[1]}</td><td>${b[1]?pc(b[2]):'–'}</td><td>${b[1]?pc(b[3]):'–'}</td></tr>`).join('')}</table>
+   <p class="note">Total goals per match: model ${eg.toFixed(2)}, actual ${ag.toFixed(2)}. Few matches means noisy numbers, so judge after 50 or more.</p></div>`);
+  }
+  addFooter();
+ };
+})();
+async function shareRecord(){
+ const done=Object.values(P).filter(p=>p.final);if(!done.length)return;
+ const n=done.length,act=p=>p.final[0]>p.final[1]?0:p.final[0]==p.final[1]?1:2;
+ let hit=0,hc=0,hch=0,oh=0,bh=0;
+ const rows=done.map(p=>{const q=p.p,v=[q.ph,q.pd,q.pa],pick=v.indexOf(Math.max(...v)),ok=pick==act(p);
+  if(ok)hit++;if(v[pick]>=.6){hc++;if(ok)hch++}
+  if((q.o25>=.5)==(p.final[0]+p.final[1]>2))oh++;if((q.bt>=.5)==(p.final[0]>0&&p.final[1]>0))bh++;
+  return{p,ok,t:new Date(p.utc)}}).sort((a,b)=>b.t-a.t);
+ const homeRate=done.filter(p=>act(p)==0).length/n,f=(a,c)=>c?Math.round(a/c*100)+'%':'–';
+ const W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),FONT="'Arial Narrow',Impact,Arial,sans-serif";
+ x.fillStyle='#000';x.fillRect(0,0,W,H);
+ const gr=x.createLinearGradient(0,0,W,0);gr.addColorStop(0,'#E10600');gr.addColorStop(1,'#6b0000');x.fillStyle=gr;x.fillRect(0,0,W,16);x.fillRect(0,H-16,W,16);
+ const img=await new Promise(a=>{const i=new Image();i.onload=()=>a(i);i.onerror=()=>a(null);i.src='icon-192.png'});
+ x.textAlign='center';x.textBaseline='alphabetic';
+ if(img){x.save();x.beginPath();x.arc(W/2,150,80,0,7);x.clip();x.drawImage(img,W/2-80,70,160,160);x.restore()}
+ x.fillStyle='#F4F4F4';x.font=`700 56px ${FONT}`;x.fillText('PITCH',W/2-44,300);x.fillStyle='#E10600';x.fillText('IQ',W/2+72,300);
+ x.fillStyle='#F4F4F4';x.font=`700 84px ${FONT}`;x.fillText('ACCURACY REPORT',W/2,410);
+ x.fillStyle='#9C9C9C';x.font=`400 34px ${FONT}`;x.fillText(('Every prediction saved before kickoff · '+n+' finished').toUpperCase(),W/2,462);
+ const cells=[[f(hit,n),'CORRECT RESULTS',hit+' of '+n],[f(hch,hc),'WHEN 60%+ SURE',hch+' of '+hc],[f(oh,n),'OVER/UNDER 2.5',oh+' of '+n],[f(bh,n),'BOTH TEAMS SCORE',bh+' of '+n]];
+ cells.forEach((cl,i)=>{const cx=60+(i%2)*490,cy=520+Math.floor(i/2)*270;x.fillStyle='#121212';x.fillRect(cx,cy,470,240);x.fillStyle='#E10600';x.fillRect(cx,cy,8,240);
+  x.textAlign='center';x.fillStyle='#F4F4F4';x.font=`700 110px ${FONT}`;x.fillText(cl[0],cx+235,cy+120);x.fillStyle='#9C9C9C';x.font=`400 32px ${FONT}`;x.fillText(cl[1],cx+235,cy+170);x.fillText(cl[2],cx+235,cy+212)});
+ x.fillStyle='#9C9C9C';x.font=`400 34px ${FONT}`;x.fillText('For comparison: always backing the home team = '+Math.round(homeRate*100)+'%',W/2,1110);
+ x.fillStyle='#F4F4F4';x.font=`700 48px ${FONT}`;x.fillText('RECENT RESULTS',W/2,1200);
+ rows.slice(0,6).forEach((r,i)=>{const y=1230+i*78;x.fillStyle='#121212';x.fillRect(60,y,960,68);x.textAlign='left';x.fillStyle=r.ok?'#3DDC84':'#FF6B6B';x.font=`700 44px ${FONT}`;x.fillText(r.ok?'✓':'✗',90,y+48);
+  x.fillStyle='#F4F4F4';let t=(r.p.h+' '+r.p.final[0]+'–'+r.p.final[1]+' '+r.p.a).toUpperCase(),z=36;do{x.font=`700 ${z}px ${FONT}`;z-=2}while(x.measureText(t).width>850&&z>18);x.fillText(t,150,y+47)});
+ x.textAlign='center';x.fillStyle='#F4F4F4';x.font=`700 42px ${FONT}`;x.fillText('spencer-pessy.github.io/pitchiq',W/2,1810);
+ x.fillStyle='#6f6f6f';x.font=`400 28px ${FONT}`;x.fillText('Right or wrong, the record is public. Model estimates, not guarantees. 18+ only.',W/2,1862);
+ const blob=await new Promise(a=>c.toBlob(a,'image/png'));
+ const file=new File([blob],'pitchiq-record.png',{type:'image/png'});
+ try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PitchIQ accuracy report'});return}}catch(e){if(e&&e.name=='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+}
  Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
