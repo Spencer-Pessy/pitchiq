@@ -78,6 +78,7 @@ function model(s){
  lh*=Math.pow(1.15,e)*(1+(ppg(H.form)-1.5)*.04)*(1-.04*H.out);
  la*=Math.pow(1.15,-e)*(1+(ppg(A.form)-1.5)*.04)*(1-.04*A.out);
  lh=Math.max(lh,.05);la=Math.max(la,.05);
+ if(D&&D.calib){lh*=D.calib.kh;la*=D.calib.ka}
  const N=8,m=[];let t=0;
  for(let i=0;i<N;i++){m[i]=[];for(let j=0;j<N;j++){m[i][j]=pois(lh,i)*pois(la,j)*tau(i,j,lh,la,-.1);t+=m[i][j]}}
  let ph=0,pd=0,pa=0,o25=0,bt=0;const all=[];
