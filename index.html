@@ -311,6 +311,85 @@ async function shareRecord(){
  Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
+ async function shareImg(){
+ const f=sel,r=model(f.s),W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+ const FONT="'Arial Narrow',Impact,Arial,sans-serif";
+ x.fillStyle='#000';x.fillRect(0,0,W,H);
+ let g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,'#E10600');g.addColorStop(1,'#6b0000');x.fillStyle=g;x.fillRect(0,0,W,16);x.fillRect(0,H-16,W,16);
+ const img=await new Promise(a=>{const i=new Image();i.onload=()=>a(i);i.onerror=()=>a(null);i.src='icon-192.png'});
+ x.textAlign='center';x.textBaseline='alphabetic';
+ if(img){x.save();x.beginPath();x.arc(W/2,190,100,0,7);x.clip();x.drawImage(img,W/2-100,90,200,200);x.restore()}
+ x.fillStyle='#F4F4F4';x.font=`700 64px ${FONT}`;x.fillText('PITCH',W/2-50,360);x.fillStyle='#E10600';x.fillText('IQ',W/2+82,360);
+ const fit=(t,max,size,wt)=>{t=t.toUpperCase();let z=size;do{x.font=`${wt||700} ${z}px ${FONT}`;z-=4}while(x.measureText(t).width>max&&z>30);return t};
+ x.fillStyle='#9C9C9C';x.font=`400 36px ${FONT}`;x.fillText((f.comp+' · '+dy(f)+' · '+tm(f)).toUpperCase(),W/2,450);
+ x.fillStyle='#F4F4F4';x.fillText(fit(f.h,920,120),W/2,590);
+ x.fillStyle='#E10600';x.font=`700 56px ${FONT}`;x.fillText('VS',W/2,680);
+ x.fillStyle='#F4F4F4';x.fillText(fit(f.a,920,120),W/2,810);
+ const bx=80,bw=920,by=900,bh=130,v=[r.ph,r.pd,r.pa],col=['#E10600','#5A5A5A','#E6E6E6'],txt=['#fff','#fff','#000'];let px=bx;
+ x.textBaseline='middle';
+ v.forEach((p,i)=>{const w=bw*p;x.fillStyle=col[i];x.fillRect(px,by,w,bh);x.fillStyle=txt[i];x.font=`700 64px ${FONT}`;if(w>90)x.fillText(Math.round(p*100)+'%',px+w/2,by+bh/2+4);px+=w});
+ x.textBaseline='alphabetic';x.fillStyle='#9C9C9C';x.font=`400 34px ${FONT}`;
+ x.textAlign='left';x.fillText('HOME WIN',bx,by+bh+52);x.textAlign='center';x.fillText('DRAW',W/2,by+bh+52);x.textAlign='right';x.fillText('AWAY WIN',bx+bw,by+bh+52);x.textAlign='center';
+ const top=r.top[0],cells=[['EXPECTED GOALS',r.lh.toFixed(1)+' – '+r.la.toFixed(1)],['LIKELIEST SCORE',top[0]+' – '+top[1]],['OVER 2.5 GOALS',Math.round(r.o25*100)+'%'],['BOTH TEAMS SCORE',Math.round(r.bt*100)+'%']];
+ cells.forEach((cl,i)=>{const cx=bx+(i%2)*470,cy=1210+Math.floor(i/2)*220;x.fillStyle='#121212';x.fillRect(cx,cy,450,190);x.fillStyle='#E10600';x.fillRect(cx,cy,8,190);x.fillStyle='#9C9C9C';x.font=`400 32px ${FONT}`;x.fillText(cl[0],cx+225,cy+60);x.fillStyle='#F4F4F4';x.font=`700 80px ${FONT}`;x.fillText(cl[1],cx+225,cy+145)});
+ if(f.odds&&f.odds.every(o=>o>1)){const inv=f.odds.map(o=>1/o),sm=inv[0]+inv[1]+inv[2];x.fillStyle='#9C9C9C';x.font=`400 34px ${FONT}`;x.fillText('MARKET: '+inv.map(i=>Math.round(i/sm*100)+'%').join('  ·  '),W/2,1690)}
+ x.fillStyle='#F4F4F4';x.font=`700 42px ${FONT}`;x.fillText('spencer-pessy.github.io/pitchiq',W/2,1768);
+ x.fillStyle='#6f6f6f';x.font=`400 28px ${FONT}`;x.fillText('Model estimate, not a guarantee. 18+ only.',W/2,1830);
+ const blob=await new Promise(a=>c.toBlob(a,'image/png'));
+ const file=new File([blob],'pitchiq-'+f.h.replace(/\W+/g,'')+'-vs-'+f.a.replace(/\W+/g,'')+'.png',{type:'image/png'});
+ try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PitchIQ forecast'});return}}catch(e){if(e&&e.name=='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+}
+let qs='',onlyFav=false;
+const getFavs=()=>{try{return JSON.parse(localStorage.getItem('piq:fav')||'[]')}catch(e){return[]}};
+const setFavs=a=>{try{localStorage.setItem('piq:fav',JSON.stringify(a))}catch(e){}};
+const isFav=m=>{const f=getFavs();return f.includes(m.h)||f.includes(m.a)};
+function showAbout(){
+ $('#app').innerHTML=`<button class="back" id="ab">← Back</button><h2>How PitchIQ works</h2>
+ <div class="panel"><h2>What it is</h2><p class="note" style="margin:0">Free football analysis for the Premier League, La Liga, Serie A, Bundesliga, Ligue 1 and the Champions League. It shows forecasts, picks, tables and a public record of its own accuracy.</p></div>
+ <div class="panel"><h2>How a forecast is made</h2><p class="note" style="margin:0">It starts with each team’s goals scored and conceded this season, split into home and away, and pulled toward the league average when a team has played few games. It adds a strength rating built from results and each team’s last five games. A goals model then turns expected goals into win, draw and loss chances. The model also compares its own goal forecasts with real scores and adjusts a little, more as results build up.</p></div>
+ <div class="panel"><h2>What it can’t see</h2><p class="note" style="margin:0">Lineups, tactics, weather and motivation. Reported injuries are shown for information, but they don’t change the forecast unless you set “Key players out” yourself.</p></div>
+ <div class="panel"><h2>The record</h2><p class="note" style="margin:0">Every prediction is saved before kickoff and scored after full time. The Record tab shows hits and misses, and Model health shows where the model is off. Nothing is edited afterwards.</p></div>
+ <div class="panel"><h2>Odds and “edge”</h2><p class="note" style="margin:0">Odds are averages from bookmakers, shown only for comparison. “Edge” means the gap between the model and the market. It is not a promise of profit, and when they differ a lot the market is usually better informed. PitchIQ is not betting advice. 18+ only. If gambling is a problem for you, please seek support in your country.</p></div>
+ <div class="panel"><h2>Data and privacy</h2><p class="note" style="margin:0">Match data comes from football-data.org, odds from The Odds API and injuries from API-Football. Scores can be delayed. There are no accounts. Your notes and favourite teams stay on your phone.${GOATCOUNTER?' The site uses an anonymous, cookie-free visit counter.':''}</p></div>`;
+ $('#ab').onclick=()=>list();
+}
+function addFooter(){
+ if($('#fb')||sel)return;
+ $('#app').insertAdjacentHTML('beforeend','<p id="fb" style="text-align:center;margin-top:24px"><a href="#" id="abl" style="color:var(--home);font-weight:600">How it works</a>'+(FEEDBACK_URL?' &nbsp;·&nbsp; <a href="'+FEEDBACK_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Send feedback</a>':'')+'</p>');
+ $('#abl').onclick=e=>{e.preventDefault();showAbout()};
+}
+(function(){
+ const _l=list,_d=detail;
+ list=function(){
+  if(onlyFav&&(tab=='up'||tab=='done')){const all=D.matches;D.matches=all.filter(isFav);try{_l()}finally{D.matches=all}}else _l();
+  document.querySelectorAll('button.card[data-id]').forEach(b=>{const m=D.matches.find(x=>x.id==b.dataset.id);const c=b.querySelector('.comp');if(m&&c&&isFav(m))c.insertAdjacentText('afterbegin','★ ')});
+  const cf=$('#cf');
+  if((tab=='up'||tab=='done')&&cf){
+   cf.insertAdjacentHTML('beforebegin','<input id="q" type="search" placeholder="Search a team…" style="margin-bottom:10px">');
+   cf.insertAdjacentHTML('afterend','<button class="back" id="fv" aria-pressed="'+onlyFav+'">'+(onlyFav?'★ My teams only: on':'☆ My teams only')+'</button>');
+   const q=$('#q');q.value=qs;
+   const apply=()=>{const nz=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const v=nz(qs).trim();let day=null,any=false;[...$('#app').children].forEach(el=>{if(el.classList.contains('day')){if(day)day.style.display=(any||!v)?'':'none';day=el;any=false}else if(el.matches('button.card[data-id]')){const ok=!v||nz(el.innerText).includes(v);el.style.display=ok?'':'none';if(ok)any=true}});if(day)day.style.display=(any||!v)?'':'none'};
+   q.addEventListener('input',()=>{qs=q.value;apply()});apply();
+   $('#fv').onclick=()=>{onlyFav=!onlyFav;list()};
+  }
+ };
+ detail=function(){
+  _d();
+  const f=sel;
+  $('#bk').insertAdjacentHTML('afterend',' <button class="back" id="shr" style="border-color:var(--home)">Share image</button>');
+  $('#shr').onclick=shareImg;
+  if(f.inj){
+   const html='<div class="panel"><h2>Reported absences</h2><div class="cols">'+[['h',f.h,'var(--home)'],['a',f.a,'var(--away)']].map(([k,n,c])=>'<div style="--c:'+c+'"><h3>'+n+'</h3>'+(f.inj[k].length?f.inj[k].map(p=>'<div class="gl"><span>'+p.n+'</span><span>'+(p.r||'')+'</span></div>').join(''):'<p class="note">None listed</p>')+'</div>').join('')+'</div><p class="note">From API-Football. Not every name is a first-team player, so set “Key players out” below yourself.</p></div>';
+   const nt=$('#nt');(nt?nt.parentNode:$('#res')).insertAdjacentHTML('beforebegin',html);
+  }
+  const row=document.createElement('div');row.style.cssText='margin-bottom:10px';
+  [f.h,f.a].forEach(t=>{const b=document.createElement('button');b.className='back';b.style.marginRight='8px';
+   const paint=()=>{b.textContent=(getFavs().includes(t)?'★ Following ':'☆ Follow ')+t};paint();
+   b.onclick=()=>{const a=getFavs();const i=a.indexOf(t);if(i>-1)a.splice(i,1);else a.push(t);setFavs(a);paint()};row.appendChild(b)});
+  document.querySelector('#app h2').insertAdjacentElement('afterend',row);
+ };
+})();
 </script>
 </body>
 </html>
