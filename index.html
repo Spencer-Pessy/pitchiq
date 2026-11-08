@@ -308,7 +308,7 @@ async function shareRecord(){
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PitchIQ accuracy report'});return}}catch(e){if(e&&e.name=='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
 }
- const TELEGRAM_URL='';   // paste your Telegram channel link between the quotes, like https://t.me/yourchannel
+ const TELEGRAM_URL='https://t.me/pitchiq_picks';   // paste your Telegram channel link between the quotes, like https://t.me/yourchannel
 (function(){
  const _d=detail,_af=addFooter;
  const esc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
