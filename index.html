@@ -308,6 +308,32 @@ async function shareRecord(){
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PitchIQ accuracy report'});return}}catch(e){if(e&&e.name=='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
 }
+ const TELEGRAM_URL='';   // paste your Telegram channel link between the quotes, like https://t.me/yourchannel
+(function(){
+ const _d=detail,_af=addFooter;
+ const esc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+ const stamp=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+ function remind(f){
+  const r=model(f.s),st=new Date(f.utc),en=new Date(st.getTime()+2*3600e3);
+  const desc='PitchIQ forecast: '+f.h+' '+Math.round(r.ph*100)+'% · Draw '+Math.round(r.pd*100)+'% · '+f.a+' '+Math.round(r.pa*100)+'%. Model estimate, not a guarantee. https://spencer-pessy.github.io/pitchiq/';
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//PitchIQ//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:piq-'+f.id+'@pitchiq','DTSTAMP:'+stamp(new Date()),'DTSTART:'+stamp(st),'DTEND:'+stamp(en),'SUMMARY:'+esc('⚽ '+f.h+' vs '+f.a),'DESCRIPTION:'+esc(desc),'BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:'+esc('Kickoff in 30 minutes: '+f.h+' vs '+f.a),'END:VALARM','END:VEVENT','END:VCALENDAR'].map(l=>{let o='';while(l.length>70){o+=l.slice(0,70)+'\r\n ';l=l.slice(70)}return o+l}).join('\r\n')+'\r\n';
+  const blob=new Blob([ics],{type:'text/calendar'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='pitchiq-'+f.id+'.ics';document.body.appendChild(a);a.click();a.remove();
+ }
+ detail=function(){
+  _d();
+  const f=sel;
+  if((f.status=='TIMED'||f.status=='SCHEDULED')&&new Date(f.utc)>Date.now()){
+   const anchor=$('#shr')||$('#bk');
+   anchor.insertAdjacentHTML('afterend',' <button class="back" id="rm" style="border-color:var(--home)">⏰ Remind me</button>');
+   $('#rm').onclick=()=>remind(f);
+  }
+ };
+ addFooter=function(){
+  const had=$('#fb');_af();
+  if(!had&&$('#fb')&&TELEGRAM_URL)$('#fb').insertAdjacentHTML('beforeend',' &nbsp;·&nbsp; <a href="'+TELEGRAM_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Telegram alerts</a>');
+ };
+})();
  Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
