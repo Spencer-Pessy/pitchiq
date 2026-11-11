@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics, ablation_comparison, wilson_interval, paired_bootstrap_interval, expected_goals_calibration
+from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics, ablation_comparison, wilson_interval, paired_bootstrap_interval, expected_goals_calibration, scoreline_baseline_comparison
 
 
 
@@ -357,6 +357,47 @@ class ModelTests(unittest.TestCase):
         self.assertGreater(result["lh"], 0)
         self.assertGreater(result["la"], 0)
         self.assertAlmostEqual(result["ph"] + result["pd"] + result["pa"], 1.0, delta=0.001)
+
+
+class ScorelineBaselineComparisonTests(unittest.TestCase):
+    def test_identical_rates_produce_a_valid_paired_comparison(self):
+        rows = [
+            {"final": [0, 0], "p": {"lh": 1.5, "la": 1.2}},
+            {"final": [1, 0], "p": {"lh": 1.5, "la": 1.2}},
+            {"final": [2, 1], "p": {"lh": 1.5, "la": 1.2}},
+            {"final": [1, 1], "p": {"lh": 1.5, "la": 1.2}},
+        ]
+        result = scoreline_baseline_comparison(rows)
+        self.assertEqual(result["matches"], 4)
+        self.assertEqual(result["excluded"], 0)
+        self.assertIsNotNone(result["delta_ci_95"])
+        self.assertAlmostEqual(
+            result["mean_delta_dc_minus_independent"],
+            result["dixon_coles_nll"] - result["independent_poisson_nll"],
+            places=4,
+        )
+        self.assertEqual(
+            result["dc_better"] + result["independent_better"] + result["ties"], 4
+        )
+
+    def test_scoreline_baseline_excludes_out_of_grid_and_invalid_rates(self):
+        rows = [
+            {"final": [8, 0], "p": {"lh": 1.5, "la": 1.2}},
+            {"final": [1, 0], "p": {"lh": 0, "la": 1.2}},
+            {"final": [1, 0], "p": {"lh": float("nan"), "la": 1.2}},
+            {"final": [1, 0], "p": {"lh": 1.5, "la": 1.2}},
+            {"final": None, "p": {"lh": 1.5, "la": 1.2}},
+        ]
+        result = scoreline_baseline_comparison(rows)
+        self.assertEqual(result["matches"], 1)
+        self.assertEqual(result["excluded"], 3)
+
+    def test_scoreline_baseline_requires_no_unpaired_claim_with_one_match(self):
+        result = scoreline_baseline_comparison([
+            {"final": [0, 0], "p": {"lh": 1.5, "la": 1.2}}
+        ])
+        self.assertIsNone(result["delta_ci_95"])
+        self.assertEqual(result["interpretation"], "no_clear_difference")
 
 
 if __name__ == "__main__":
