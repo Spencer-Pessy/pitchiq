@@ -8,6 +8,7 @@ from pitchiq_data import (
     player_goals_per_appearance,
     player_rate_stats,
     team_venue_stats,
+    forecast_input_snapshot,
 )
 
 
@@ -36,6 +37,30 @@ class TeamVenueStatsTests(unittest.TestCase):
         self.assertEqual(result["venue_matches"], 0)
         self.assertEqual(result["form_matches"], 0)
         self.assertEqual(result["form"], "")
+
+
+class ForecastSnapshotTests(unittest.TestCase):
+    def test_snapshot_captures_model_inputs_for_future_diagnostics(self):
+        stats = {
+            "h": {"gf": 1.8, "ga": 1.1, "elo": 1550, "form": "WWDLW", "out": 0,
+                  "venue_matches": 8, "form_matches": 5, "form_scope": "all_venues"},
+            "a": {"gf": 1.2, "ga": 1.5, "elo": 1490, "form": "LDWDL", "out": 0,
+                  "venue_matches": 6, "form_matches": 5, "form_scope": "all_venues"},
+            "lh": 1.55, "la": 1.25,
+        }
+        snapshot = forecast_input_snapshot(stats)
+        self.assertEqual(snapshot["schema"], 1)
+        self.assertEqual(snapshot["home"]["venue_matches"], 8)
+        self.assertEqual(snapshot["away"]["form"], "LDWDL")
+        self.assertEqual(snapshot["league_home"], 1.55)
+        self.assertEqual(snapshot["league_away"], 1.25)
+        self.assertNotIn("unrelated", snapshot["home"])
+
+    def test_snapshot_supports_older_or_partial_team_inputs(self):
+        snapshot = forecast_input_snapshot({"h": {"gf": 1.4}, "a": {}, "lh": 1.5})
+        self.assertEqual(snapshot["home"], {"gf": 1.4})
+        self.assertEqual(snapshot["away"], {})
+        self.assertIsNone(snapshot["league_away"])
 
 
 class CompetitionDataTests(unittest.TestCase):
