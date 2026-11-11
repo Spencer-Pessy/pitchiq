@@ -12,7 +12,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 
 - Fixtures, scores, standings and scorers from football-data.org, including free-tier FIFA World Cup and UEFA European Championship tournament coverage (where fixtures are available). The main match list publishes upcoming fixtures up to 30 days ahead so international breaks do not leave the schedule looking empty.
 - A separate no-key OpenFootball World Cup 2026 fixtures/results feed (CC0). It is tournament-only, not a complete international calendar; football-data.org separately supplies its free World Cup and EURO coverage. International fixtures are listed without model forecasts until a reliable national-team history dataset is integrated.
-- Competition top-scorer comparison with goals, assists, appearances, goals per appearance, assists per appearance and combined goal contributions per appearance (not per 90; minutes played are not supplied by this source).
+- Competition top-goalscorer comparison with goals, assists, appearances, goals per appearance, assists per appearance and combined goal contributions per appearance (not per 90; minutes played are not supplied). The provider returns a top-goalscorer list rather than a complete assists leaderboard, so alternate sorts compare only those listed players and unavailable stats remain blank.
 - Home/draw/away, over 2.5 goals and both-teams-to-score probabilities.
 - Likeliest scorelines and expected goals.
 - Optional bookmaker-odds comparison from The Odds API.
