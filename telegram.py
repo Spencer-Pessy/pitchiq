@@ -75,8 +75,8 @@ if RESULTS_ONLY:
     print("Results-only check complete; no new picks or news posts were requested.")
     raise SystemExit(0)
 
-up = [p for p in preds if valid_forecast(p) and not p.get("final")
-      and now < when(p) < lim]
+up = [p for p in preds if valid_forecast(p) and snapshot_published_pick(p) is not None
+      and not p.get("final") and now < when(p) < lim]
 if not up:
     print("No eligible matches in the next 36 hours; no Telegram post will be sent.")
     save_pick_state(pick_state)
