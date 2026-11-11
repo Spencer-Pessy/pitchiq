@@ -12,7 +12,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 
 - Fixtures, scores, standings and scorers from football-data.org, including free-tier FIFA World Cup and UEFA European Championship tournament coverage (where fixtures are available).
 - A separate API-Football national-team fixtures feed covering international friendlies, qualifiers and tournaments where available. These fixtures are listed without model forecasts until a reliable national-team history dataset is integrated.
-- Competition top-scorer comparison with goals, assists, appearances and goals per appearance (not goals per 90; minutes played are not supplied by this source).
+- Competition top-scorer comparison with goals, assists, appearances, goals per appearance, assists per appearance and combined goal contributions per appearance (not per 90; minutes played are not supplied by this source).
 - Home/draw/away, over 2.5 goals and both-teams-to-score probabilities.
 - Likeliest scorelines and expected goals.
 - Optional bookmaker-odds comparison from The Odds API.
@@ -79,4 +79,4 @@ The published `data_health` object reports fixture counts by competition, total 
 
 ### International fixtures and free API quota
 
-The international feed uses the existing `API_FOOTBALL_KEY` secret and the API-Football fixtures endpoint. Its scheduled workflow queries eight calendar dates per refresh, four times daily (up to 12 fixture requests per day). The existing injury refresh uses four more requests per day, for an expected PitchIQ total of about 16 of the free plan's 100 daily requests. The free account's available fixture dates are limited to a rolling three-day window, so this feed currently shows yesterday, today and tomorrow only. The script records the remaining-request header; monitor the API dashboard for any other usage. The feed is separate from the club prediction model: national-team fixtures are shown as fixtures only until historical international form can be built and validated. No API key is exposed in the website.
+The international feed uses the existing `API_FOOTBALL_KEY` secret and the API-Football fixtures endpoint. Its scheduled workflow queries yesterday, today and tomorrow once each per refresh, four times daily (up to 12 fixture requests per day). The existing injury refresh uses four more requests per day, for an expected PitchIQ total of about 16 of the free plan's 100 daily requests. The free account's available fixture dates are limited to a rolling three-day window, so this feed currently shows yesterday, today and tomorrow only. The script records the remaining-request header; monitor the API dashboard for any other usage. The feed is separate from the club prediction model: national-team fixtures are shown as fixtures only until historical international form can be built and validated. No API key is exposed in the website.
