@@ -1,1 +1,65 @@
-# pitchiq
+# PitchIQ
+
+Football match analysis and probability forecasts.
+
+**Live site:** https://spencer-pessy.github.io/pitchiq/
+
+PitchIQ combines recent team performance, home/away scoring rates, Elo ratings and a Poisson goal model. It presents model probabilities, likely scorelines, selected market comparisons where odds are available, league tables and a public record of pre-match forecasts.
+
+> Forecasts are statistical estimates for information and discussion. They are not betting advice, tips or guarantees.
+
+## Current features
+
+- Fixtures, scores, league tables and top scorers from football-data.org.
+- Home/draw/away, over 2.5 goals and both-teams-to-score probabilities.
+- Likeliest scorelines and expected goals.
+- Optional bookmaker-odds comparison from The Odds API.
+- Reported absences from API-Football, displayed as information; users can manually adjust key-player absences.
+- Historical prediction ledger and model-performance summaries.
+- Telegram match-day forecasts and football headlines when there are no eligible matches.
+- Shareable forecast/record graphics, match reminders, phone-local notes and a mobile-friendly installable web app.
+
+## Data flow
+
+1. `update.py` retrieves competition fixtures/results and standings, calculates team statistics and forecasts, and updates `data.json` and `predictions.json`.
+2. `odds.py` refreshes the optional odds snapshot in `odds.json`.
+3. `injuries.py` refreshes reported absences in `injuries.json`.
+4. `telegram.py` posts the top three upcoming forecasts or a small set of linked football headlines to the configured Telegram destination.
+5. `index.html` reads the published JSON files and renders the website.
+
+The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.
+
+## GitHub Actions
+
+The workflows in `.github/workflows/` can be run on their schedules or manually with **Actions → select workflow → Run workflow**:
+
+- **Update data** — every 30 minutes.
+- **Update odds** — twice daily.
+- **Update injuries** — twice daily.
+- **Telegram picks** — daily.
+
+The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid.
+
+## Repository secrets
+
+Configure secrets under **Settings → Secrets and variables → Actions**. Never put API keys or bot tokens in source files.
+
+- `FOOTBALL_DATA_KEY` — football-data.org.
+- `ODDS_API_KEY` — The Odds API.
+- `API_FOOTBALL_KEY` — API-Football.
+- `TELEGRAM_BOT_TOKEN` — Telegram bot token.
+- `TELEGRAM_CHAT_ID` — destination chat/channel ID.
+
+Third-party API quotas and free-plan limits can change. PitchIQ's scheduled integrations should stay within available free allowances; do not add paid services or subscriptions without explicit approval.
+
+## Local checks
+
+Python automation scripts use the Python standard library except `telegram.py`, which uses Pillow to create the forecast image. The GitHub Actions Telegram workflow installs Pillow at runtime.
+
+- Check Python syntax: `python -m py_compile update.py odds.py injuries.py telegram.py`
+- Run the website by serving the repository root over HTTP; opening `index.html` directly may prevent JSON fetches from working.
+- To test scheduled integrations, use the corresponding GitHub Actions workflow and inspect its logs.
+
+## Privacy and limitations
+
+There are no user accounts. Match notes and manual absence adjustments are stored in the visitor's browser. External data may be delayed or incomplete; reported absences do not automatically alter model probabilities. Odds and injury coverage depend on the relevant provider's availability and quota.
