@@ -116,3 +116,10 @@ class AccuracyConfidenceIntervalWebTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("const wilson=(successes,total)=>", source)
         self.assertIn("95% Wilson interval:", source)
+
+class AblationUncertaintyWebTests(unittest.TestCase):
+    def test_record_view_displays_paired_bootstrap_interval(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Paired 95% CI", source)
+        self.assertIn("brier_delta_ci_95", source)
+        self.assertIn("intervals crossing zero do not show a clear direction", source)
