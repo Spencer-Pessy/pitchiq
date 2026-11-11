@@ -151,6 +151,12 @@ for p in up:
     i = v.index(max(v))
     pick = ["Home win: " + p["h"], "Draw", "Away win: " + p["a"]][i]
     rows.append((v[i], p, pick))
+if not rows:
+    print("No new eligible picks remain after duplicate filtering.")
+    save_pick_state(pick_state)
+    news_post()
+    raise SystemExit
+
 rows.sort(key=lambda r: -r[0])
 top = rows[:3]
 for _, record, _ in top:
