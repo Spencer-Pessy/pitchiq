@@ -27,7 +27,9 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 4. `telegram.py` posts the top three upcoming forecasts or a small set of linked football headlines to the configured Telegram destination.
 5. `index.html` reads the published JSON files and renders the website.
 
-The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.\n\nThe forecasting calculations live in `pitchiq_model.py`, separate from API and file operations. `pitchiq_data.py` keeps international tournament goal averages separate from club-football averages. Offline unit tests in `test_pitchiq_model.py` and `test_pitchiq_data.py` cover the probability model, evaluation metrics and competition grouping. Run them with `python -m unittest -v test_pitchiq_model test_pitchiq_data`. Run `python model_metrics.py` to calculate accuracy, multiclass Brier score, log loss and expected-goals mean absolute error from the saved prediction ledger.
+The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.
+
+The forecasting calculations live in `pitchiq_model.py`, separate from API and file operations. `pitchiq_data.py` keeps international tournament goal averages separate from club-football averages. Offline unit tests in `test_pitchiq_model.py` and `test_pitchiq_data.py` cover the probability model, evaluation metrics and competition grouping. Run them with `python -m unittest -v test_pitchiq_model test_pitchiq_data`. Run `python model_metrics.py` to calculate accuracy, multiclass Brier score, log loss and expected-goals mean absolute error from the saved prediction ledger.
 
 ## GitHub Actions
 
@@ -38,7 +40,7 @@ The workflows in `.github/workflows/` can be run on their schedules or manually 
 - **Update injuries** — twice daily.
 - **Telegram picks** — daily.
 
-The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid.
+The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
 
 ## Repository secrets
 
