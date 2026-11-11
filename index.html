@@ -69,7 +69,7 @@ h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:1
 const $=s=>document.querySelector(s);
 // Escape all external feed text before inserting it into HTML templates.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let D=null,P={},I={fixtures:[]},tab='up',comp='all',sel=null,playerSort='goals';
+let D=null,P={},I={fixtures:[]},Q={results:[]},tab='up',comp='all',sel=null,playerSort='goals';
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
 const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
@@ -300,6 +300,19 @@ function international(){
  $('#app').innerHTML=head()+tabsHtml()+'<p class="note">2026 FIFA World Cup · OpenFootball (CC0) · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. Fixtures only for now; no model forecasts without reliable international form data.</p>'+(cards||'<p class="note">No World Cup fixtures are available in this dataset. This free source covers the 2026 tournament, not the full calendar of international friendlies and qualifiers.</p>');
  bind();
 }
+
+function publishedResultsHtml(){
+ const entries=(Array.isArray(Q?.results)?Q.results:[]).filter(r=>r&&Array.isArray(r.final)&&r.final.length===2&&Number.isInteger(r.final[0])&&Number.isInteger(r.final[1])&&r.final[0]>=0&&r.final[1]>=0&&r.p&&[0,1,2].includes(r.pick_index));
+ if(!entries.length)return '<div class="panel"><h2>Published picks · results</h2><p class="note" style="margin:0">No published top picks have been settled yet. Once a match from a PitchIQ picks post reaches full time, its original pick and result will appear here.</p></div>';
+ const sorted=[...entries].sort((a,b)=>new Date(b.utc)-new Date(a.utc)),hits=sorted.filter(r=>r.correct===true).length;
+ const cards=sorted.map(r=>{
+  const labels=['Home win: '+esc(r.h),'Draw','Away win: '+esc(r.a)],prob=Number(r.p?.[['ph','pd','pa'][r.pick_index]]);
+  const validProb=Number.isFinite(prob)&&prob>=0&&prob<=1;
+  return '<div class="card"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">'+r.final[0]+' – '+r.final[1]+'</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill" style="color:var('+(r.correct===true?'--ok':'--no')+')">'+(r.correct===true?'✓ Correct':'✗ Missed')+' · '+esc(labels[r.pick_index])+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
+ }).join('');
+ return '<div class="panel"><h2>Published picks · results</h2><div class="stat"><span>Correct picks</span><b>'+hits+' / '+sorted.length+' ('+Math.round(hits/sorted.length*100)+'%)</b></div><p class="note">Only matches previously selected and published by PitchIQ are included. Each result is matched by its original fixture ID; the pre-match pick and probabilities are preserved.</p>'+cards+'</div>';
+}
+
 function list(){
  if(tab=='intl')return international();
  if(tab=='rec')return record();
@@ -308,7 +321,7 @@ function list(){
  const ms=D.matches.filter(m=>(comp=='all'||m.code==comp)&&(tab=='up'?m.status!='FINISHED':m.status=='FINISHED'));
  if(tab!='up')ms.reverse();
  const codes=[...new Map(D.matches.map(m=>[m.code,m.comp]))];
- let html='',last='';
+ let html=tab=='done'?publishedResultsHtml():'',last='';
  for(const m of ms){
   const d=dy(m);if(d!=last){html+=`<div class="day">${d}</div>`;last=d}
   const r=model(m.s);
@@ -506,7 +519,7 @@ async function shareRecord(){
   if(!had&&$('#fb')&&TELEGRAM_URL)$('#fb').insertAdjacentHTML('beforeend',' &nbsp;·&nbsp; <a href="'+TELEGRAM_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Telegram alerts</a>');
  };
 })();
- Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('international.json?'+Date.now()).then(r=>r.ok?r.json():{fixtures:[]}).catch(()=>({fixtures:[]}))]).then(([d,p,i])=>{D=d;P=p;I=i||{fixtures:[]};list()}).catch(()=>{
+ Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('international.json?'+Date.now()).then(r=>r.ok?r.json():{fixtures:[]}).catch(()=>({fixtures:[]})),fetch('daily/published_picks.json?'+Date.now()).then(r=>r.ok?r.json():{results:[]}).catch(()=>({results:[]}))]).then(([d,p,i,q])=>{D=d;P=p;I=i||{fixtures:[]};Q=q||{results:[]};list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
  async function shareImg(){
