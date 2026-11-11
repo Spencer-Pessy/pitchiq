@@ -4,7 +4,7 @@ Football match analysis and probability forecasts.
 
 **Live site:** https://spencer-pessy.github.io/pitchiq/
 
-PitchIQ combines recent team performance, home/away scoring rates, Elo ratings and a Poisson goal model. It presents model probabilities, likely scorelines, selected market comparisons where odds are available, league tables and a public record of pre-match forecasts.
+PitchIQ combines recent team performance, home/away scoring rates, Elo ratings and a Poisson goal model. Match details disclose the number of venue-specific matches supporting each scoring rate; those rates are shrunk toward the league average, while the form input uses the team's latest five matches across venues. It presents model probabilities, likely scorelines, selected market comparisons where odds are available, league tables and a public record of pre-match forecasts.
 
 > Forecasts are statistical estimates for information and discussion. They are not betting advice, tips or guarantees.
 
