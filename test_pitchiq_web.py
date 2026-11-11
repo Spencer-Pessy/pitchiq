@@ -140,6 +140,19 @@ class ExactScorelineDiagnosticsWebTests(unittest.TestCase):
         self.assertIn("lower negative log likelihood is better", source)
 
 
+
+class ExactScorelineCalibrationWebTests(unittest.TestCase):
+    def test_record_view_checks_top_score_confidence_and_top_three_coverage(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("top1Probability:top1.p/total", source)
+        self.assertIn("top3Probability:top3Mass/total", source)
+        self.assertIn("top1Hit,top3Probability:top3Mass/total,top3Hit", source)
+        self.assertIn("Top-score confidence calibration", source)
+        self.assertIn("Top-score probability", source)
+        self.assertIn("Actual hit rate", source)
+        self.assertIn("Top-three probability mass / actual coverage", source)
+        self.assertIn("Sparse bins are descriptive only", source)
+
 class ExpectedGoalsCalibrationWebTests(unittest.TestCase):
     def test_record_view_displays_home_and_away_expected_goals_bands(self):
         source = Path("index.html").read_text(encoding="utf-8")
