@@ -42,6 +42,8 @@ class MetricsTests(unittest.TestCase):
         ]
         result = baseline_comparison(rows)
         self.assertEqual(result["rolling_prior"]["matches"], 4)
+        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.724, places=3)
+        self.assertEqual(result["rolling_prior"]["accuracy"], 0.25)
         self.assertEqual(result["model_on_odds_sample"]["matches"], 3)
         self.assertEqual(result["bookmaker_consensus"]["matches"], 3)
         self.assertIsNotNone(result["model_minus_bookmaker_brier"])
