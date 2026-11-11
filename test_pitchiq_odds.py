@@ -1,6 +1,6 @@
 import unittest
 
-from pitchiq_odds import active_sport_keys, market_events
+from pitchiq_odds import active_sport_keys, market_events, require_nonempty_snapshot
 
 
 class ActiveSportValidationTests(unittest.TestCase):
@@ -18,6 +18,24 @@ class ActiveSportValidationTests(unittest.TestCase):
                         [{"key": "", "active": True}], [{"key": "x", "active": 1}]):
             with self.subTest(payload=payload), self.assertRaises(ValueError):
                 active_sport_keys(payload)
+
+
+class SnapshotPublicationGuardTests(unittest.TestCase):
+    def test_accepts_nonempty_snapshot_for_active_requested_competition(self):
+        events = [{"home": "Arsenal", "away": "Chelsea", "odds": [2.0, 3.5, 4.0]}]
+        self.assertEqual(
+            require_nonempty_snapshot({"soccer_epl"}, {"soccer_epl", "soccer_uefa_champs_league"}, events),
+            events,
+        )
+
+    def test_rejects_when_no_requested_competition_is_active(self):
+        with self.assertRaises(ValueError):
+            require_nonempty_snapshot({"soccer_nba"}, {"soccer_epl"}, [])
+
+    def test_rejects_empty_or_invalid_event_collection(self):
+        for events in ([], None, {}):
+            with self.subTest(events=events), self.assertRaises(ValueError):
+                require_nonempty_snapshot({"soccer_epl"}, {"soccer_epl"}, events)
 
 
 class OddsMarketValidationTests(unittest.TestCase):
