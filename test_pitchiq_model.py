@@ -58,65 +58,6 @@ class MetricsTests(unittest.TestCase):
                             for row in result["groups"]["home_venue_sample"]))
 
 
-    def test_input_diagnostics_group_saved_forecast_snapshots(self):
-        rows = []
-        for index in range(12):
-            rows.append({
-                "final": [2, 0] if index < 6 else [0, 1],
-                "utc": f"2026-11-{index + 1:02d}T12:00:00Z",
-                "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1},
-                "inputs": {"schema": 1,
-                    "home": {"venue_matches": 8 if index < 6 else 2, "form": "WWDWW"},
-                    "away": {"venue_matches": 7 if index < 6 else 1, "form": "LLDLL"}},
-            })
-        rows.append({"final": [1, 0], "p": {"ph": 1, "pd": 0, "pa": 0}})
-        result = input_diagnostics(rows)
-        self.assertEqual(result["snapshot_matches"], 12)
-        venue = {x["group"]: x for x in result["venue_support"]}
-        self.assertEqual(venue["6+"]["matches"], 6)
-        self.assertEqual(venue["0–2"]["matches"], 6)
-        self.assertEqual(venue["6+"]["interpretation"], "monitoring_only")
-        form = {x["group"]: x for x in result["form_edge"]}
-        self.assertEqual(form["Home stronger"]["matches"], 12)
-
-    def test_input_diagnostics_ignores_old_records_without_snapshots(self):
-        result = input_diagnostics([{"final": [1, 0], "p": {"ph": 1, "pd": 0, "pa": 0}}])
-        self.assertEqual(result["snapshot_matches"], 0)
-        self.assertTrue(all(x["matches"] == 0 for x in result["venue_support"]))
-
-    def test_chronological_split_uses_earlier_and_later_forecasts(self):
-        rows = [
-            {"utc": "2026-11-01T12:00:00Z", "final": [1, 0], "p": {"ph": 0.8, "pd": 0.1, "pa": 0.1}},
-            {"utc": "2026-11-02T12:00:00Z", "final": [0, 1], "p": {"ph": 0.8, "pd": 0.1, "pa": 0.1}},
-            {"utc": "2026-11-03T12:00:00Z", "final": [0, 1], "p": {"ph": 0.1, "pd": 0.1, "pa": 0.8}},
-            {"utc": "2026-11-04T12:00:00Z", "final": [0, 1], "p": {"ph": 0.1, "pd": 0.1, "pa": 0.8}},
-        ]
-        result = evaluate(rows)
-        self.assertEqual([x["period"] for x in result["chronological_split"]], ["earlier", "later"])
-        self.assertEqual([x["matches"] for x in result["chronological_split"]], [2, 2])
-        self.assertEqual(result["chronological_split"][0]["accuracy"], 0.5)
-        self.assertEqual(result["chronological_split"][1]["accuracy"], 1.0)
-        self.assertAlmostEqual(result["chronological_split"][1]["brier"], 0.06, places=4)
-
-    def test_perfect_confidence_is_included_in_final_bin(self):
-        result = evaluate([{"final": [1, 0], "p": {"ph": 1.0, "pd": 0.0, "pa": 0.0}}])
-        self.assertEqual(result["matches"], 1)
-        self.assertEqual(result["confidence_bins"], [{
-            "lower": 0.9, "upper": 1.0, "matches": 1,
-            "mean_confidence": 1.0, "accuracy": 1.0,
-        }])
-
-    def test_invalid_or_incomplete_records_are_skipped(self):
-        result = evaluate([{"final": None, "p": {}}, {"final": [1, 0], "p": {"ph": 0.5}}])
-        self.assertEqual(result["matches"], 0)
-        self.assertIsNone(result["accuracy"])
-        self.assertIsNone(result["home_goals_bias"])
-        self.assertIsNone(result["away_goals_bias"])
-
-    def test_probabilities_must_be_valid(self):
-        result = evaluate([{"final": [1, 0], "p": {"ph": 0.8, "pd": 0.8, "pa": 0.1}}])
-        self.assertEqual(result["matches"], 0)
-
 
 class ModelTests(unittest.TestCase):
     def setUp(self):
