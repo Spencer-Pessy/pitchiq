@@ -73,7 +73,7 @@ def normalize_fixture(item):
 
 def main():
     now = datetime.now(timezone.utc)
-    days = [(now.date() + timedelta(days=offset)).isoformat() for offset in range(8)]
+    days = [(now.date() + timedelta(days=offset)).isoformat() for offset in (-1, 0, 1)]
     fixtures = []
     remaining = "unknown"
     for day in days:
