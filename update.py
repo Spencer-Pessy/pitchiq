@@ -139,7 +139,7 @@ for m in matches:
     if m["status"] == "FINISHED":
         if when < now - timedelta(hours=48):
             continue
-    elif when > now + timedelta(days=7) or when < now - timedelta(hours=6):
+    elif when > now + timedelta(days=30) or when < now - timedelta(hours=6):
         continue
     ah, aa = avgs(m["_c"])
     h, a = m["homeTeam"], m["awayTeam"]
