@@ -404,6 +404,8 @@ def baseline_comparison(predictions):
     records.sort(key=lambda row: row["date"])
     counts = [1, 1, 1]
     prior_rows, competition_prior_rows, model_market_rows, market_rows = [], [], [], []
+    model_market_brier_deltas, model_market_log_deltas = [], []
+    model_prior_brier_deltas, model_prior_log_deltas = [], []
     competition_counts = {}
     index = 0
     while index < len(records):
@@ -425,9 +427,20 @@ def baseline_comparison(predictions):
                 for outcome in range(3)
             ]
             competition_prior_rows.append((competition_prior, row["actual"]))
+            target = [1 if outcome == row["actual"] else 0 for outcome in range(3)]
+            model_brier = sum((value - target[i]) ** 2 for i, value in enumerate(row["model"]))
+            prior_brier = sum((value - target[i]) ** 2 for i, value in enumerate(competition_prior))
+            model_loss = -math.log(max(row["model"][row["actual"]], 1e-15))
+            prior_loss = -math.log(max(competition_prior[row["actual"]], 1e-15))
+            model_prior_brier_deltas.append(model_brier - prior_brier)
+            model_prior_log_deltas.append(model_loss - prior_loss)
             if row["market"] is not None:
                 model_market_rows.append((row["model"], row["actual"]))
                 market_rows.append((row["market"], row["actual"]))
+                market_brier = sum((value - target[i]) ** 2 for i, value in enumerate(row["market"]))
+                market_loss = -math.log(max(row["market"][row["actual"]], 1e-15))
+                model_market_brier_deltas.append(model_brier - market_brier)
+                model_market_log_deltas.append(model_loss - market_loss)
         for row in records[index:end]:
             counts[row["actual"]] += 1
             code = str(row.get("competition") or "Other")
@@ -451,6 +464,13 @@ def baseline_comparison(predictions):
             round(model_market_scores["log_loss"] - market_scores["log_loss"], 4)
             if model_market_scores["log_loss"] is not None and market_scores["log_loss"] is not None else None
         ),
+        "model_minus_bookmaker_brier_ci_95": paired_bootstrap_interval(model_market_brier_deltas),
+        "model_minus_bookmaker_log_loss_ci_95": paired_bootstrap_interval(model_market_log_deltas),
+        "model_minus_competition_prior_brier": (
+            round(sum(model_prior_brier_deltas) / len(model_prior_brier_deltas), 4)
+            if model_prior_brier_deltas else None
+        ),
+        "model_minus_competition_prior_brier_ci_95": paired_bootstrap_interval(model_prior_brier_deltas),
     }
 
 
