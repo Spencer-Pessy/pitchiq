@@ -6,6 +6,22 @@ import sys
 from pitchiq_model import predict as model_predict
 
 
+
+def wilson_interval(successes, total, z=1.96):
+    """Return a two-sided Wilson score interval for a binomial proportion."""
+    if total <= 0 or successes < 0 or successes > total:
+        return None
+    proportion = successes / total
+    z_squared = z * z
+    denominator = 1 + z_squared / total
+    center = (proportion + z_squared / (2 * total)) / denominator
+    margin = z * math.sqrt(
+        (proportion * (1 - proportion) + z_squared / (4 * total)) / total
+    ) / denominator
+    return [round(max(0.0, center - margin), 4),
+            round(min(1.0, center + margin), 4)]
+
+
 def _diagnostic_group(rows, label):
     count = len(rows)
     hits = 0
@@ -447,7 +463,7 @@ def evaluate(predictions):
                 "log_loss": round(subset_loss, 4),
             })
     if not n:
-        return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None,
+        return {"matches": 0, "accuracy": None, "accuracy_ci_95": None, "brier": None, "log_loss": None,
                 "chronological_split": [], "confidence_bins": [], "expected_calibration_error": None,
                 "max_calibration_gap": None, "home_goals_mae": None, "away_goals_mae": None,
                 "home_goals_bias": None, "away_goals_bias": None,
@@ -502,6 +518,7 @@ def evaluate(predictions):
     return {
         "matches": n,
         "accuracy": round(correct / n, 4),
+        "accuracy_ci_95": wilson_interval(correct, n),
         "chronological_split": chronological,
         "confidence_bins": populated_bins,
         "expected_calibration_error": round(calibration_error, 4),
