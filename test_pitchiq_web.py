@@ -87,6 +87,9 @@ class BaselineComparisonWebTests(unittest.TestCase):
     def test_record_view_discloses_rolling_prior_and_fair_bookmaker_comparison(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("Baseline comparison", source)
+        self.assertIn("Competition-aware rolling prior", source)
+        self.assertIn("const rollingPrior=scoreSummary(priorRows),competitionRollingPrior=scoreSummary(competitionPriorRows)", source)
+        self.assertIn("five prior-match equivalents", source)
         self.assertIn("updates only after earlier kickoffs", source)
         self.assertIn("matches at the same kickoff share the same prior", source)
         self.assertIn("overround removed", source)
