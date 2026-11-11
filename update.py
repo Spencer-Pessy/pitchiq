@@ -1,6 +1,7 @@
 import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.error
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
+from pitchiq_model import ppg, pois, tau, predict as model_predict
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL"]
@@ -122,64 +123,7 @@ def team_stats(tid, home, prior_for, prior_against):
     gf = (sum(r[1] for r in rows) + K * prior_for) / (n + K)
     ga = (sum(r[2] for r in rows) + K * prior_against) / (n + K)
     form = "".join(r[3] for r in hist[tid][-5:])
-    return {"gf": round(gf, 2), "ga": round(ga, 2), "elo": int(elo[tid]), "form": form, "out": 0}
-
-
-def ppg(form):
-    f = form[-5:]
-    if not f:
-        return 1.5
-    return sum(3 if c == "W" else 1 if c == "D" else 0 for c in f) / len(f)
-
-
-def pois(l, k):
-    return math.exp(-l) * l ** k / math.factorial(k)
-
-
-def tau(i, j, a, b, r):
-    if i == 0 and j == 0:
-        return 1 - a * b * r
-    if i == 0 and j == 1:
-        return 1 + a * r
-    if i == 1 and j == 0:
-        return 1 + b * r
-    if i == 1 and j == 1:
-        return 1 - r
-    return 1
-
-
-def predict(s):
-    H, A = s["h"], s["a"]
-    LH, LA = max(s["lh"], .3), max(s["la"], .3)
-    lh = H["gf"] * A["ga"] / LH
-    la = A["gf"] * H["ga"] / LA
-    e = (H["elo"] - A["elo"]) / 400
-    lh *= 1.15 ** e * (1 + (ppg(H["form"]) - 1.5) * .04)
-    la *= 1.15 ** -e * (1 + (ppg(A["form"]) - 1.5) * .04)
-    lh, la = max(lh, .05), max(la, .05)
-    rlh, rla = lh, la
-    lh, la = lh * CAL["kh"], la * CAL["ka"]
-    N = 8
-    m, t = {}, 0
-    for i in range(N):
-        for j in range(N):
-            m[i, j] = pois(lh, i) * pois(la, j) * tau(i, j, lh, la, -.1)
-            t += m[i, j]
-    r = dict(ph=0, pd=0, pa=0, o25=0, bt=0)
-    for (i, j), p in m.items():
-        p /= t
-        if i > j:
-            r["ph"] += p
-        elif i == j:
-            r["pd"] += p
-        else:
-            r["pa"] += p
-        if i + j > 2:
-            r["o25"] += p
-        if i and j:
-            r["bt"] += p
-    r["lh"], r["la"] = lh, la
-    r["rlh"], r["rla"] = rlh, rla
+    return {"gf": round(gf, 2), "rla"] = rlh, rla
     return {k: round(v, 4) for k, v in r.items()}
 
 
@@ -265,6 +209,10 @@ if len(_pp) >= 10:
     CAL["kh"] = round(min(1.15, max(0.85, 1 + (_ah / _ph - 1) * _w)), 4)
     CAL["ka"] = round(min(1.15, max(0.85, 1 + (_aa / _pa - 1) * _w)), 4)
 print("calibration:", CAL, "from", len(_pp), "results")
+
+
+def predict(s):
+    return model_predict(s, CAL)
 
 # Injuries (from injuries.json, refreshed by a separate workflow)
 try:
