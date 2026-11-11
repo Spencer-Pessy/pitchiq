@@ -73,6 +73,15 @@ class PublishedPicksResultsWebTests(unittest.TestCase):
         self.assertIn("Pending picks are not counted in the accuracy rate", source)
         self.assertIn("original fixture ID", source)
 
+    def test_social_preview_metadata_and_small_screen_layout_exist(self):
+        self.assertIn('property="og:title"', self.html)
+        self.assertIn('property="og:description"', self.html)
+        self.assertIn('property="og:image"', self.html)
+        self.assertIn('name="twitter:card"', self.html)
+        self.assertIn("@media(max-width:480px)", self.html)
+        self.assertIn(".cols,.stats{grid-template-columns:1fr}", self.html)
+
+
 if __name__ == "__main__":
     unittest.main()
 
