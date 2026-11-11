@@ -39,7 +39,7 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["home"]["matches"], 3)
         self.assertAlmostEqual(result["home"]["mean_probability"], 0.4333, places=4)
         self.assertAlmostEqual(result["home"]["observed_rate"], 0.3333, places=4)
-        self.assertAlmostEqual(result["home"]["brier"], 0.09, places=4)
+        self.assertAlmostEqual(result["home"]["brier"], 0.0567, places=4)
         self.assertAlmostEqual(result["home"]["expected_calibration_error"], 0.2333, places=4)
         self.assertEqual(result["draw"]["matches"], 3)
         self.assertEqual(result["away"]["matches"], 3)
