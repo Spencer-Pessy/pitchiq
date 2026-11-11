@@ -23,6 +23,14 @@ class MetricsTests(unittest.TestCase):
         self.assertAlmostEqual(result["home_goals_mae"], 0.1, places=4)
         self.assertAlmostEqual(result["away_goals_mae"], 0.4, places=4)
 
+    def test_perfect_confidence_is_included_in_final_bin(self):
+        result = evaluate([{"final": [1, 0], "p": {"ph": 1.0, "pd": 0.0, "pa": 0.0}}])
+        self.assertEqual(result["matches"], 1)
+        self.assertEqual(result["confidence_bins"], [{
+            "lower": 0.9, "upper": 1.0, "matches": 1,
+            "mean_confidence": 1.0, "accuracy": 1.0,
+        }])
+
     def test_invalid_or_incomplete_records_are_skipped(self):
         result = evaluate([{"final": None, "p": {}}, {"final": [1, 0], "p": {"ph": 0.5}}])
         self.assertEqual(result["matches"], 0)
