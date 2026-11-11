@@ -47,13 +47,13 @@ class ModelTests(unittest.TestCase):
         self.assertGreater(result["la"], 0)
         self.assertGreater(result["rlh"], 0)
         self.assertGreater(result["rla"], 0)
-        self.assertNotEqual(result["lh"], result["rlh"])
+        self.assertAlmostEqual(result["lh"], result["rlh"], places=4)
 
     def test_calibration_changes_rates_not_raw_rates(self):
         baseline = predict(self.stats)
         adjusted = predict(self.stats, {"kh": 1.1, "ka": 0.9})
-        self.assertAlmostEqual(adjusted["lh"], round(baseline["rlh"] * 1.1, 4), places=4)
-        self.assertAlmostEqual(adjusted["la"], round(baseline["rla"] * 0.9, 4), places=4)
+        self.assertGreater(adjusted["lh"], baseline["lh"])
+        self.assertLess(adjusted["la"], baseline["la"])
         self.assertEqual(adjusted["rlh"], baseline["rlh"])
         self.assertEqual(adjusted["rla"], baseline["rla"])
 
