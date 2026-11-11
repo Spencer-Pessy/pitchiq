@@ -112,6 +112,9 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["bookmaker_consensus"]["matches"], 3)
         self.assertIsNotNone(result["model_minus_bookmaker_brier"])
         self.assertIsNotNone(result["model_minus_bookmaker_log_loss"])
+        self.assertIsNotNone(result["model_minus_bookmaker_brier_ci_95"])
+        self.assertIsNotNone(result["model_minus_bookmaker_log_loss_ci_95"])
+        self.assertIsNotNone(result["model_minus_competition_prior_brier_ci_95"])
         reversed_result = baseline_comparison(list(reversed(rows)))
         self.assertEqual(result, reversed_result)
 
