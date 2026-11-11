@@ -467,10 +467,6 @@ function addFooter(){
   const f=sel;if(!f.s)return;
   $('#bk').insertAdjacentHTML('afterend',' <button class="back" id="shr" style="border-color:var(--home)">Share image</button>');
   $('#shr').onclick=shareImg;
-  if(f.inj){
-   const html='<div class="panel"><h2>Reported absences</h2><div class="cols">'+[['h',f.h,'var(--home)'],['a',f.a,'var(--away)']].map(([k,n,c])=>'<div style="--c:'+c+'"><h3>'+esc(n)+'</h3>'+(f.inj[k].length?f.inj[k].map(p=>'<div class="gl"><span>'+esc(p.n)+'</span><span>'+esc(p.r||'')+'</span></div>').join(''):'<p class="note">None listed</p>')+'</div>').join('')+'</div><p class="note">From API-Football. Not every name is a first-team player, so set “Key players out” below yourself.</p></div>';
-   const nt=$('#nt');(nt?nt.parentNode:$('#res')).insertAdjacentHTML('beforebegin',html);
-  }
   const row=document.createElement('div');row.style.cssText='margin-bottom:10px';
   [f.h,f.a].forEach(t=>{const b=document.createElement('button');b.className='back';b.style.marginRight='8px';
    const paint=()=>{b.textContent=(getFavs().includes(t)?'★ Following ':'☆ Follow ')+t};paint();
