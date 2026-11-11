@@ -2,7 +2,7 @@ import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.er
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_goals_per_appearance
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
