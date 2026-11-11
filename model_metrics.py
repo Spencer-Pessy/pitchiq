@@ -68,6 +68,9 @@ def input_diagnostics(predictions):
         result["interpretation"] = "monitoring_only" if len(rows) < 10 else "reviewable"
         return result
 
+    venue_bands = [("0–2", lambda n: 0 <= n <= 2),
+                   ("3–5", lambda n: 3 <= n <= 5),
+                   ("6+", lambda n: n >= 6)]
     venue_support = [
         summarize(label, [row for value, row in venue_rows if predicate(value)])
         for label, predicate in venue_bands
