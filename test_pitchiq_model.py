@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison
+from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics
 
 
 
@@ -28,6 +28,27 @@ class MetricsTests(unittest.TestCase):
         self.assertAlmostEqual(result["away_goals_bias"], 0.4, places=4)
 
 
+
+    def test_outcome_class_metrics_scores_each_one_vs_rest_probability(self):
+        rows = [
+            {"final": [2, 0], "p": {"ph": 0.8, "pd": 0.1, "pa": 0.1}},
+            {"final": [0, 1], "p": {"ph": 0.2, "pd": 0.3, "pa": 0.5}},
+            {"final": [1, 2], "p": {"ph": 0.3, "pd": 0.2, "pa": 0.5}},
+        ]
+        result = outcome_class_metrics(rows)
+        self.assertEqual(result["home"]["matches"], 3)
+        self.assertAlmostEqual(result["home"]["mean_probability"], 0.4333, places=4)
+        self.assertAlmostEqual(result["home"]["observed_rate"], 0.3333, places=4)
+        self.assertAlmostEqual(result["home"]["brier"], 0.09, places=4)
+        self.assertAlmostEqual(result["home"]["expected_calibration_error"], 0.2333, places=4)
+        self.assertEqual(result["draw"]["matches"], 3)
+        self.assertEqual(result["away"]["matches"], 3)
+
+    def test_outcome_class_metrics_returns_empty_values_for_no_valid_rows(self):
+        result = outcome_class_metrics([{"final": None, "p": {}}])
+        self.assertEqual(set(result), {"home", "draw", "away"})
+        self.assertTrue(all(row["matches"] == 0 and row["brier"] is None
+                            for row in result.values()))
 
     def test_baseline_comparison_uses_prior_results_and_de_vigged_odds(self):
         rows = [
