@@ -1,6 +1,7 @@
 """Evaluation metrics for completed PitchIQ 1X2 forecasts."""
 import json
 import math
+import random
 import sys
 
 from pitchiq_model import predict as model_predict
@@ -223,6 +224,23 @@ def outcome_class_metrics(predictions):
     return result
 
 
+
+def paired_bootstrap_interval(differences, iterations=1000, seed=20261111):
+    """Return a deterministic percentile 95% CI for a paired mean difference."""
+    values = [float(value) for value in differences]
+    if len(values) < 2 or not all(math.isfinite(value) for value in values):
+        return None
+    rng = random.Random(seed)
+    size = len(values)
+    means = []
+    for _ in range(iterations):
+        means.append(sum(values[rng.randrange(size)] for _ in range(size)) / size)
+    means.sort()
+    lower = means[max(0, int(0.025 * iterations))]
+    upper = means[min(iterations - 1, int(0.975 * iterations))]
+    return [round(lower, 4), round(upper, 4)]
+
+
 def ablation_comparison(predictions):
     """Replay versioned forecasts while disabling Elo and/or recent form."""
     variants = {
@@ -232,6 +250,7 @@ def ablation_comparison(predictions):
         "without_elo_or_form": {"use_elo": False, "use_form": False},
     }
     scored = {name: [] for name in variants}
+    paired_deltas = {name: [] for name in variants if name != "full_model"}
     for item in predictions:
         final = item.get("final")
         snapshot = item.get("inputs")
@@ -250,20 +269,35 @@ def ablation_comparison(predictions):
             if (not all(math.isfinite(x) for x in (home_goals, away_goals, stats["lh"], stats["la"]))
                     or min(home_goals, away_goals) < 0):
                 continue
+            forecasts = {}
             for name, switches in variants.items():
                 forecast = model_predict(stats, calibration, **switches)
                 probabilities = [forecast[key] for key in ("ph", "pd", "pa")]
                 if all(math.isfinite(value) for value in probabilities):
+                    forecasts[name] = probabilities
                     scored[name].append((probabilities, actual))
+            if "full_model" in forecasts:
+                target = [1 if index == actual else 0 for index in range(3)]
+                full_brier = sum((value - target[index]) ** 2
+                                 for index, value in enumerate(forecasts["full_model"]))
+                for name in paired_deltas:
+                    if name in forecasts:
+                        variant_brier = sum((value - target[index]) ** 2
+                                            for index, value in enumerate(forecasts[name]))
+                        paired_deltas[name].append(variant_brier - full_brier)
         except (KeyError, TypeError, ValueError):
             continue
 
     results = {name: _probability_scores(rows) for name, rows in scored.items()}
     full_brier = results["full_model"]["brier"]
-    for row in results.values():
+    for name, row in results.items():
         row["brier_delta_vs_full"] = (
             round(row["brier"] - full_brier, 4)
             if row["brier"] is not None and full_brier is not None else None
+        )
+        row["brier_delta_ci_95"] = (
+            paired_bootstrap_interval(paired_deltas[name])
+            if name in paired_deltas else None
         )
     return {
         "matches": results["full_model"]["matches"],
