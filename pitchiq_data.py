@@ -1,5 +1,7 @@
 """Competition-aware data grouping helpers for PitchIQ."""
 
+from datetime import datetime
+
 INTERNATIONAL_COMPETITIONS = frozenset({"WC", "EC"})
 
 
@@ -133,3 +135,34 @@ def forecast_input_snapshot(stats, calibration=None):
             "ka": (calibration or {}).get("ka", 1.0),
         },
     }
+
+
+def record_forward_evaluations(existing, fixtures, finished_scores, now, predict_fn, snapshot_fn):
+    """Create immutable research forecasts and attach final scores when available.
+
+    This separate ledger lets new model experiments start from already-published
+    upcoming fixtures without rewriting the public prediction history.
+    """
+    ledger = existing if isinstance(existing, dict) else {}
+    for fixture in fixtures:
+        if fixture.get("status") not in ("SCHEDULED", "TIMED"):
+            continue
+        key = str(fixture["id"])
+        kickoff = datetime.fromisoformat(fixture["utc"].replace("Z", "+00:00"))
+        if kickoff <= now or key in ledger:
+            continue
+        stats = fixture["s"]
+        ledger[key] = {
+            "id": fixture["id"], "comp": fixture["comp"], "code": fixture["code"],
+            "utc": fixture["utc"], "h": fixture["h"], "a": fixture["a"],
+            "p": predict_fn(stats), "inputs": snapshot_fn(stats),
+            "final": None, "made": now.isoformat(), "evaluation_only": True,
+        }
+
+    for item in ledger.values():
+        if item.get("final") is not None:
+            continue
+        score = finished_scores.get(item.get("id"), finished_scores.get(str(item.get("id"))))
+        if score is not None:
+            item["final"] = list(score)
+    return ledger
