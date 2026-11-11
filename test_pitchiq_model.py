@@ -18,6 +18,8 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["accuracy"], 1.0)
         self.assertIsNotNone(result["brier"])
         self.assertIsNotNone(result["log_loss"])
+        self.assertEqual(sum(x["matches"] for x in result["confidence_bins"]), 2)
+        self.assertTrue(all(0 <= x["accuracy"] <= 1 for x in result["confidence_bins"]))
         self.assertAlmostEqual(result["home_goals_mae"], 0.1, places=4)
         self.assertAlmostEqual(result["away_goals_mae"], 0.4, places=4)
 
