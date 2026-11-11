@@ -146,6 +146,16 @@ function record(){
  })));
  const confBins=[.3,.4,.5,.6,.7,.8,.9].map((lo,i)=>{const bin=rows.filter(r=>Math.max(...r.v)>=lo&&(i===6?Math.max(...r.v)<=1:Math.max(...r.v)<lo+.1));return{lo,n:bin.length,confidence:bin.length?bin.reduce((z,r)=>z+Math.max(...r.v),0)/bin.length:0,accuracy:bin.length?bin.filter(r=>r.ok).length/bin.length:0}}).filter(x=>x.n);
  const ece=n?confBins.reduce((sum,x)=>sum+x.n*Math.abs(x.confidence-x.accuracy),0)/n:0,maxCalibrationGap=confBins.length?Math.max(...confBins.map(x=>Math.abs(x.confidence-x.accuracy))):0;
+ const binaryMetric=key=>{
+  const items=rows.map(r=>{const probability=Number(r.p.p[key]),hg=Number(r.p.final[0]),ag=Number(r.p.final[1]);return{probability,actual:key==="o25"?(hg+ag>2?1:0):(hg>0&&ag>0?1:0)}}).filter(x=>Number.isFinite(x.probability)&&x.probability>=0&&x.probability<=1);
+  if(!items.length)return{n:0,accuracy:null,brier:null,ece:null};
+  const bins=[0,.2,.4,.6,.8].map(lo=>{const hi=lo+.2,b=items.filter(x=>x.probability>=lo&&(hi===1?x.probability<=1:x.probability<hi));return b.length?{n:b.length,p:b.reduce((s,x)=>s+x.probability,0)/b.length,y:b.filter(x=>x.actual===1).length/b.length}:null}).filter(Boolean);
+  const brier=items.reduce((s,x)=>s+Math.pow(x.probability-x.actual,2),0)/items.length;
+  const ece=bins.reduce((s,b)=>s+b.n*Math.abs(b.p-b.y),0)/items.length;
+  const accuracy=items.filter(x=>(x.probability>=.5)===(x.actual===1)).length/items.length;
+  return{n:items.length,accuracy,brier,ece};
+ };
+ const overMetric=binaryMetric("o25"),bttsMetric=binaryMetric("bt");
  $('#app').innerHTML=head()+tabsHtml()+(n?`<h2>Model performance</h2><div class="big">
  <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span></div>
  <div><b>${(br/n).toFixed(3)}</b><span>Brier score · lower is better</span></div>
@@ -156,6 +166,8 @@ function record(){
  <div class="stat"><span>60%+ confidence picks</span><b>${f(hch,hc)} (${hch}/${hc})</b></div>
  <div class="stat"><span>Over/under 2.5 goals</span><b>${f(oh,o)} (${oh}/${o})</b></div>
  <div class="stat"><span>Both teams to score</span><b>${f(bh,b)} (${bh}/${b})</b></div>
+  <div class="stat"><span>Over 2.5 · Brier / ECE</span><b>${overMetric.n?overMetric.brier.toFixed(3)+" / "+(overMetric.ece*100).toFixed(1)+" pp":"–"} · ${overMetric.n} matches</b></div>
+  <div class="stat"><span>BTTS · Brier / ECE</span><b>${bttsMetric.n?bttsMetric.brier.toFixed(3)+" / "+(bttsMetric.ece*100).toFixed(1)+" pp":"–"} · ${bttsMetric.n} matches</b></div>
  </div>
  <div class="panel"><h2>Competition breakdown</h2><div style="overflow-x:auto"><table class="lt"><tr><th>Competition</th><th>Matches</th><th>1X2</th><th>Brier</th><th>Log loss</th><th>xG MAE H/A</th><th>xG bias H/A</th></tr>${compRows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.n}</td><td>${f(x.accuracy,x.n)}</td><td>${x.brier.toFixed(3)}</td><td>${x.loss.toFixed(3)}</td><td>${x.homeMae===null?'–':x.homeMae.toFixed(2)+' / '+x.awayMae.toFixed(2)}</td><td>${x.homeBias===null?'–':(x.homeBias>0?'+':'')+x.homeBias.toFixed(2)+' / '+(x.awayBias>0?'+':'')+x.awayBias.toFixed(2)}</td></tr>`).join('')}</table></div><p class="note">xG MAE is home / away average absolute error; lower is better. xG bias is predicted minus actual goals: positive means overprediction and negative means underprediction. Its sample count may be smaller if expected goals were not saved. Small competition samples can swing sharply, so use this as a monitoring signal—not a league ranking or proof of model strength.</p></div>
  <div class="panel"><h2>Chronological check</h2><p class="note">Compares the earlier and later halves of the saved forecasts in date order. This is a historical holdout comparison, not a fresh simulation or proof that a model change will improve future results.</p><div style="overflow-x:auto"><table class="lt"><tr><th>Period</th><th>Matches</th><th>1X2</th><th>Brier</th><th>Log loss</th></tr>${timeSlices.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.n}</td><td>${f(x.accuracy,x.n)}</td><td>${x.brier.toFixed(3)}</td><td>${x.loss.toFixed(3)}</td></tr>`).join('')}</table></div><p class="note">Each half is still a small sample; wait for more completed league forecasts before drawing conclusions.</p></div>
