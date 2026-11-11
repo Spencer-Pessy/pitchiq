@@ -2,9 +2,10 @@ import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.er
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, goal_average_keys
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
-COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL"]
+COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
 BASE = "https://api.football-data.org/v4"
 
 
@@ -86,14 +87,14 @@ fin = sorted(
 tot = defaultdict(lambda: [0, 0, 0])
 for m in fin:
     hg, ag = goals(m)
-    for k in (m["_c"], "ALL"):
+    for k in goal_average_keys(m["_c"]):
         tot[k][0] += hg
         tot[k][1] += ag
         tot[k][2] += 1
 
 
 def avgs(c):
-    k = "ALL" if c == "CL" or tot[c][2] < 20 else c
+    k = average_bucket(c, {key: value[2] for key, value in tot.items()})
     n = tot[k][2]
     if n < 20:
         return 1.5, 1.2
@@ -196,7 +197,10 @@ for x in out:
 CAL = {"kh": 1.0, "ka": 1.0}
 try:
     with open("predictions.json") as f:
-        _pp = [p for p in json.load(f).values() if p.get("final")]
+        _pp = [
+            p for p in json.load(f).values()
+            if p.get("final") and p.get("code") not in INTERNATIONAL_COMPETITIONS
+        ]
 except Exception:
     _pp = []
 if len(_pp) >= 10:
