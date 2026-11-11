@@ -81,3 +81,14 @@ class BinaryMarketCalibrationWebTests(unittest.TestCase):
         self.assertIn("const binaryMetric=key=>", source)
         self.assertIn("Over 2.5 · Brier / ECE", source)
         self.assertIn("BTTS · Brier / ECE", source)
+
+
+class BaselineComparisonWebTests(unittest.TestCase):
+    def test_record_view_discloses_rolling_prior_and_fair_bookmaker_comparison(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Baseline comparison", source)
+        self.assertIn("updates only after earlier kickoffs", source)
+        self.assertIn("matches at the same kickoff share the same prior", source)
+        self.assertIn("overround removed", source)
+        self.assertIn("PitchIQ and bookmaker rows use the exact same odds-available matches", source)
+        self.assertIn("PitchIQ minus bookmaker · Brier", source)
