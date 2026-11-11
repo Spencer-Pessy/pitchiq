@@ -31,7 +31,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 
 The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.
 
-The forecasting calculations live in `pitchiq_model.py`, separate from API and file operations. `pitchiq_data.py` keeps international tournament goal averages separate from club-football averages. Offline unit tests in `test_pitchiq_model.py` and `test_pitchiq_data.py` cover the probability model, evaluation metrics and competition grouping. Run them with `python -m unittest -v test_pitchiq_model test_pitchiq_data`. Run `python model_metrics.py` to calculate accuracy, multiclass Brier score, log loss and expected-goals mean absolute error from the saved prediction ledger.
+The forecasting calculations live in `pitchiq_model.py`, separate from API and file operations. `pitchiq_data.py` keeps international tournament goal averages separate from club-football averages. Offline unit tests in `test_pitchiq_model.py` and `test_pitchiq_data.py` cover the probability model, evaluation metrics and competition grouping. Run them with `python -m unittest -v test_pitchiq_model test_pitchiq_data test_international`. Run `python model_metrics.py` to calculate accuracy, multiclass Brier score, log loss and expected-goals mean absolute error from the saved prediction ledger.
 
 ## GitHub Actions
 
@@ -59,7 +59,7 @@ Third-party API quotas and free-plan limits can change. PitchIQ's scheduled inte
 
 Python automation scripts use the Python standard library except `telegram.py`, which uses Pillow to create the forecast image. The GitHub Actions Telegram workflow installs Pillow at runtime.
 
-- Check Python syntax: `python -m py_compile update.py international.py odds.py injuries.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py`
+- Check Python syntax: `python -m py_compile update.py international.py odds.py   telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py`
 - Run the website by serving the repository root over HTTP; opening `index.html` directly may prevent JSON fetches from working.
 - The service worker caches the app shell and last successful JSON snapshots for offline viewing; the next connection refreshes them.
 - To test scheduled integrations, use the corresponding GitHub Actions workflow and inspect its logs.
