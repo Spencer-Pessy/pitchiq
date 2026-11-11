@@ -4,6 +4,107 @@ import math
 import sys
 
 
+def _diagnostic_group(rows, label):
+    count = len(rows)
+    hits = 0
+    brier = 0.0
+    home_error = away_error = 0.0
+    goal_count = 0
+    for item, actual, probs in rows:
+        hits += probs.index(max(probs)) == actual
+        brier += sum((value - (1 if index == actual else 0)) ** 2
+                     for index, value in enumerate(probs))
+        final = item["final"]
+        prediction = item.get("p") or {}
+        try:
+            home_error += abs(float(prediction["lh"]) - float(final[0]))
+            away_error += abs(float(prediction["la"]) - float(final[1]))
+            goal_count += 1
+        except (KeyError, TypeError, ValueError):
+            pass
+    return {
+        "band": label,
+        "matches": count,
+        "accuracy": round(hits / count, 4) if count else None,
+        "brier": round(brier / count, 4) if count else None,
+        "home_goals_mae": round(home_error / goal_count, 4) if goal_count else None,
+        "away_goals_mae": round(away_error / goal_count, 4) if goal_count else None,
+    }
+
+
+def input_diagnostics(predictions):
+    """Evaluate completed forecasts against their saved pre-match input samples."""
+    valid = []
+    completed = 0
+    for item in predictions:
+        final = item.get("final")
+        probs = item.get("p") or {}
+        if not isinstance(final, list) or len(final) != 2:
+            continue
+        completed += 1
+        inputs = item.get("inputs")
+        if not isinstance(inputs, dict) or inputs.get("schema") != 1:
+            continue
+        try:
+            home, away = float(final[0]), float(final[1])
+            p = [float(probs[key]) for key in ("ph", "pd", "pa")]
+            if (not all(math.isfinite(x) for x in [home, away] + p)
+                    or min(home, away) < 0 or any(x < 0 or x > 1 for x in p)
+                    or abs(sum(p) - 1.0) > 0.02):
+                continue
+        except (KeyError, TypeError, ValueError):
+            continue
+        actual = 0 if home > away else 1 if home == away else 2
+        valid.append((item, actual, p))
+
+    dimensions = {
+        "home_venue_sample": [
+            ("0–2", lambda n: 0 <= n <= 2), ("3–5", lambda n: 3 <= n <= 5),
+            ("6–10", lambda n: 6 <= n <= 10), ("11+", lambda n: n >= 11),
+        ],
+        "away_venue_sample": [
+            ("0–2", lambda n: 0 <= n <= 2), ("3–5", lambda n: 3 <= n <= 5),
+            ("6–10", lambda n: 6 <= n <= 10), ("11+", lambda n: n >= 11),
+        ],
+        "home_form_points": [
+            ("0–4", lambda n: 0 <= n <= 4), ("5–9", lambda n: 5 <= n <= 9),
+            ("10–12", lambda n: 10 <= n <= 12), ("13–15", lambda n: 13 <= n <= 15),
+        ],
+        "away_form_points": [
+            ("0–4", lambda n: 0 <= n <= 4), ("5–9", lambda n: 5 <= n <= 9),
+            ("10–12", lambda n: 10 <= n <= 12), ("13–15", lambda n: 13 <= n <= 15),
+        ],
+    }
+    results = {}
+    for dimension, bands in dimensions.items():
+        side = "home" if dimension.startswith("home_") else "away"
+        grouped = []
+        for item, actual, probs in valid:
+            team = item["inputs"].get(side) or {}
+            if dimension.endswith("venue_sample"):
+                value = team.get("venue_matches")
+                try:
+                    value = int(value)
+                except (TypeError, ValueError):
+                    continue
+            else:
+                form = team.get("form")
+                if not isinstance(form, str) or any(char not in "WDL" for char in form):
+                    continue
+                value = sum({"W": 3, "D": 1, "L": 0}[char] for char in form)
+            grouped.append((value, (item, actual, probs)))
+        results[dimension] = [
+            _diagnostic_group([row for value, row in grouped if predicate(value)], label)
+            for label, predicate in bands
+        ]
+    return {
+        "completed_forecasts": completed,
+        "snapshot_forecasts": len(valid),
+        "missing_or_invalid_snapshots": completed - len(valid),
+        "groups": results,
+    }
+
+
 def evaluate(predictions):
     """Calculate outcome accuracy, multiclass Brier/log loss and goal MAE."""
     records = []
@@ -49,7 +150,8 @@ def evaluate(predictions):
     if not n:
         return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None,
                 "chronological_split": [], "home_goals_mae": None, "away_goals_mae": None,
-                "home_goals_bias": None, "away_goals_bias": None}
+                "home_goals_bias": None, "away_goals_bias": None,
+                "input_diagnostics": input_diagnostics(predictions)}
 
     correct = 0
     confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
@@ -101,6 +203,7 @@ def evaluate(predictions):
         "away_goals_mae": round(away_mae / goal_n, 4) if goal_n else None,
         "home_goals_bias": round(home_bias / goal_n, 4) if goal_n else None,
         "away_goals_bias": round(away_bias / goal_n, 4) if goal_n else None,
+        "input_diagnostics": input_diagnostics(predictions),
     }
 
 
