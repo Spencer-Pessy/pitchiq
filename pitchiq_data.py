@@ -20,10 +20,11 @@ def average_bucket(code, counts):
     return code
 
 
-def build_feed_health(fixture_counts, standings_codes, published_match_count):
+def build_feed_health(fixture_counts, standings_codes, published_match_count, standings_failed=()):
     """Summarize source coverage without exposing credentials or raw responses."""
     fixture_counts = dict(sorted(fixture_counts.items()))
     standings_codes = sorted(set(standings_codes))
+    standings_failed = sorted(set(standings_failed))
     return {
         "fixture_competitions": len(fixture_counts),
         "fixture_counts": fixture_counts,
@@ -34,5 +35,7 @@ def build_feed_health(fixture_counts, standings_codes, published_match_count):
         ),
         "standings_available": standings_codes,
         "standings_competitions": len(standings_codes),
+        "standings_failed": standings_failed,
+        "standings_failures": len(standings_failed),
         "published_match_count": published_match_count,
     }
