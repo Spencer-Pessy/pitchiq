@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics, ablation_comparison
+from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics, ablation_comparison, wilson_interval
 
 
 
@@ -208,6 +208,24 @@ class MetricsTests(unittest.TestCase):
                             for row in result["groups"]["home_venue_sample"]))
 
 
+
+
+    def test_wilson_accuracy_interval_reflects_small_sample_uncertainty(self):
+        self.assertEqual(wilson_interval(0, 0), None)
+        self.assertEqual(wilson_interval(0, 10), [0.0, 0.2775])
+        self.assertEqual(wilson_interval(10, 10), [0.7225, 1.0])
+        interval = wilson_interval(1, 2)
+        self.assertAlmostEqual(interval[0], 0.0945, places=4)
+        self.assertAlmostEqual(interval[1], 0.9055, places=4)
+
+    def test_evaluate_returns_accuracy_confidence_interval(self):
+        rows = [
+            {"final": [2, 0], "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1}},
+            {"final": [0, 2], "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1}},
+        ]
+        result = evaluate(rows)
+        self.assertEqual(result["accuracy"], 0.5)
+        self.assertEqual(result["accuracy_ci_95"], wilson_interval(1, 2))
 
 class ModelTests(unittest.TestCase):
     def setUp(self):
