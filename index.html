@@ -91,18 +91,39 @@ const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
 const tm=m=>new Date(m.utc).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 const dy=m=>new Date(m.utc).toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'});
 function record(){
- const all=Object.values(P),done=all.filter(p=>p.final),open=all.length-done.length;
- let hit=0,hc=0,hch=0,o=0,oh=0,b=0,bh=0,br=0;
- const rows=done.map(p=>{const q=p.p,v=[q.ph,q.pd,q.pa],pick=v.indexOf(Math.max(...v)),[hg,ag]=p.final,act=hg>ag?0:hg==ag?1:2,ok=pick==act;
-  if(ok)hit++;if(v[pick]>=.6){hc++;if(ok)hch++}
-  o++;if((q.o25>=.5)==(hg+ag>2))oh++;b++;if((q.bt>=.5)==(hg>0&&ag>0))bh++;
+ const all=Object.values(P),open=all.filter(p=>!p.final).length;
+ let hit=0,hc=0,hch=0,o=0,oh=0,b=0,bh=0,br=0,ll=0,hm=0,am=0,gn=0;
+ const rows=all.filter(p=>{
+  if(!Array.isArray(p.final)||p.final.length!==2||!p.p)return false;
+  const hg=Number(p.final[0]),ag=Number(p.final[1]),v=[p.p.ph,p.p.pd,p.p.pa].map(Number);
+  return Number.isFinite(hg)&&Number.isFinite(ag)&&hg>=0&&ag>=0&&v.every(x=>Number.isFinite(x)&&x>=0&&x<=1)&&Math.abs(v.reduce((a,x)=>a+x,0)-1)<=.02;
+ }).map(p=>{
+  const q=p.p,v=[q.ph,q.pd,q.pa],pick=v.indexOf(Math.max(...v)),hg=Number(p.final[0]),ag=Number(p.final[1]),act=hg>ag?0:hg==ag?1:2,ok=pick==act;
+  if(ok)hit++;
+  if(v[pick]>=.6){hc++;if(ok)hch++}
+  if(Number.isFinite(Number(q.o25))){o++;if((Number(q.o25)>=.5)==(hg+ag>2))oh++}
+  if(Number.isFinite(Number(q.bt))){b++;if((Number(q.bt)>=.5)==(hg>0&&ag>0))bh++}
   br+=v.reduce((t,x,i)=>t+Math.pow(x-(i==act?1:0),2),0);
-  return{p,pick,v,ok,t:new Date(p.utc)}}).sort((x,y)=>y.t-x.t);
- const n=done.length,f=(a,c)=>c?Math.round(a/c*100)+'%':'–';
- const nm=['home win','draw','away win'];
- $('#app').innerHTML=head()+tabsHtml()+(n?`<div class="big"><div><b>${f(hit,n)}</b><span>Correct results · ${hit} of ${n}</span></div><div><b>${f(hch,hc)}</b><span>When 60%+ confident · ${hch} of ${hc}</span></div><div><b>${f(oh,o)}</b><span>Over/under 2.5 right</span></div><div><b>${f(bh,b)}</b><span>Both-teams-to-score right</span></div></div>
- <p class="note">Probability score (Brier): ${(br/n).toFixed(3)}. Lower is better, and 0.667 is what blind guessing scores. Every prediction was saved before kickoff and can’t be changed afterwards. ${open} more are waiting for their match.</p>
- <div class="day">Recent</div>${rows.slice(0,25).map(r=>`<div class="card"><div class="comp">${r.p.comp} · ${r.t.toLocaleDateString([],{day:'numeric',month:'short'})}</div><div class="row"><span class="tm">${r.p.h}</span><span class="ko">${r.p.final[0]} – ${r.p.final[1]}</span><span class="tm r">${r.p.a}</span></div><span class="pill" style="color:var(${r.ok?'--ok':'--no'})">${r.ok?'✓':'✗'} Predicted ${nm[r.pick]} (${Math.round(r.v[r.pick]*100)}%)</span></div>`).join('')}`
+  ll-=Math.log(Math.max(v[act],1e-15));
+  const xh=Number(q.lh),xa=Number(q.la);
+  if(Number.isFinite(xh)&&Number.isFinite(xa)){hm+=Math.abs(xh-hg);am+=Math.abs(xa-ag);gn++}
+  return{p,pick,v,ok,t:new Date(p.utc)};
+ }).sort((x,y)=>y.t-x.t);
+ const n=rows.length,f=(a,c)=>c?Math.round(a/c*100)+'%':'–',nm=['home win','draw','away win'];
+ const mae=gn?(hm/gn).toFixed(2)+' / '+(am/gn).toFixed(2):'–';
+ $('#app').innerHTML=head()+tabsHtml()+(n?`<h2>Model performance</h2><div class="big">
+ <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span></div>
+ <div><b>${(br/n).toFixed(3)}</b><span>Brier score · lower is better</span></div>
+ <div><b>${(ll/n).toFixed(3)}</b><span>Log loss · lower is better</span></div>
+ <div><b>${mae}</b><span>Expected-goals MAE · home / away</span></div>
+ </div>
+ <div class="panel"><h2>Other forecast checks</h2>
+ <div class="stat"><span>60%+ confidence picks</span><b>${f(hch,hc)} (${hch}/${hc})</b></div>
+ <div class="stat"><span>Over/under 2.5 goals</span><b>${f(oh,o)} (${oh}/${o})</b></div>
+ <div class="stat"><span>Both teams to score</span><b>${f(bh,b)} (${bh}/${b})</b></div>
+ </div>
+ <p class="note">Based on ${n} completed, valid pre-match forecasts. Brier score measures probability error (0 is perfect; about 0.667 is the uniform 1X2 reference). Log loss penalises confident wrong forecasts. Expected-goals MAE is the average absolute difference between predicted and actual goals, shown home / away. Lower is better for all three error measures. Results are historical and do not guarantee future performance. Predictions are saved before kickoff and are not overwritten. ${open} forecasts are still waiting for results.</p>
+ <div class="day">Recent results</div>${rows.slice(0,25).map(r=>`<div class="card"><div class="comp">${r.p.comp} · ${r.t.toLocaleDateString([],{day:'numeric',month:'short'})}</div><div class="row"><span class="tm">${r.p.h}</span><span class="ko">${r.p.final[0]} – ${r.p.final[1]}</span><span class="tm r">${r.p.a}</span></div><span class="pill" style="color:var(${r.ok?'--ok':'--no'})">${r.ok?'✓':'✗'} Predicted ${nm[r.pick]} (${Math.round(r.v[r.pick]*100)}%)</span></div>`).join('')}`
  :`<div class="panel"><h2>Record starts today</h2><p class="note" style="margin:0">Predictions are saved before kickoff and scored after full time. ${open} are saved and waiting for their matches. Come back after they finish to see the first results.</p></div>`);
  bind();
 }
