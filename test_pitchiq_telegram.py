@@ -131,6 +131,14 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertIn("no Telegram post will be sent.", source)
 
 
+    def test_daily_record_uses_only_settled_published_pick_ledger(self):
+        source = Path("telegram.py").read_text(encoding="utf-8")
+        self.assertIn('published_results = pick_state["results"]', source)
+        self.assertIn('Published-pick record:', source)
+        self.assertNotIn('done = [p for p in preds if valid_forecast(p) and valid_final(p.get("final"))]', source)
+        self.assertNotIn('Record so far:', source)
+
+
 class TelegramDeliverySafetyTests(unittest.TestCase):
     def test_pick_ledger_is_saved_only_after_confirmed_photo_or_text_delivery(self):
         source = Path("telegram.py").read_text(encoding="utf-8")
