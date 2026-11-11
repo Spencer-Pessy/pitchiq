@@ -3,6 +3,8 @@ import json
 import math
 import sys
 
+from pitchiq_model import predict as model_predict
+
 
 def _diagnostic_group(rows, label):
     count = len(rows)
@@ -205,6 +207,55 @@ def outcome_class_metrics(predictions):
     return result
 
 
+def ablation_comparison(predictions):
+    """Replay versioned forecasts while disabling Elo and/or recent form."""
+    variants = {
+        "full_model": {"use_elo": True, "use_form": True},
+        "without_elo": {"use_elo": False, "use_form": True},
+        "without_form": {"use_elo": True, "use_form": False},
+        "without_elo_or_form": {"use_elo": False, "use_form": False},
+    }
+    scored = {name: [] for name in variants}
+    for item in predictions:
+        final = item.get("final")
+        snapshot = item.get("inputs")
+        if (not isinstance(final, list) or len(final) != 2
+                or not isinstance(snapshot, dict) or snapshot.get("schema") != 2):
+            continue
+        try:
+            home_goals, away_goals = float(final[0]), float(final[1])
+            stats = {
+                "h": snapshot["home"], "a": snapshot["away"],
+                "lh": float(snapshot["league_home"]),
+                "la": float(snapshot["league_away"]),
+            }
+            calibration = snapshot["calibration"]
+            actual = 0 if home_goals > away_goals else 1 if home_goals == away_goals else 2
+            if (not all(math.isfinite(x) for x in (home_goals, away_goals, stats["lh"], stats["la"]))
+                    or min(home_goals, away_goals) < 0):
+                continue
+            for name, switches in variants.items():
+                forecast = model_predict(stats, calibration, **switches)
+                probabilities = [forecast[key] for key in ("ph", "pd", "pa")]
+                if all(math.isfinite(value) for value in probabilities):
+                    scored[name].append((probabilities, actual))
+        except (KeyError, TypeError, ValueError):
+            continue
+
+    results = {name: _probability_scores(rows) for name, rows in scored.items()}
+    full_brier = results["full_model"]["brier"]
+    for row in results.values():
+        row["brier_delta_vs_full"] = (
+            round(row["brier"] - full_brier, 4)
+            if row["brier"] is not None and full_brier is not None else None
+        )
+    return {
+        "matches": results["full_model"]["matches"],
+        "variants": results,
+        "note": "Controlled replay on schema-2 snapshots only; all variants use identical matches and the original saved calibration.",
+    }
+
+
 def binary_market_metrics(predictions, key):
     """Score a saved binary market probability against its completed outcome."""
     rows = []
@@ -404,7 +455,8 @@ def evaluate(predictions):
                 "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
                                    "btts": binary_market_metrics(predictions, "bt")},
                 "outcome_classes": outcome_class_metrics(predictions),
-                "baseline_comparison": baseline_comparison(predictions)}
+                "baseline_comparison": baseline_comparison(predictions),
+                "ablation_comparison": ablation_comparison(predictions)}
 
     correct = 0
     confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
@@ -466,6 +518,7 @@ def evaluate(predictions):
                            "btts": binary_market_metrics(predictions, "bt")},
         "outcome_classes": outcome_class_metrics(predictions),
         "baseline_comparison": baseline_comparison(predictions),
+        "ablation_comparison": ablation_comparison(predictions),
     }
 
 
