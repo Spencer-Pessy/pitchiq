@@ -4,6 +4,7 @@ from pitchiq_data import (
     INTERNATIONAL_COMPETITIONS,
     average_bucket,
     goal_average_keys,
+    build_feed_health,
 )
 
 
@@ -31,6 +32,25 @@ class CompetitionDataTests(unittest.TestCase):
 
     def test_small_club_competition_keeps_existing_fallback(self):
         self.assertEqual(average_bucket("PL", {"PL": 12, "ALL": 100}), "ALL")
+
+    def test_feed_health_reports_competition_coverage(self):
+        health = build_feed_health(
+            {"PL": 30, "WC": 4, "EC": 2},
+            {"PL", "WC"},
+            18,
+        )
+        self.assertEqual(health["fixture_competitions"], 3)
+        self.assertEqual(health["fixture_total"], 36)
+        self.assertEqual(health["international_fixture_total"], 6)
+        self.assertEqual(health["standings_competitions"], 2)
+        self.assertEqual(health["published_match_count"], 18)
+        self.assertEqual(health["fixture_counts"], {"EC": 2, "PL": 30, "WC": 4})
+
+    def test_feed_health_handles_no_standings_or_fixtures(self):
+        health = build_feed_health({}, set(), 0)
+        self.assertEqual(health["fixture_total"], 0)
+        self.assertEqual(health["international_fixture_total"], 0)
+        self.assertEqual(health["standings_available"], [])
 
 
 if __name__ == "__main__":
