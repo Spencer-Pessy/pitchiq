@@ -12,7 +12,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: pitchiq-data-update
+  group: pitchiq-publish
   cancel-in-progress: false
 jobs:
   update:
