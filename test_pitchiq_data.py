@@ -34,6 +34,29 @@ class CompetitionDataTests(unittest.TestCase):
     def test_small_club_competition_keeps_existing_fallback(self):
         self.assertEqual(average_bucket("PL", {"PL": 12, "ALL": 100}), "ALL")
 
+    def test_international_fixture_detection_uses_team_metadata(self):
+        from pitchiq_data import is_international_fixture
+
+        national = {"league": {"name": "Friendly", "country": "World"},
+                    "teams": {"home": {"national": True}, "away": {"national": True}}}
+        club = {"league": {"name": "Friendlies", "country": "World"},
+                "teams": {"home": {"national": False}, "away": {"national": False}}}
+        self.assertTrue(is_international_fixture(national))
+        self.assertFalse(is_international_fixture(club))
+
+    def test_international_fixture_detection_recognizes_tournaments(self):
+        from pitchiq_data import is_international_fixture
+
+        world_cup = {"league": {"name": "World Cup - Qualification Africa", "country": "Africa"},
+                     "teams": {"home": {}, "away": {}}}
+        friendlies = {"league": {"name": "Friendlies", "country": "World"},
+                      "teams": {"home": {}, "away": {}}}
+        club_friendly = {"league": {"name": "Friendlies Clubs", "country": "World"},
+                         "teams": {"home": {}, "away": {}}}
+        self.assertTrue(is_international_fixture(world_cup))
+        self.assertTrue(is_international_fixture(friendlies))
+        self.assertFalse(is_international_fixture(club_friendly))
+
     def test_player_scoring_rate_is_calculated_safely(self):
         self.assertEqual(player_goals_per_appearance(9, 10), 0.9)
         self.assertEqual(player_goals_per_appearance(1, 3), 0.333)
