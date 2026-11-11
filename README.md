@@ -38,7 +38,7 @@ The forecasting calculations live in `pitchiq_model.py`, separate from API and f
 The workflows in `.github/workflows/` can be run on their schedules or manually with **Actions → select workflow → Run workflow**:
 
 - **Update data** — every 30 minutes.
-- **Update odds** — twice daily.
+- **Update odds** — once daily (07:00 UTC) to conserve the free API allowance. Each run makes one sports-discovery request and up to six league-odds requests; publication retries reuse the saved response and do not make extra odds API calls.
 - **Update international fixtures** — daily; one public JSON download, no API key.
 - **Telegram picks** — daily.
 
