@@ -9,6 +9,7 @@ from pitchiq_data import (
     player_rate_stats,
     team_venue_stats,
     forecast_input_snapshot,
+    record_forward_evaluations,
 )
 
 
@@ -187,6 +188,52 @@ class CompetitionDataTests(unittest.TestCase):
         self.assertEqual(health["international_fixture_total"], 0)
         self.assertEqual(health["standings_available"], [])
         self.assertEqual(health["standings_failures"], 0)
+
+
+class ForwardEvaluationLedgerTests(unittest.TestCase):
+    def test_creates_immutable_shadow_forecast_and_scores_it_later(self):
+        from datetime import datetime, timezone
+        now = datetime(2026, 11, 11, 12, tzinfo=timezone.utc)
+        fixture = {
+            "id": 123, "status": "TIMED", "utc": "2026-11-20T18:00:00Z",
+            "comp": "Premier League", "code": "PL", "h": "Arsenal", "a": "Chelsea",
+            "s": {"h": {"gf": 1.8}, "a": {"gf": 1.2}, "lh": 1.5, "la": 1.1},
+        }
+        calls = []
+        def predict(stats):
+            calls.append("predict")
+            return {"ph": 0.5, "pd": 0.25, "pa": 0.25}
+        def snapshot(stats):
+            calls.append("snapshot")
+            return {"schema": 2, "home": stats["h"], "away": stats["a"],
+                    "league_home": stats["lh"], "league_away": stats["la"],
+                    "calibration": {"kh": 1.0, "ka": 1.0}}
+        ledger = record_forward_evaluations({}, [fixture], {}, now, predict, snapshot)
+        self.assertEqual(list(ledger), ["123"])
+        self.assertTrue(ledger["123"]["evaluation_only"])
+        self.assertEqual(ledger["123"]["inputs"]["schema"], 2)
+        self.assertIsNone(ledger["123"]["final"])
+        self.assertEqual(calls, ["predict", "snapshot"])
+
+        # A later refresh must not replace the original shadow forecast.
+        original_probability = ledger["123"]["p"]
+        changed_fixture = dict(fixture, s={"h": {"gf": 99}, "a": {"gf": 0}, "lh": 2, "la": 0.2})
+        ledger = record_forward_evaluations(
+            ledger, [changed_fixture], {123: [2, 1]}, now, predict, snapshot)
+        self.assertEqual(ledger["123"]["p"], original_probability)
+        self.assertEqual(ledger["123"]["final"], [2, 1])
+        self.assertEqual(calls, ["predict", "snapshot"])
+
+    def test_ignores_started_fixtures_and_keeps_existing_scores(self):
+        from datetime import datetime, timezone
+        now = datetime(2026, 11, 11, 12, tzinfo=timezone.utc)
+        fixture = {
+            "id": 124, "status": "TIMED", "utc": "2026-11-11T11:00:00Z",
+            "comp": "Premier League", "code": "PL", "h": "A", "a": "B",
+            "s": {"h": {}, "a": {}, "lh": 1.5, "la": 1.2},
+        }
+        ledger = record_forward_evaluations({}, [fixture], {}, now, lambda _: {}, lambda _: {})
+        self.assertEqual(ledger, {})
 
 
 if __name__ == "__main__":
