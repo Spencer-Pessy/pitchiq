@@ -48,7 +48,8 @@ def evaluate(predictions):
             })
     if not n:
         return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None,
-                "chronological_split": [], "home_goals_mae": None, "away_goals_mae": None}
+                "chronological_split": [], "home_goals_mae": None, "away_goals_mae": None,
+                "home_goals_bias": None, "away_goals_bias": None}
 
     correct = 0
     confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
@@ -56,6 +57,8 @@ def evaluate(predictions):
     log_loss = 0.0
     home_mae = 0.0
     away_mae = 0.0
+    home_bias = 0.0
+    away_bias = 0.0
     goal_n = 0
     for home, away, p, actual, original, _date in records:
         hit = p.index(max(p)) == actual
@@ -75,6 +78,8 @@ def evaluate(predictions):
             if math.isfinite(expected_home) and math.isfinite(expected_away):
                 home_mae += abs(expected_home - home)
                 away_mae += abs(expected_away - away)
+                home_bias += expected_home - home
+                away_bias += expected_away - away
                 goal_n += 1
         except (KeyError, TypeError, ValueError):
             pass
@@ -94,6 +99,8 @@ def evaluate(predictions):
         "goal_samples": goal_n,
         "home_goals_mae": round(home_mae / goal_n, 4) if goal_n else None,
         "away_goals_mae": round(away_mae / goal_n, 4) if goal_n else None,
+        "home_goals_bias": round(home_bias / goal_n, 4) if goal_n else None,
+        "away_goals_bias": round(away_bias / goal_n, 4) if goal_n else None,
     }
 
 
