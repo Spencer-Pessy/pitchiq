@@ -51,7 +51,7 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(pois(1.0, 1), math.exp(-1), places=12)
 
     def test_dixon_coles_adjustments(self):
-        self.assertAlmostEqual(tau(0, 0, 1.5, 1.2, -0.1), 1.15)
+        self.assertAlmostEqual(tau(0, 0, 1.5, 1.2, -0.1), 1.18)
         self.assertAlmostEqual(tau(0, 1, 1.5, 1.2, -0.1), 0.85)
         self.assertAlmostEqual(tau(1, 0, 1.5, 1.2, -0.1), 0.88)
         self.assertAlmostEqual(tau(1, 1, 1.5, 1.2, -0.1), 1.1)
