@@ -27,17 +27,30 @@ jobs:
         run: python -m py_compile update.py international.py odds.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py
       - name: Run offline model tests
         run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international
-      - run: python update.py
+      - name: Refresh and publish data with safe retry
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
-      - run: |
+        run: |
+          set -euo pipefail
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add data.json predictions.json model_evaluation.json details.json
-          if git diff --cached --quiet; then
-            echo "No changes to publish."
-            exit 0
-          fi
-          git commit -m "Update data"
-          git pull --rebase
-          git push
+          for attempt in 1 2 3; do
+            echo "Data refresh/publication attempt $attempt of 3"
+            git fetch origin main
+            git reset --hard origin/main
+            python update.py
+            git add data.json predictions.json model_evaluation.json details.json
+            if git diff --cached --quiet; then
+              echo "No changes to publish."
+              exit 0
+            fi
+            git commit -m "Update data"
+            if git push; then
+              echo "Data snapshot published successfully."
+              exit 0
+            fi
+            echo "Push was rejected; the next attempt will refresh from the latest main branch."
+            sleep 5
+          done
+          echo "Unable to publish data after 3 fresh attempts."
+          exit 1
