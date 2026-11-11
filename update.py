@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -269,13 +269,34 @@ with open("predictions.json", "w") as f:
     json.dump(preds, f, ensure_ascii=False)
 print("predictions stored:", len(preds))
 
-# Publish controlled model ablation scores from completed schema-2 snapshots.
+# Maintain a separate forward-only research ledger. Existing public forecasts
+# remain immutable; this ledger captures current inputs for already-listed fixtures.
+try:
+    with open("model_evaluation.json") as f:
+        evaluation = json.load(f)
+except Exception:
+    evaluation = {}
+finished_scores = {str(match_id): goals(match) for match_id, match in byid.items()}
+evaluation = record_forward_evaluations(
+    evaluation, out, finished_scores, now, predict,
+    lambda stats: forecast_input_snapshot(stats, CAL),
+)
+with open("model_evaluation.json", "w") as f:
+    json.dump(evaluation, f, ensure_ascii=False)
+evaluation_rows = list(evaluation.values())
+evaluation_completed = sum(isinstance(row.get("final"), list) for row in evaluation_rows)
+print("forward evaluation forecasts:", len(evaluation_rows), "completed:", evaluation_completed)
+
+# Publish controlled ablation scores from the separate forward-only ledger.
 with open("data.json", "w") as f:
     json.dump({
         "updated": now.isoformat(), "odds_updated": odds_data["updated"],
         "calib": CAL,
         "data_health": build_feed_health(fixture_counts, tables.keys(), len(out), standings_failed),
         "matches": out, "tables": tables,
-        "ablation": ablation_comparison(list(preds.values())),
+        "model_evaluation": {
+            "forecasts": len(evaluation_rows), "completed": evaluation_completed,
+        },
+        "ablation": ablation_comparison(evaluation_rows),
     }, f, ensure_ascii=False)
 print("matches written:", len(out))
