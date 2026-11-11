@@ -230,6 +230,8 @@ def paired_bootstrap_interval(differences, iterations=1000, seed=20261111):
     values = [float(value) for value in differences]
     if len(values) < 2 or not all(math.isfinite(value) for value in values):
         return None
+    # Canonical ordering makes seeded intervals invariant to input row order.
+    values.sort()
     rng = random.Random(seed)
     size = len(values)
     means = []
