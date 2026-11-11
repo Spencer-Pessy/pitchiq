@@ -22,6 +22,8 @@ class MetricsTests(unittest.TestCase):
         self.assertTrue(all(0 <= x["accuracy"] <= 1 for x in result["confidence_bins"]))
         self.assertAlmostEqual(result["home_goals_mae"], 0.1, places=4)
         self.assertAlmostEqual(result["away_goals_mae"], 0.4, places=4)
+        self.assertAlmostEqual(result["home_goals_bias"], -0.1, places=4)
+        self.assertAlmostEqual(result["away_goals_bias"], 0.4, places=4)
 
     def test_chronological_split_uses_earlier_and_later_forecasts(self):
         rows = [
@@ -49,6 +51,8 @@ class MetricsTests(unittest.TestCase):
         result = evaluate([{"final": None, "p": {}}, {"final": [1, 0], "p": {"ph": 0.5}}])
         self.assertEqual(result["matches"], 0)
         self.assertIsNone(result["accuracy"])
+        self.assertIsNone(result["home_goals_bias"])
+        self.assertIsNone(result["away_goals_bias"])
 
     def test_probabilities_must_be_valid(self):
         result = evaluate([{"final": [1, 0], "p": {"ph": 0.8, "pd": 0.8, "pa": 0.1}}])
