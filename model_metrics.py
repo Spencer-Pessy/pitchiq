@@ -42,8 +42,9 @@ def evaluate(predictions):
         hit = p.index(max(p)) == actual
         correct += hit
         confidence = max(p)
-        for lo, hi, confidences, outcomes in confidence_groups:
-            if lo <= confidence < hi or (hi > 1 and confidence <= 1):
+        for index, (lo, hi, confidences, outcomes) in enumerate(confidence_groups):
+            # Include an exactly 100% forecast in the final 0.9–1.0 band.
+            if lo <= confidence < hi or (index == len(confidence_groups) - 1 and confidence == 1.0):
                 confidences.append(confidence)
                 outcomes.append(float(hit))
                 break
