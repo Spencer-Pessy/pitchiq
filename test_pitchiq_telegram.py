@@ -1,6 +1,6 @@
 """Tests for Telegram input validation."""
 import unittest
-from pitchiq_telegram import parse_kickoff, valid_probabilities, valid_forecast, valid_final
+from pitchiq_telegram import parse_kickoff, valid_probabilities, valid_forecast, valid_final, clean_seen_urls
 
 
 class TelegramValidationTests(unittest.TestCase):
@@ -30,6 +30,13 @@ class TelegramValidationTests(unittest.TestCase):
             row.update(change)
             self.assertFalse(valid_forecast(row))
         self.assertFalse(valid_forecast(None))
+
+    def test_seen_history_is_sanitized_and_bounded(self):
+        self.assertEqual(clean_seen_urls({"bad": "shape"}), [])
+        self.assertEqual(clean_seen_urls([" https://a ", None, "", 3, "https://b"]),
+                         ["https://a", "https://b"])
+        self.assertEqual(clean_seen_urls([str(i) for i in range(205)]),
+                         [str(i) for i in range(5, 205)])
 
     def test_final_score_requires_two_nonnegative_integers(self):
         self.assertTrue(valid_final([0, 0]))
