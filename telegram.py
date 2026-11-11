@@ -110,15 +110,15 @@ for k, (c, p, pick) in enumerate(top, 1):
     lines += [f"{k}. {p['h']} vs {p['a']}",
               f"   {p['comp']} · {when(p).strftime('%H:%M')}",
               f"   Model: {pick} {round(c * 100)}%", ""]
-done = [p for p in preds if valid_forecast(p) and valid_final(p.get("final"))]
-if done:
-    hit = 0
-    for p in done:
-        v = [p["p"]["ph"], p["p"]["pd"], p["p"]["pa"]]
-        a, b = p["final"]
-        act = 0 if a > b else 1 if a == b else 2
-        hit += v.index(max(v)) == act
-    lines.append(f"Record so far: {hit} of {len(done)} results right ({round(hit / len(done) * 100)}%).")
+# Keep the public Telegram record consistent with the Results tab: only
+# picks already published by this bot and settled in the persistent ledger.
+published_results = pick_state["results"]
+if published_results:
+    hit = sum(item["correct"] is True for item in published_results)
+    total = len(published_results)
+    lines.append(
+        f"Published-pick record: {hit} of {total} results right ({round(hit / total * 100)}%)."
+    )
 lines += ["Full forecasts: " + SITE, "Model estimates, not tips or guarantees. 18+ only."]
 text = "\n".join(lines)
 print(text)
