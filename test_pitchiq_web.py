@@ -56,7 +56,10 @@ class InputSignalDiagnosticsWebTests(unittest.TestCase):
     def test_record_view_discloses_saved_input_diagnostics_and_small_samples(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("Input-signal diagnostics", source)
-        self.assertIn("const snapRows=rows.filter(r=>r.p.inputs?.schema===1)", source)
+        self.assertIn("const snapRows=rows.filter(r=>r.p.inputs?.schema===2)", source)
+        self.assertIn("Controlled model ablation", source)
+        self.assertIn("without_elo_or_form", source)
+        self.assertIn("original saved calibration", source)
         self.assertIn("const diagSummary=(name,items)=>", source)
         self.assertIn("The existing ledger predates snapshot capture", source)
         self.assertIn("new forecasts will populate these checks as their matches finish", source)
