@@ -52,10 +52,20 @@ class CompetitionDataTests(unittest.TestCase):
         self.assertEqual(health["fixture_total"], 36)
         self.assertEqual(health["international_fixture_total"], 6)
         self.assertEqual(health["standings_competitions"], 2)
-        self.assertEqual(health["standings_failed"], ["EC"])
-        self.assertEqual(health["standings_failures"], 1)
+        self.assertEqual(health["standings_failed"], [])
+        self.assertEqual(health["standings_failures"], 0)
         self.assertEqual(health["published_match_count"], 18)
         self.assertEqual(health["fixture_counts"], {"EC": 2, "PL": 30, "WC": 4})
+
+    def test_only_unexpected_standings_failures_are_reported(self):
+        health = build_feed_health(
+            {"PL": 20, "WC": 10, "EC": 8},
+            {"PL"},
+            5,
+            {"WC", "EC", "PL"},
+        )
+        self.assertEqual(health["standings_failed"], ["PL"])
+        self.assertEqual(health["standings_failures"], 1)
 
     def test_feed_health_handles_no_standings_or_fixtures(self):
         health = build_feed_health({}, set(), 0)
