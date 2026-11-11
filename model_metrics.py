@@ -58,7 +58,9 @@ def input_diagnostics(predictions):
         valid.append((item, actual, p))
 
     def form_points(form):
-        if not isinstance(form, str) or not 1 <= len(form) <= 5 or any(char not in "WDL" for char in form):
+        if not isinstance(form, str) or not 1 <= len(form) <= 5:
+            return None
+        if any(char not in "WDL" for char in form):
             return None
         return sum({"W": 3, "D": 1, "L": 0}[char] for char in form)
 
@@ -68,9 +70,64 @@ def input_diagnostics(predictions):
         result["interpretation"] = "monitoring_only" if len(rows) < 10 else "reviewable"
         return result
 
-    venue_bands = [("0–2", lambda n: 0 <= n <= 2),
-                   ("3–5", lambda n: 3 <= n <= 5),
-                   ("6+", lambda n: n >= 6)]
+    bands = {
+        "home_venue_sample": [
+            ("0–2", lambda n: 0 <= n <= 2), ("3–5", lambda n: 3 <= n <= 5),
+            ("6–10", lambda n: 6 <= n <= 10), ("11+", lambda n: n >= 11),
+        ],
+        "away_venue_sample": [
+            ("0–2", lambda n: 0 <= n <= 2), ("3–5", lambda n: 3 <= n <= 5),
+            ("6–10", lambda n: 6 <= n <= 10), ("11+", lambda n: n >= 11),
+        ],
+        "home_form_points": [
+            ("0–4", lambda n: 0 <= n <= 4), ("5–9", lambda n: 5 <= n <= 9),
+            ("10–12", lambda n: 10 <= n <= 12), ("13–15", lambda n: 13 <= n <= 15),
+        ],
+        "away_form_points": [
+            ("0–4", lambda n: 0 <= n <= 4), ("5–9", lambda n: 5 <= n <= 9),
+            ("10–12", lambda n: 10 <= n <= 12), ("13–15", lambda n: 13 <= n <= 15),
+        ],
+    }
+    groups = {}
+    for dimension, dimension_bands in bands.items():
+        side = "home" if dimension.startswith("home_") else "away"
+        is_venue = dimension.endswith("venue_sample")
+        values = []
+        for item, actual, probs in valid:
+            team = item["inputs"].get(side) or {}
+            try:
+                value = int(team["venue_matches"]) if is_venue else form_points(team.get("form"))
+            except (KeyError, TypeError, ValueError):
+                continue
+            if value is None or (is_venue and value < 0):
+                continue
+            values.append((value, (item, actual, probs)))
+        groups[dimension] = [
+            summarize(label, [row for value, row in values if predicate(value)])
+            for label, predicate in dimension_bands
+        ]
+
+    venue_rows = []
+    form_rows = []
+    for item, actual, probs in valid:
+        home = item["inputs"].get("home") or {}
+        away = item["inputs"].get("away") or {}
+        try:
+            home_n, away_n = int(home["venue_matches"]), int(away["venue_matches"])
+            if home_n >= 0 and away_n >= 0:
+                venue_rows.append((min(home_n, away_n), (item, actual, probs)))
+        except (KeyError, TypeError, ValueError):
+            pass
+        home_form, away_form = form_points(home.get("form")), form_points(away.get("form"))
+        if home_form is not None and away_form is not None:
+            edge = "Home stronger" if home_form > away_form else "Away stronger" if away_form > home_form else "Even"
+            form_rows.append((edge, (item, actual, probs)))
+
+    venue_bands = [
+        ("0–2", lambda n: 0 <= n <= 2),
+        ("3–5", lambda n: 3 <= n <= 5),
+        ("6+", lambda n: n >= 6),
+    ]
     venue_support = [
         summarize(label, [row for value, row in venue_rows if predicate(value)])
         for label, predicate in venue_bands
@@ -79,44 +136,6 @@ def input_diagnostics(predictions):
         summarize(label, [row for edge, row in form_rows if edge == label])
         for label in ("Home stronger", "Even", "Away stronger")
     ]
-    dimensions = {
-        "home_venue_sample": [("0–2", lambda n: 0 <= n <= 2),
-                              ("3–5", lambda n: 3 <= n <= 5),
-                              ("6–10", lambda n: 6 <= n <= 10),
-                              ("11+", lambda n: n >= 11)],
-        "away_venue_sample": [("0–2", lambda n: 0 <= n <= 2),
-                              ("3–5", lambda n: 3 <= n <= 5),
-                              ("6–10", lambda n: 6 <= n <= 10),
-                              ("11+", lambda n: n >= 11)],
-        "home_form_points": [("0–4", lambda n: 0 <= n <= 4),
-                             ("5–9", lambda n: 5 <= n <= 9),
-                             ("10–12", lambda n: 10 <= n <= 12),
-                             ("13–15", lambda n: 13 <= n <= 15)],
-        "away_form_points": [("0–4", lambda n: 0 <= n <= 4),
-                             ("5–9", lambda n: 5 <= n <= 9),
-                             ("10–12", lambda n: 10 <= n <= 12),
-                             ("13–15", lambda n: 13 <= n <= 15)],
-    }
-    groups = {}
-    for dimension, bands in dimensions.items():
-        side = "home" if dimension.startswith("home_") else "away"
-        grouped = []
-        for item, actual, probs in valid:
-            team = item["inputs"].get(side) or {}
-            try:
-                if dimension.endswith("venue_sample"):
-                    value = int(team["venue_matches"])
-                else:
-                    value = form_points(team.get("form"))
-                    if value is None:
-                        continue
-            except (KeyError, TypeError, ValueError):
-                continue
-            grouped.append((value, (item, actual, probs)))
-        groups[dimension] = [
-            summarize(label, [row for value, row in grouped if predicate(value)])
-            for label, predicate in bands
-        ]
 
     return {
         "completed_forecasts": completed,
