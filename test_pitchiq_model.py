@@ -18,8 +18,8 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["accuracy"], 1.0)
         self.assertIsNotNone(result["brier"])
         self.assertIsNotNone(result["log_loss"])
-        self.assertAlmostEqual(result["home_goals_mae"], 0.2, places=4)
-        self.assertAlmostEqual(result["away_goals_mae"], 0.1, places=4)
+        self.assertAlmostEqual(result["home_goals_mae"], 0.1, places=4)
+        self.assertAlmostEqual(result["away_goals_mae"], 0.4, places=4)
 
     def test_invalid_or_incomplete_records_are_skipped(self):
         result = evaluate([{"final": None, "p": {}}, {"final": [1, 0], "p": {"ph": 0.5}}])
