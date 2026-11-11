@@ -212,4 +212,4 @@ if __name__ == "__main__":
     with open(path, encoding="utf-8") as source:
         data = json.load(source)
     values = data.values() if isinstance(data, dict) else data
-    print(json.dumps(evaluate(list(values)), indent=2))
+    print(json.dumps({**evaluate(list(values)), "input_diagnostics": input_diagnostics(list(values))}, indent=2))
