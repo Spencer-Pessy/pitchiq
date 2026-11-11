@@ -175,6 +175,8 @@ def backfill_market_odds(predictions, odds_events, snapshot_updated, now, same_t
         snapshot_time = datetime.fromisoformat(str(snapshot_updated).replace("Z", "+00:00"))
     except (TypeError, ValueError):
         return attached
+    if snapshot_time > now or not isinstance(odds_events, list):
+        return attached
     for item in predictions.values():
         if item.get("odds") is not None:
             continue
