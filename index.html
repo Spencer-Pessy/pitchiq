@@ -219,7 +219,7 @@ function res(){
  <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
  <div class="legend"><span>${esc(f.h)}</span><span>Draw</span><span>${esc(f.a)}</span></div>
  <div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
- <h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${f.h} ${x[0]}–${x[1]} ${f.a} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
+ <h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${esc(f.h)} ${x[0]}–${x[1]} ${esc(f.a)} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
  <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
 }
 (function(){
