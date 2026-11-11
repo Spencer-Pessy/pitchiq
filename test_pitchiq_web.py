@@ -73,3 +73,11 @@ class CalibrationDisplayTests(unittest.TestCase):
         self.assertIn("Expected calibration error (lower is better)", source)
         self.assertIn("Largest populated-band gap", source)
         self.assertIn("not a reason to recalibrate on their own", source)
+
+
+class BinaryMarketCalibrationWebTests(unittest.TestCase):
+    def test_record_view_scores_goal_market_probabilities(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const binaryMetric=key=>", source)
+        self.assertIn("Over 2.5 · Brier / ECE", source)
+        self.assertIn("BTTS · Brier / ECE", source)
