@@ -36,7 +36,7 @@ def evaluate(predictions):
             count = len(subset)
             hits = sum(row[2].index(max(row[2])) == row[3] for row in subset)
             subset_brier = sum(
-                sum((value - (index == row[3]) ** 2 for index, value in enumerate(row[2]))
+                sum((value - (1 if index == row[3] else 0)) ** 2 for index, value in enumerate(row[2]))
                 for row in subset
             ) / count
             subset_loss = sum(-math.log(max(row[2][row[3]], 1e-15)) for row in subset) / count
