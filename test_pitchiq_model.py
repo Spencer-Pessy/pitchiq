@@ -47,6 +47,20 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["groups"]["away_venue_sample"][2]["matches"], 1)
         self.assertEqual(result["groups"]["home_form_points"][0]["matches"], 1)
 
+
+    def test_input_diagnostics_excludes_missing_form_instead_of_treating_it_as_losses(self):
+        rows = [{
+            "final": [1, 0],
+            "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
+            "inputs": {"schema": 1,
+                "home": {"venue_matches": 4, "form": ""},
+                "away": {"venue_matches": 5, "form": "WWD"}},
+        }]
+        result = input_diagnostics(rows)
+        self.assertEqual(result["snapshot_forecasts"], 1)
+        self.assertEqual(result["groups"]["home_form_points"][0]["matches"], 0)
+        self.assertEqual(result["groups"]["away_form_points"][2]["matches"], 1)
+
     def test_input_diagnostics_ignores_malformed_snapshots(self):
         result = input_diagnostics([
             {"final": [1, 0], "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
