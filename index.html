@@ -206,7 +206,8 @@ function record(){
   return{band,n:sample,meanPred,meanActual,bias:sample?meanPred-meanActual:null,mae:sample?items.reduce((s,x)=>s+Math.abs(x.pred-x.actual),0)/sample:null};
  });
  const xgHome=xgCalibration("lh",0),xgAway=xgCalibration("la",1),xgCell=v=>v===null?"–":v.toFixed(2),xgRows=items=>items.map(x=>`<tr><td>${x.band}</td><td>${x.n}</td><td>${xgCell(x.meanPred)}</td><td>${xgCell(x.meanActual)}</td><td>${x.bias===null?"–":(x.bias>0?"+":"")+x.bias.toFixed(2)}</td><td>${xgCell(x.mae)}</td></tr>`).join("");
- const dcBaseline=D?.scoreline_baseline||null;\n const scorelineRows=[];let scorelineExcluded=0;
+ const dcBaseline=D?.scoreline_baseline||null;
+ const scorelineRows=[];let scorelineExcluded=0;
  rows.forEach(r=>{
   const hg=Number(r.p.final[0]),ag=Number(r.p.final[1]),lh=Number(r.p.p.lh),la=Number(r.p.p.la);
   if(!Number.isInteger(hg)||!Number.isInteger(ag)||hg<0||ag<0||hg>=8||ag>=8||!Number.isFinite(lh)||!Number.isFinite(la)||lh<=0||la<=0){scorelineExcluded++;return}
