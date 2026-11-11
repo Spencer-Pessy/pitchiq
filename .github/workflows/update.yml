@@ -1,5 +1,11 @@
 name: Update data
 on:
+  push:
+    branches: [main]
+    paths:
+      - update.py
+      - pitchiq_data.py
+      - .github/workflows/update.yml
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
