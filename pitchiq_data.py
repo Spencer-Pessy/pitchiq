@@ -39,3 +39,15 @@ def build_feed_health(fixture_counts, standings_codes, published_match_count, st
         "standings_failures": len(standings_failed),
         "published_match_count": published_match_count,
     }
+
+
+def player_goals_per_appearance(goals, appearances):
+    """Return goals per appearance, or None when source data is incomplete."""
+    try:
+        goals = float(goals)
+        appearances = float(appearances)
+    except (TypeError, ValueError):
+        return None
+    if goals < 0 or appearances <= 0:
+        return None
+    return round(goals / appearances, 3)
