@@ -114,8 +114,11 @@ def save_pick_state(state):
 
 
 pick_state = load_pick_state()
+RESULTS_ONLY = os.environ.get("PITCHIQ_RESULTS_ONLY") == "1"
 completed_picks, resolved_state = resolve_published_picks(pick_state, preds)
-if completed_picks:
+# Results are sent only by the dedicated results workflow. This prevents the
+# daily picks workflow from sending a result and then failing before saving it.
+if completed_picks and RESULTS_ONLY:
     result_lines = ["✅ PitchIQ — Results for our published picks", now.strftime("%a %d %b") + " · Full-time scores", ""]
     for item in completed_picks:
         mark = "✓ CORRECT" if item["correct"] else "✗ MISSED"
@@ -139,7 +142,7 @@ if completed_picks:
         pick_state = clean_pick_state(pick_state)
 
 
-if os.environ.get("PITCHIQ_RESULTS_ONLY") == "1":
+if RESULTS_ONLY:
     save_pick_state(pick_state)
     print("Results-only check complete; no new picks or news posts were requested.")
     raise SystemExit(0)
