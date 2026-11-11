@@ -24,9 +24,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Validate Python syntax
-        run: python -m py_compile update.py international.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py
+        run: python -m py_compile update.py international.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py
       - name: Run offline model and feed tests
-        run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_pitchiq_odds
+        run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_pitchiq_odds test_pitchiq_telegram
       - name: Refresh and publish data with safe retry
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
