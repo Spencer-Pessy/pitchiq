@@ -302,15 +302,20 @@ function international(){
 }
 
 function publishedResultsHtml(){
+ const pending=(Array.isArray(Q?.pending)?Q.pending:[]).filter(r=>r&&r.id!=null&&r.h&&r.a&&r.comp&&r.p&&[0,1,2].includes(r.pick_index));
  const entries=(Array.isArray(Q?.results)?Q.results:[]).filter(r=>r&&Array.isArray(r.final)&&r.final.length===2&&Number.isInteger(r.final[0])&&Number.isInteger(r.final[1])&&r.final[0]>=0&&r.final[1]>=0&&r.p&&[0,1,2].includes(r.pick_index));
- if(!entries.length)return '<div class="panel"><h2>Published picks · results</h2><p class="note" style="margin:0">No published top picks have been settled yet. Once a match from a PitchIQ picks post reaches full time, its original pick and result will appear here.</p></div>';
+ if(!pending.length&&!entries.length)return '<div class="panel"><h2>Published picks · results</h2><p class="note" style="margin:0">No published top picks have been settled yet. Once a match from a PitchIQ picks post reaches full time, its original pick and result will appear here.</p></div>';
+ const labels=r=>['Home win: '+esc(r.h),'Draw','Away win: '+esc(r.a)];
+ const pendingCards=[...pending].sort((a,b)=>new Date(a.utc)-new Date(b.utc)).map(r=>{
+  const key=['ph','pd','pa'][r.pick_index],prob=Number(r.p&&r.p[key]),validProb=Number.isFinite(prob)&&prob>=0&&prob<=1;
+  return '<div class="card"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">–</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill">⏳ Awaiting full time · '+labels(r)[r.pick_index]+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
+ }).join('');
  const sorted=[...entries].sort((a,b)=>new Date(b.utc)-new Date(a.utc)),hits=sorted.filter(r=>r.correct===true).length;
  const cards=sorted.map(r=>{
-  const labels=['Home win: '+esc(r.h),'Draw','Away win: '+esc(r.a)],key=['ph','pd','pa'][r.pick_index],prob=Number(r.p&&r.p[key]);
-  const validProb=Number.isFinite(prob)&&prob>=0&&prob<=1;
-  return '<div class="card"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">'+r.final[0]+' – '+r.final[1]+'</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill" style="color:var('+(r.correct===true?'--ok':'--no')+')">'+(r.correct===true?'✓ Correct':'✗ Missed')+' · '+esc(labels[r.pick_index])+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
+  const key=['ph','pd','pa'][r.pick_index],prob=Number(r.p&&r.p[key]),validProb=Number.isFinite(prob)&&prob>=0&&prob<=1;
+  return '<div class="card"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">'+r.final[0]+' – '+r.final[1]+'</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill" style="color:var('+(r.correct===true?'--ok':'--no')+')">'+(r.correct===true?'✓ Correct':'✗ Missed')+' · '+labels(r)[r.pick_index]+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
  }).join('');
- return '<div class="panel"><h2>Published picks · results</h2><div class="stat"><span>Correct picks</span><b>'+hits+' / '+sorted.length+' ('+Math.round(hits/sorted.length*100)+'%)</b></div><p class="note">Only matches previously selected and published by PitchIQ are included. Each result is matched by its original fixture ID; the pre-match pick and probabilities are preserved.</p>'+cards+'</div>';
+ return '<div class="panel"><h2>Published picks · results</h2>'+(entries.length?'<div class="stat"><span>Correct picks</span><b>'+hits+' / '+sorted.length+' ('+Math.round(hits/sorted.length*100)+'%)</b></div>':'')+(pending.length?'<h3>Awaiting full time · '+pending.length+'</h3>'+pendingCards:'')+(entries.length?'<h3>Settled published picks</h3>':'')+cards+'<p class="note">Only matches previously selected and published by PitchIQ are included. Each result is matched by its original fixture ID; the pre-match pick and probabilities are preserved. Pending picks are not counted in the accuracy rate.</p></div>';
 }
 
 function list(){
