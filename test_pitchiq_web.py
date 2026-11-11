@@ -125,6 +125,21 @@ class AblationUncertaintyWebTests(unittest.TestCase):
         self.assertIn("intervals crossing zero do not show a clear direction", source)
 
 
+class ExactScorelineDiagnosticsWebTests(unittest.TestCase):
+    def test_record_view_replays_normalised_dixon_coles_score_grid(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const scorelineRows=[];let scorelineExcluded=0", source)
+        self.assertIn("for(let i=0;i<8;i++)for(let j=0;j<8;j++)", source)
+        self.assertIn("pois(lh,i)*pois(la,j)*tau(i,j)", source)
+        self.assertIn("actualProbability/total", source)
+        self.assertIn("Exact-scoreline evaluation", source)
+        self.assertIn("Exact-score negative log likelihood", source)
+        self.assertIn("Most-likely exact score hit rate", source)
+        self.assertIn("outside the grid are excluded", source)
+        self.assertIn("rounded to four decimals", source)
+        self.assertIn("lower negative log likelihood is better", source)
+
+
 class ExpectedGoalsCalibrationWebTests(unittest.TestCase):
     def test_record_view_displays_home_and_away_expected_goals_bands(self):
         source = Path("index.html").read_text(encoding="utf-8")
