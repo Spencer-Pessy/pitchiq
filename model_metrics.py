@@ -45,7 +45,7 @@ def input_diagnostics(predictions):
             continue
         completed += 1
         inputs = item.get("inputs")
-        if not isinstance(inputs, dict) or inputs.get("schema") != 1:
+        if not isinstance(inputs, dict) or inputs.get("schema") not in (1, 2):
             continue
         try:
             home, away = float(final[0]), float(final[1])
