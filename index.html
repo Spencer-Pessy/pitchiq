@@ -69,7 +69,7 @@ h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:1
 const $=s=>document.querySelector(s);
 // Escape all external feed text before inserting it into HTML templates.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let D=null,P={},I={items:[]},tab='up',comp='all',sel=null;
+let D=null,P={},tab='up',comp='all',sel=null;
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
 const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
@@ -190,12 +190,10 @@ const fld=[['gf','Goals scored / game'],['ga','Goals conceded / game'],['elo','R
 function detail(){
  const f=sel,s=f.s;
  const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
- const absences=(I.items||[]).filter(x=>[f.h,f.a].some(team=>(x.team||'').toLowerCase()==team.toLowerCase()));
- const absencePanel=absences.length?`<div class="panel"><h2>Reported absences</h2><p class="note">API-Football reports; coverage may be incomplete. These reports do not automatically change the forecast.</p>${absences.map(x=>`<div class="gl"><span><b>${esc(x.player)}</b> · ${esc(x.team)}</span><span>${esc(x.reason||'Reason not supplied')}</span></div>`).join('')}</div>`:'';
  $('#app').innerHTML=`<button class="back" id="bk">← Matches</button>
  <div class="comp">${esc(f.comp)} · ${dy(f)} ${tm(f)}</div><h2>${esc(f.h)} vs ${esc(f.a)}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
  ${f.goals&&f.goals.length?`<div class="panel"><h2>Goals</h2>${f.goals.map(g=>`<div class="gl"><span>⚽ ${g.min?g.min+(g.extra?'+'+g.extra:'')+"′ ":''}${esc(g.scorer||'Goal')}</span><span>${g.assist?'Assist: '+esc(g.assist)+' · ':''}${esc(g.team)}</span></div>`).join('')}</div>`:''}
- ${absencePanel}<div id="res"></div>
+ <div id="res"></div>
  <div class="panel"><p class="note" style="margin-top:0">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust anything you know better, such as injuries.</p>
  <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
  <label>Decimal odds: home / draw / away (filled in automatically when available)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input data-k="o0" value="${f.odds?f.odds[0]:''}" inputmode="decimal"><input data-k="o1" value="${f.odds?f.odds[1]:''}" inputmode="decimal"><input data-k="o2" value="${f.odds?f.odds[2]:''}" inputmode="decimal"></div></div>`;
@@ -366,7 +364,7 @@ async function shareRecord(){
   if(!had&&$('#fb')&&TELEGRAM_URL)$('#fb').insertAdjacentHTML('beforeend',' &nbsp;·&nbsp; <a href="'+TELEGRAM_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Telegram alerts</a>');
  };
 })();
- Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('injuries.json?'+Date.now()).then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]}))]).then(([d,p,i])=>{D=d;P=p;I=i||{items:[]};list()}).catch(()=>{
+ Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
  async function shareImg(){
