@@ -33,7 +33,7 @@ for i, c in enumerate(COMPS):
     d = get(f"/competitions/{c}/matches")
     # Never publish a partial/empty fixture feed when an API request failed.
     # A genuine empty list is valid; None means the request did not succeed.
-    if d is None:
+    if d is None or not isinstance(d.get("matches"), list):
         raise SystemExit(
             f"Aborting update: fixture request failed for {c}. "
             "The previous data.json will be kept."
@@ -58,10 +58,12 @@ def goals(m):
 
 # League tables
 tables = {}
+standings_failed = []
 for c in COMPS:
     time.sleep(7)
     d = get(f"/competitions/{c}/standings")
-    if not d:
+    if not d or not isinstance(d.get("standings"), list):
+        standings_failed.append(c)
         continue
     for st in d.get("standings", []):
         if st.get("type") == "TOTAL":
@@ -241,7 +243,7 @@ for x in out:
         x["inj"] = res
 
 with open("data.json", "w") as f:
-    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "calib": CAL, "data_health": build_feed_health(fixture_counts, tables.keys(), len(out)), "matches": out, "tables": tables}, f, ensure_ascii=False)
+    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "calib": CAL, "data_health": build_feed_health(fixture_counts, tables.keys(), len(out), standings_failed), "matches": out, "tables": tables}, f, ensure_ascii=False)
 print("matches written:", len(out))
 
 # Results tracker: save each prediction before kickoff, score it after full time
