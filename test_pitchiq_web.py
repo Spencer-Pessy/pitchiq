@@ -163,3 +163,13 @@ class ExpectedGoalsCalibrationWebTests(unittest.TestCase):
         self.assertIn("Mean actual", source)
         self.assertIn("monitoring-only", source)
         self.assertIn("no automatic model correction is applied", source)
+
+
+class ScorelineBaselineComparisonWebTests(unittest.TestCase):
+    def test_record_view_displays_paired_dixon_coles_baseline(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Dixon–Coles vs independent Poisson", source)
+        self.assertIn("mean_delta_dc_minus_independent", source)
+        self.assertIn("delta_ci_95", source)
+        self.assertIn("negative delta favours Dixon–Coles", source)
+        self.assertIn("D.scoreline_baseline", source)
