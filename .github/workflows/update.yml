@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: pitchiq-data-update
+  cancel-in-progress: false
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -13,6 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Validate Python syntax
+        run: python -m py_compile update.py odds.py injuries.py telegram.py
       - run: python update.py
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
