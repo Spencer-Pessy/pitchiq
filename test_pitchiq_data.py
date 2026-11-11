@@ -299,6 +299,18 @@ class MarketOddsBackfillTests(unittest.TestCase):
         self.assertIsNone(post["1"]["odds"])
         self.assertIsNone(distant["1"]["odds"])
 
+    def test_rejects_future_dated_odds_snapshot(self):
+        from datetime import datetime, timezone
+        predictions = {"1": {"utc": "2026-11-22T15:00:00Z", "h": "Arsenal",
+                             "a": "Chelsea", "odds": None}}
+        events = [{"home": "Arsenal", "away": "Chelsea",
+                   "commence": "2026-11-22T15:00:00Z", "odds": [1.8, 3.7, 4.5]}]
+        count = backfill_market_odds(
+            predictions, events, "2026-11-12T07:00:00Z",
+            datetime(2026, 11, 11, 12, tzinfo=timezone.utc), lambda a, b: a == b)
+        self.assertEqual(count, 0)
+        self.assertIsNone(predictions["1"]["odds"])
+
 
 if __name__ == "__main__":
     unittest.main()
