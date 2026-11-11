@@ -49,6 +49,14 @@ class TelegramValidationTests(unittest.TestCase):
         self.assertFalse(valid_final([True, 0]))
 
 
+    def test_published_pick_snapshot_requires_a_stable_fixture_id(self):
+        forecast = {"h": "Home", "a": "Away", "comp": "League",
+                    "utc": "2026-11-12T19:00:00Z",
+                    "p": {"ph": 0.5, "pd": 0.25, "pa": 0.25}}
+        self.assertIsNone(snapshot_published_pick(forecast))
+        forecast["id"] = "fixture-123"
+        self.assertEqual(snapshot_published_pick(forecast)["id"], "fixture-123")
+
     def test_published_pick_snapshot_and_result_use_original_prediction(self):
         forecast = {"id": 42, "h": "Home", "a": "Away", "comp": "League",
                     "utc": "2026-11-12T19:00:00Z",
