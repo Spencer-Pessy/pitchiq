@@ -50,3 +50,13 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InputSignalDiagnosticsWebTests(unittest.TestCase):
+    def test_record_view_discloses_saved_input_diagnostics_and_small_samples(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Input-signal diagnostics", source)
+        self.assertIn("const snapRows=rows.filter(r=>r.p.inputs?.schema===1)", source)
+        self.assertIn("Groups below 10 matches are monitoring-only", source)
+        self.assertIn("Venue sample (weaker side)", source)
+        self.assertIn("Recent form edge", source)
