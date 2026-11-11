@@ -476,6 +476,48 @@ def baseline_comparison(predictions):
     }
 
 
+
+def expected_goals_calibration(predictions):
+    """Group saved expected-goal forecasts by predicted-goal band, per team."""
+    edges = (0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, float("inf"))
+    labels = ("0–0.49", "0.50–0.99", "1.00–1.49", "1.50–1.99",
+              "2.00–2.49", "2.50–2.99", "3.00+")
+    result = {}
+    for side, key, score_index in (("home", "lh", 0), ("away", "la", 1)):
+        groups = [[] for _ in labels]
+        for item in predictions:
+            final = item.get("final")
+            probs = item.get("p") or {}
+            if not isinstance(final, list) or len(final) != 2:
+                continue
+            try:
+                predicted = float(probs[key])
+                actual = float(final[score_index])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if (not math.isfinite(predicted) or not math.isfinite(actual)
+                    or predicted < 0 or actual < 0):
+                continue
+            if predicted > 10 or actual > 30:
+                continue
+            for index, (lower, upper) in enumerate(zip(edges, edges[1:])):
+                if lower <= predicted < upper:
+                    groups[index].append((predicted, actual))
+                    break
+        result[side] = [
+            {
+                "band": label,
+                "matches": len(rows),
+                "mean_predicted": round(sum(x[0] for x in rows) / len(rows), 4) if rows else None,
+                "mean_actual": round(sum(x[1] for x in rows) / len(rows), 4) if rows else None,
+                "bias": round(sum(x[0] - x[1] for x in rows) / len(rows), 4) if rows else None,
+                "mae": round(sum(abs(x[0] - x[1]) for x in rows) / len(rows), 4) if rows else None,
+                "interpretation": "monitoring_only" if len(rows) < 10 else "reviewable",
+            }
+            for label, rows in zip(labels, groups)
+        ]
+    return result
+
 def evaluate(predictions):
     """Calculate outcome accuracy, multiclass Brier/log loss and goal MAE."""
     records = []
@@ -522,7 +564,7 @@ def evaluate(predictions):
         return {"matches": 0, "accuracy": None, "accuracy_ci_95": None, "brier": None, "log_loss": None,
                 "chronological_split": [], "confidence_bins": [], "expected_calibration_error": None,
                 "max_calibration_gap": None, "home_goals_mae": None, "away_goals_mae": None,
-                "home_goals_bias": None, "away_goals_bias": None,
+                "home_goals_bias": None, "away_goals_bias": None,\n                "expected_goals_calibration": expected_goals_calibration(predictions),
                 "input_diagnostics": input_diagnostics(predictions),
                 "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
                                    "btts": binary_market_metrics(predictions, "bt")},
@@ -584,7 +626,7 @@ def evaluate(predictions):
         "goal_samples": goal_n,
         "home_goals_mae": round(home_mae / goal_n, 4) if goal_n else None,
         "away_goals_mae": round(away_mae / goal_n, 4) if goal_n else None,
-        "home_goals_bias": round(home_bias / goal_n, 4) if goal_n else None,
+        "home_goals_bias": round(home_bias / goal_n, 4) if goal_n else None,\n        "expected_goals_calibration": expected_goals_calibration(predictions),
         "away_goals_bias": round(away_bias / goal_n, 4) if goal_n else None,
         "input_diagnostics": input_diagnostics(predictions),
         "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
