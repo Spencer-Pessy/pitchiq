@@ -14,6 +14,13 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
             with self.subTest(replacement=replacement):
                 self.assertIn(replacement, self.html)
 
+    def test_player_comparison_sort_is_null_safe_and_scope_is_clear(self):
+        self.assertIn("playerSort='goals'", self.html)
+        self.assertIn("playerSort==='assists'?'a':playerSort==='contributions'?'gapm':'g'", self.html)
+        self.assertIn("if(av==null)return 1;if(bv==null)return -1", self.html)
+        self.assertIn('complete league-wide assists ranking', self.html)
+        self.assertIn("ps.onchange=e=>{playerSort=e.target.value;list()}", self.html)
+
     def test_provider_text_is_escaped_before_html_interpolation(self):
         fields = (
             "r.p.comp", "r.p.h", "r.p.a", "x.name", "x.m.comp", "x.m.h", "x.m.a",
