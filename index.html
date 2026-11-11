@@ -122,6 +122,28 @@ function record(){
   items.forEach(r=>{if(r.ok)correct++;const hg=Number(r.p.final[0]),ag=Number(r.p.final[1]),actual=hg>ag?0:hg==ag?1:2;brier+=r.v.reduce((sum,v,i)=>sum+Math.pow(v-(i==actual?1:0),2),0);loss-=Math.log(Math.max(r.v[actual],1e-15))});
   return{name,n:items.length,accuracy:correct/items.length,brier:brier/items.length,loss:loss/items.length};
  });
+ const snapRows=rows.filter(r=>r.p.inputs?.schema===1);
+ const diagSummary=(name,items)=>{
+  let correct=0,brier=0;
+  items.forEach(r=>{
+   if(r.ok)correct++;
+   const hg=Number(r.p.final[0]),ag=Number(r.p.final[1]),actual=hg>ag?0:hg==ag?1:2;
+   brier+=r.v.reduce((sum,v,i)=>sum+Math.pow(v-(i==actual?1:0),2),0);
+  });
+  return{name,n:items.length,accuracy:items.length?correct/items.length:null,brier:items.length?brier/items.length:null};
+ };
+ const venueDiag=['0–2','3–5','6+'].map(name=>diagSummary(name,snapRows.filter(r=>{
+  const h=Number(r.p.inputs.home?.venue_matches),a=Number(r.p.inputs.away?.venue_matches);
+  if(!Number.isFinite(h)||!Number.isFinite(a)||h<0||a<0)return false;
+  const n=Math.min(h,a);
+  return name==='0–2'?n<=2:name==='3–5'?n<=5:n>=6;
+ })));
+ const formPoints=s=>typeof s==='string'&&/^[WDL]*$/.test(s)?[...s].reduce((n,x)=>n+(x==='W'?3:x==='D'?1:0),0):null;
+ const formDiag=['Home stronger','Even','Away stronger'].map(name=>diagSummary(name,snapRows.filter(r=>{
+  const h=formPoints(r.p.inputs.home?.form),a=formPoints(r.p.inputs.away?.form);
+  if(h===null||a===null)return false;
+  return name==='Home stronger'?h>a:name==='Away stronger'?a>h:h===a;
+ })));
  const confBins=[.3,.4,.5,.6,.7,.8,.9].map((lo,i)=>{const bin=rows.filter(r=>Math.max(...r.v)>=lo&&(i===6?Math.max(...r.v)<=1:Math.max(...r.v)<lo+.1));return{lo,n:bin.length,confidence:bin.length?bin.reduce((z,r)=>z+Math.max(...r.v),0)/bin.length:0,accuracy:bin.length?bin.filter(r=>r.ok).length/bin.length:0}}).filter(x=>x.n);
  $('#app').innerHTML=head()+tabsHtml()+(n?`<h2>Model performance</h2><div class="big">
  <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span></div>
