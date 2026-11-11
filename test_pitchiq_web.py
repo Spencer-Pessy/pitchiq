@@ -74,12 +74,13 @@ class PublishedPicksResultsWebTests(unittest.TestCase):
         self.assertIn("original fixture ID", source)
 
     def test_social_preview_metadata_and_small_screen_layout_exist(self):
-        self.assertIn('property="og:title"', self.html)
-        self.assertIn('property="og:description"', self.html)
-        self.assertIn('property="og:image"', self.html)
-        self.assertIn('name="twitter:card"', self.html)
-        self.assertIn("@media(max-width:480px)", self.html)
-        self.assertIn(".cols,.stats{grid-template-columns:1fr}", self.html)
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('property="og:title"', source)
+        self.assertIn('property="og:description"', source)
+        self.assertIn('property="og:image"', source)
+        self.assertIn('name="twitter:card"', source)
+        self.assertIn("@media(max-width:480px)", source)
+        self.assertIn(".cols,.stats{grid-template-columns:1fr}", source)
 
 
 if __name__ == "__main__":
