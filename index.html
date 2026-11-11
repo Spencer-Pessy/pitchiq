@@ -69,7 +69,7 @@ h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:1
 const $=s=>document.querySelector(s);
 // Escape all external feed text before inserting it into HTML templates.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let D=null,P={},I={fixtures:[]},tab='up',comp='all',sel=null;
+let D=null,P={},I={fixtures:[]},tab='up',comp='all',sel=null,playerSort='goals';
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
 const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
@@ -149,6 +149,7 @@ function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Pick
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
+ const ps=$('#ps');if(ps)ps.onchange=e=>{playerSort=e.target.value;list()};
  document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{const source=tab=='intl'?(I.fixtures||[]):D.matches;sel=source.find(x=>String(x.id)==b.dataset.id);if(!sel)return;sel.odds=sel.odds||null;detail()});}
 let pk='conf';
 function picks(){
@@ -167,9 +168,14 @@ function tables(){
  const T=D.tables||{},ks=Object.keys(T);
  if(!ks.length){$('#app').innerHTML=head()+tabsHtml()+'<p class="note">No tables yet. They appear after the next data update.</p>';return bind()}
  if(!T[comp])comp=ks[0];
- const t=T[comp];
+ const t=T[comp],scorers=[...(t.scorers||[])].sort((a,b)=>{
+  const key=playerSort==='assists'?'a':playerSort==='contributions'?'gapm':'g',av=a[key],bv=b[key];
+  if(av==null&&bv==null)return String(a.name||'').localeCompare(String(b.name||''));
+  if(av==null)return 1;if(bv==null)return -1;
+  return Number(bv)-Number(av)||Number(b.g||0)-Number(a.g||0)||String(a.name||'').localeCompare(String(b.name||''));
+ });
  $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${esc(T[k].name)}</option>`).join('')}</select>
- <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>${t.scorers&&t.scorers.length?`<h2>Top scorers</h2><div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Player</th><th>Team</th><th>G</th><th>A</th><th>Apps</th><th>G/App</th><th>A/App</th><th>G+A/App</th></tr>${t.scorers.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td><b>${p.g??'–'}</b></td><td>${p.a??'–'}</td><td>${p.m??'–'}</td><td>${p.gpm!=null?Number(p.gpm).toFixed(2):'–'}</td><td>${p.apm!=null?Number(p.apm).toFixed(2):'–'}</td><td>${p.gapm!=null?Number(p.gapm).toFixed(2):'–'}</td></tr>`).join('')}</table></div>`:''}`;
+ <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>${scorers.length?`<h2>Player comparison · top goal scorers</h2><label for="ps">Sort listed players by</label><select id="ps" aria-label="Sort player comparison"><option value="goals" ${playerSort==='goals'?'selected':''}>Goals scored</option><option value="assists" ${playerSort==='assists'?'selected':''}>Assists</option><option value="contributions" ${playerSort==='contributions'?'selected':''}>Goals + assists per appearance</option></select><div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Player</th><th>Team</th><th>G</th><th>A</th><th>Apps</th><th>G/App</th><th>A/App</th><th>G+A/App</th></tr>${scorers.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td><b>${p.g??'–'}</b></td><td>${p.a??'–'}</td><td>${p.m??'–'}</td><td>${p.gpm!=null?Number(p.gpm).toFixed(2):'–'}</td><td>${p.apm!=null?Number(p.apm).toFixed(2):'–'}</td><td>${p.gapm!=null?Number(p.gapm).toFixed(2):'–'}</td></tr>`).join('')}</table></div><p class="note">The provider supplies a top-goalscorer list, not a complete league-wide assists ranking. Sorting by assists or contributions only compares these listed players. Missing statistics are shown as —, not zero. Rates are per appearance, not per 90 minutes.</p>`:''}`;
  bind();
 }
 function international(){
