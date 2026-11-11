@@ -104,6 +104,13 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertNotIn("odds.py", workflow)
         self.assertIn("group: pitchiq-publish", workflow)
 
+    def test_daily_picks_workflow_never_falls_back_to_unrequested_news(self):
+        source = Path("telegram.py").read_text(encoding="utf-8")
+        self.assertNotIn("def news_post", source)
+        self.assertNotIn("news_post()", source)
+        self.assertIn("no Telegram post will be sent", source)
+        self.assertIn("no Telegram post will be sent.", source)
+
 
 class TelegramDeliverySafetyTests(unittest.TestCase):
     def test_pick_ledger_is_saved_only_after_confirmed_photo_or_text_delivery(self):
