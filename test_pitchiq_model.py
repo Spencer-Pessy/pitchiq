@@ -3,6 +3,32 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
+from model_metrics import evaluate
+
+
+
+class MetricsTests(unittest.TestCase):
+    def test_evaluate_known_predictions(self):
+        rows = [
+            {"final": [2, 0], "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1, "lh": 1.8, "la": 0.8}},
+            {"final": [1, 1], "p": {"ph": 0.2, "pd": 0.6, "pa": 0.2, "lh": 1.0, "la": 1.0}},
+        ]
+        result = evaluate(rows)
+        self.assertEqual(result["matches"], 2)
+        self.assertEqual(result["accuracy"], 1.0)
+        self.assertIsNotNone(result["brier"])
+        self.assertIsNotNone(result["log_loss"])
+        self.assertAlmostEqual(result["home_goals_mae"], 0.2, places=4)
+        self.assertAlmostEqual(result["away_goals_mae"], 0.1, places=4)
+
+    def test_invalid_or_incomplete_records_are_skipped(self):
+        result = evaluate([{"final": None, "p": {}}, {"final": [1, 0], "p": {"ph": 0.5}}])
+        self.assertEqual(result["matches"], 0)
+        self.assertIsNone(result["accuracy"])
+
+    def test_probabilities_must_be_valid(self):
+        result = evaluate([{"final": [1, 0], "p": {"ph": 0.8, "pd": 0.8, "pa": 0.1}}])
+        self.assertEqual(result["matches"], 0)
 
 
 class ModelTests(unittest.TestCase):
