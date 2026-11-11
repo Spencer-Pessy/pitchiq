@@ -57,7 +57,7 @@ class InputSignalDiagnosticsWebTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("Input-signal diagnostics", source)
         self.assertIn("const snapRows=rows.filter(r=>r.p.inputs?.schema===2)", source)
-        self.assertIn("Controlled model ablation", source)
+        self.assertIn("Forward-only controlled model ablation", source)
         self.assertIn("without_elo_or_form", source)
         self.assertIn("original saved calibration", source)
         self.assertIn("const diagSummary=(name,items)=>", source)
