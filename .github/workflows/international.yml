@@ -31,17 +31,28 @@ jobs:
         run: |
           python -m py_compile international.py test_international.py
           python -m unittest -v test_international
-      - name: Refresh World Cup fixtures from OpenFootball
-        run: python international.py
-      - name: Publish international fixture snapshot
+      - name: Refresh and publish international fixtures with safe retry
         run: |
+          set -euo pipefail
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add international.json
-          if git diff --cached --quiet; then
-            echo "No changes to publish."
-            exit 0
-          fi
-          git commit -m "Update free international fixture feed"
-          git pull --rebase
-          git push
+          for attempt in 1 2 3; do
+            echo "International refresh/publication attempt $attempt of 3"
+            git fetch origin main
+            git reset --hard origin/main
+            python international.py
+            git add international.json
+            if git diff --cached --quiet; then
+              echo "No international fixture changes to publish."
+              exit 0
+            fi
+            git commit -m "Update free international fixture feed"
+            if git push; then
+              echo "International fixture snapshot published successfully."
+              exit 0
+            fi
+            echo "Push rejected; retrying from latest main."
+            sleep 5
+          done
+          echo "Unable to publish international fixtures after 3 fresh attempts."
+          exit 1
