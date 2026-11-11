@@ -11,6 +11,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 ## Current features
 
 - Fixtures, scores, standings and scorers from football-data.org, including free-tier FIFA World Cup and UEFA European Championship tournament coverage (where fixtures are available).
+- Competition top-scorer comparison with goals, assists, appearances and goals per appearance (not goals per 90; minutes played are not supplied by this source).
 - Home/draw/away, over 2.5 goals and both-teams-to-score probabilities.
 - Likeliest scorelines and expected goals.
 - Optional bookmaker-odds comparison from The Odds API.
