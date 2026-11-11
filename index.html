@@ -174,7 +174,7 @@ function international(){
   const score=Array.isArray(f.score)?esc(f.score[0])+' – '+esc(f.score[1]):tm(f);
   return '<button class="card" data-id="'+esc(f.id)+'"><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><span class="pill">'+esc(label(f))+'</span></button>';
  }).join('');
- $('#app').innerHTML=head()+tabsHtml()+'<p class="note">National-team fixtures · API-Football · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. Fixtures only for now; no model forecasts without reliable international form data.</p>'+(cards||'<p class="note">No national-team fixtures in the current date window. The feed refreshes every six hours.</p>');
+ $('#app').innerHTML=head()+tabsHtml()+'<p class="note">2026 FIFA World Cup · OpenFootball (CC0) · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. Fixtures only for now; no model forecasts without reliable international form data.</p>'+(cards||'<p class="note">No World Cup fixtures are available in this dataset. This free source covers the 2026 tournament, not the full calendar of international friendlies and qualifiers.</p>');
  bind();
 }
 function list(){
@@ -204,7 +204,7 @@ function detail(){
  const f=sel,s=f.s;
  if(!s){
   const status=({NS:'Scheduled',TBD:'Time to be confirmed','1H':'Live',HT:'Half time','2H':'Live',ET:'Extra time',P:'Penalties',FT:'Full time',AET:'After extra time',PEN:'Penalties',PST:'Postponed',CANC:'Cancelled',SUSP:'Suspended'}[f.status]||f.status||'Scheduled');
-  $('#app').innerHTML='<button class="back" id="bk">← International</button><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><h2>'+esc(f.h)+' vs '+esc(f.a)+'</h2><div class="panel"><h2>'+esc(status)+'</h2><p class="note">Kick-off: '+new Date(f.utc).toLocaleString()+'</p>'+(f.score?'<p><b>Score: '+esc(f.score[0])+' – '+esc(f.score[1])+'</b></p>':'')+(f.venue?'<p class="note">Venue: '+esc(f.venue)+'</p>':'')+'</div><p class="note">This fixture is listed from API-Football. PitchIQ does not provide a model forecast for it yet; national-team performance history is not sufficiently integrated.</p>';
+  $('#app').innerHTML='<button class="back" id="bk">← International</button><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><h2>'+esc(f.h)+' vs '+esc(f.a)+'</h2><div class="panel"><h2>'+esc(status)+'</h2><p class="note">Kick-off: '+new Date(f.utc).toLocaleString()+'</p>'+(f.score?'<p><b>Score: '+esc(f.score[0])+' – '+esc(f.score[1])+'</b></p>':'')+(f.venue?'<p class="note">Venue: '+esc(f.venue)+'</p>':'')+'</div><p class="note">This fixture is listed from OpenFootball's public-domain World Cup dataset. PitchIQ does not provide a model forecast for it yet; national-team performance history is not sufficiently integrated.</p>';
   $('#bk').onclick=()=>{sel=null;tab='intl';list()};
   return;
  }
