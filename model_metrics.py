@@ -58,7 +58,7 @@ def input_diagnostics(predictions):
         valid.append((item, actual, p))
 
     def form_points(form):
-        if not isinstance(form, str) or any(char not in "WDL" for char in form):
+        if not isinstance(form, str) or not 1 <= len(form) <= 5 or any(char not in "WDL" for char in form):
             return None
         return sum({"W": 3, "D": 1, "L": 0}[char] for char in form)
 
@@ -67,37 +67,6 @@ def input_diagnostics(predictions):
         result["group"] = label
         result["interpretation"] = "monitoring_only" if len(rows) < 10 else "reviewable"
         return result
-
-    venue_bands = [("0–2", lambda n: 0 <= n <= 2),
-                   ("3–5", lambda n: 3 <= n <= 5),
-                   ("6+", lambda n: n >= 6)]
-    venue_rows = []
-    form_rows = []
-    dimensions = {
-        "home_venue_sample": [], "away_venue_sample": [],
-        "home_form_points": [], "away_form_points": [],
-    }
-    for item, actual, probs in valid:
-        inputs = item["inputs"]
-        home = inputs.get("home") or {}
-        away = inputs.get("away") or {}
-        try:
-            weaker = min(int(home["venue_matches"]), int(away["venue_matches"]))
-            venue_rows.append((weaker, (item, actual, probs)))
-            dimensions["home_venue_sample"].append(
-                (int(home["venue_matches"]), (item, actual, probs)))
-            dimensions["away_venue_sample"].append(
-                (int(away["venue_matches"]), (item, actual, probs)))
-        except (KeyError, TypeError, ValueError):
-            pass
-        hp, ap = form_points(home.get("form")), form_points(away.get("form"))
-        if hp is not None:
-            dimensions["home_form_points"].append((hp, (item, actual, probs)))
-        if ap is not None:
-            dimensions["away_form_points"].append((ap, (item, actual, probs)))
-        if hp is not None and ap is not None:
-            edge = "Home stronger" if hp > ap else "Away stronger" if ap > hp else "Even"
-            form_rows.append((edge, (item, actual, probs)))
 
     venue_support = [
         summarize(label, [row for value, row in venue_rows if predicate(value)])
