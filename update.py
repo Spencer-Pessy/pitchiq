@@ -2,7 +2,7 @@ import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.er
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, goal_average_keys
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -28,6 +28,7 @@ def get(path):
 
 
 matches = []
+fixture_counts = {}
 for i, c in enumerate(COMPS):
     d = get(f"/competitions/{c}/matches")
     # Never publish a partial/empty fixture feed when an API request failed.
@@ -37,6 +38,7 @@ for i, c in enumerate(COMPS):
             f"Aborting update: fixture request failed for {c}. "
             "The previous data.json will be kept."
         )
+    fixture_counts[c] = len(d.get("matches", []))
     for m in d.get("matches", []):
         m["_c"] = c
         m["_cn"] = d["competition"]["name"]
@@ -239,7 +241,7 @@ for x in out:
         x["inj"] = res
 
 with open("data.json", "w") as f:
-    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "calib": CAL, "matches": out, "tables": tables}, f, ensure_ascii=False)
+    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "calib": CAL, "data_health": build_feed_health(fixture_counts, tables.keys(), len(out)), "matches": out, "tables": tables}, f, ensure_ascii=False)
 print("matches written:", len(out))
 
 # Results tracker: save each prediction before kickoff, score it after full time
