@@ -2,7 +2,8 @@ import glob, json, os, re, urllib.request, urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
-from pitchiq_telegram import (parse_kickoff, valid_forecast, valid_final, clean_seen_urls,\n                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
+from pitchiq_telegram import (parse_kickoff, valid_forecast, valid_final, clean_seen_urls,
+                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
 from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -122,7 +123,7 @@ if completed_picks:
         ]
     result_lines += ["These are the results of the exact picks previously published by PitchIQ.",
                      "Original probabilities are preserved. Model estimates, not guarantees."]
-    result_message = "\\n".join(result_lines)
+    result_message = "\n".join(result_lines)
     print(result_message)
     if TOKEN and CHAT:
         response = call("sendMessage", json.dumps({"chat_id": CHAT, "text": result_message,
