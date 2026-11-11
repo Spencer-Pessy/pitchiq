@@ -24,8 +24,8 @@ def _valid_timestamp(value):
     if not isinstance(value, str) or not value.strip():
         return False
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return True
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.tzinfo is not None and parsed.utcoffset() is not None
     except ValueError:
         return False
 
@@ -67,12 +67,16 @@ def market_events(payload):
                 outcomes = market.get("outcomes")
                 if not isinstance(outcomes, list):
                     raise ValueError(f"odds event {index} h2h outcomes must be a list")
+                seen_outcomes = set()
                 for outcome in outcomes:
                     if not isinstance(outcome, dict):
                         raise ValueError(f"odds event {index} outcome must be an object")
                     name, price = outcome.get("name"), outcome.get("price")
                     if not isinstance(name, str) or not name.strip():
                         raise ValueError(f"odds event {index} outcome has invalid name")
+                    if name in seen_outcomes:
+                        raise ValueError(f"odds event {index} h2h market has duplicate outcome {name!r}")
+                    seen_outcomes.add(name)
                     if (isinstance(price, bool) or not isinstance(price, (int, float))
                             or not math.isfinite(price) or price <= 1 or price >= 1000):
                         raise ValueError(f"odds event {index} outcome has invalid decimal price")
