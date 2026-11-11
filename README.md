@@ -85,3 +85,10 @@ The Record tab replays the model's normalised 8×8 Poisson + Dixon–Coles score
 
 
 The exact-scoreline Record panel also compares the average probability assigned to each forecast's single most likely score with its observed hit rate, grouped into confidence bands. It reports the combined probability mass of the three most likely scorelines against the observed top-three coverage. These are descriptive calibration checks; sparse bins should not drive model changes.
+
+
+### Dixon–Coles scoreline baseline
+
+The Record diagnostics compare the saved Dixon–Coles scoreline distribution with an independent Poisson model using the same saved pre-match expected-goal rates, the same 8×8 (0–7 goals) grid, and separate normalisation. It reports paired exact-score negative log likelihood, the mean Dixon–Coles-minus-independent difference, a deterministic paired-bootstrap 95% interval, and match-level wins/ties. A negative difference favours Dixon–Coles; an interval crossing zero does not establish a clear improvement. Invalid rates and scores outside the grid are excluded and counted. This is a retrospective diagnostic, not an automatic model switch.
+
+The fixture updater no longer reads a stale injury cache: automated injury feeds remain disabled until a reliable free source is validated. Manual key-player absence adjustments remain available in the website.
