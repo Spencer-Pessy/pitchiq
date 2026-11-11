@@ -21,9 +21,10 @@ concurrency:
 jobs:
   international:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Check international feed and tests
@@ -37,6 +38,10 @@ jobs:
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           git add international.json
-          git commit -m "Update free international fixture feed" || exit 0
-          git pull --rebase -X theirs
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+            exit 0
+          fi
+          git commit -m "Update free international fixture feed"
+          git pull --rebase
           git push
