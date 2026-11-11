@@ -2,7 +2,7 @@ import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.er
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -124,12 +124,7 @@ K = 6  # shrink small samples toward the league average
 
 
 def team_stats(tid, home, prior_for, prior_against):
-    rows = [r for r in hist[tid] if r[0] == home]
-    n = len(rows)
-    gf = (sum(r[1] for r in rows) + K * prior_for) / (n + K)
-    ga = (sum(r[2] for r in rows) + K * prior_against) / (n + K)
-    form = "".join(r[3] for r in hist[tid][-5:])
-    return {"gf": round(gf, 2), "ga": round(ga, 2), "elo": int(elo[tid]), "form": form, "out": 0}
+    return team_venue_stats(hist[tid], home, prior_for, prior_against, elo[tid], shrink=K, form_limit=5)
 
 
 now = datetime.now(timezone.utc)
