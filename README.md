@@ -18,7 +18,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 - Reported absences from API-Football, displayed as information; users can manually adjust key-player absences.
 - Historical prediction ledger and a public performance record showing 1X2 accuracy, Brier score, log loss, expected-goals MAE and additional market hit rates.
 - Telegram match-day forecasts and football headlines when there are no eligible matches.
-- Shareable forecast/record graphics, match reminders, phone-local notes and a mobile-friendly installable web app.
+- Shareable forecast/record graphics, match reminders, phone-local notes and a mobile-friendly installable web app with offline shell and last-known-data caching.
 
 ## Data flow
 
@@ -61,6 +61,7 @@ Python automation scripts use the Python standard library except `telegram.py`, 
 
 - Check Python syntax: `python -m py_compile update.py odds.py injuries.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py`
 - Run the website by serving the repository root over HTTP; opening `index.html` directly may prevent JSON fetches from working.
+- The service worker caches the app shell and last successful JSON snapshots for offline viewing; the next connection refreshes them.
 - To test scheduled integrations, use the corresponding GitHub Actions workflow and inspect its logs.
 
 ## Privacy and limitations
