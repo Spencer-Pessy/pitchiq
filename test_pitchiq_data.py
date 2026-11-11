@@ -10,6 +10,7 @@ from pitchiq_data import (
     team_venue_stats,
     forecast_input_snapshot,
     record_forward_evaluations,
+    backfill_market_odds,
 )
 
 
@@ -248,6 +249,55 @@ class ForwardEvaluationLedgerTests(unittest.TestCase):
         ledger = record_forward_evaluations(
             existing, [], {123: [2, 2]}, now, lambda _: {}, lambda _: {})
         self.assertEqual(ledger["123"]["final"], [1, 0])
+
+
+class MarketOddsBackfillTests(unittest.TestCase):
+    def test_backfills_future_forecast_without_changing_prediction(self):
+        from datetime import datetime, timezone
+        predictions = {
+            "1": {"id": 1, "utc": "2026-11-22T15:00:00Z", "h": "Arsenal",
+                  "a": "Chelsea", "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
+                  "made": "2026-11-01T08:00:00+00:00", "final": None, "odds": None}
+        }
+        events = [{"home": "Arsenal FC", "away": "Chelsea FC",
+                   "commence": "2026-11-22T15:00:00Z", "odds": [1.8, 3.7, 4.5]}]
+        now = datetime(2026, 11, 11, 12, tzinfo=timezone.utc)
+        same = lambda a, b: (a or "").replace(" FC", "") == (b or "").replace(" FC", "")
+        count = backfill_market_odds(predictions, events, "2026-11-11T07:00:00Z", now, same)
+        self.assertEqual(count, 1)
+        self.assertEqual(predictions["1"]["odds"], [1.8, 3.7, 4.5])
+        self.assertEqual(predictions["1"]["odds_updated"], "2026-11-11T07:00:00+00:00")
+        self.assertEqual(predictions["1"]["p"], {"ph": 0.6, "pd": 0.2, "pa": 0.2})
+        self.assertEqual(predictions["1"]["made"], "2026-11-01T08:00:00+00:00")
+
+    def test_does_not_overwrite_existing_market_snapshot(self):
+        from datetime import datetime, timezone
+        predictions = {"1": {"utc": "2026-11-22T15:00:00Z", "h": "Arsenal",
+                             "a": "Chelsea", "odds": [2.0, 3.0, 4.0]}}
+        events = [{"home": "Arsenal", "away": "Chelsea",
+                   "commence": "2026-11-22T15:00:00Z", "odds": [1.8, 3.7, 4.5]}]
+        count = backfill_market_odds(
+            predictions, events, "2026-11-11T07:00:00Z",
+            datetime(2026, 11, 11, 12, tzinfo=timezone.utc), lambda a, b: a == b)
+        self.assertEqual(count, 0)
+        self.assertEqual(predictions["1"]["odds"], [2.0, 3.0, 4.0])
+
+    def test_rejects_post_kickoff_or_mismatched_market_events(self):
+        from datetime import datetime, timezone
+        now = datetime(2026, 11, 11, 12, tzinfo=timezone.utc)
+        base = {"utc": "2026-11-22T15:00:00Z", "h": "Arsenal",
+                "a": "Chelsea", "odds": None}
+        late = [{"home": "Arsenal", "away": "Chelsea",
+                 "commence": "2026-11-22T15:00:00Z", "odds": [1.8, 3.7, 4.5]}]
+        far = [{"home": "Arsenal", "away": "Chelsea",
+                "commence": "2026-11-23T15:00:00Z", "odds": [1.8, 3.7, 4.5]}]
+        same = lambda a, b: a == b
+        post = {"1": dict(base)}
+        self.assertEqual(backfill_market_odds(post, late, "2026-11-23T00:00:00Z", now, same), 0)
+        distant = {"1": dict(base)}
+        self.assertEqual(backfill_market_odds(distant, far, "2026-11-11T07:00:00Z", now, same), 0)
+        self.assertIsNone(post["1"]["odds"])
+        self.assertIsNone(distant["1"]["odds"])
 
 
 if __name__ == "__main__":
