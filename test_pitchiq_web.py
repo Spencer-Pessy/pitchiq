@@ -63,3 +63,4 @@ class InputSignalDiagnosticsWebTests(unittest.TestCase):
         self.assertIn("Groups below 10 matches are monitoring-only", source)
         self.assertIn("Venue sample (weaker side)", source)
         self.assertIn("Recent form edge", source)
+        self.assertIn("s.length>=1&&s.length<=5", source)
