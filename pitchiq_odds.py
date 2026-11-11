@@ -92,3 +92,13 @@ def market_events(payload):
                 ],
             })
     return events
+
+
+def require_nonempty_snapshot(active_keys, wanted_keys, events):
+    """Reject empty refreshes so the publisher keeps its last good snapshot."""
+    active_wanted = set(active_keys).intersection(wanted_keys)
+    if not active_wanted:
+        raise ValueError("no requested competitions are currently active")
+    if not isinstance(events, list) or not events:
+        raise ValueError("no complete three-way odds events were returned")
+    return events
