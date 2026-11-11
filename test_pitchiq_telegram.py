@@ -1,6 +1,6 @@
 """Tests for Telegram input validation."""
 import unittest
-from pitchiq_telegram import parse_kickoff, valid_probabilities, valid_forecast, valid_final, clean_seen_urls
+from pitchiq_telegram import (parse_kickoff, valid_probabilities, valid_forecast, valid_final, clean_seen_urls,\n                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
 
 
 class TelegramValidationTests(unittest.TestCase):
@@ -45,6 +45,37 @@ class TelegramValidationTests(unittest.TestCase):
         self.assertFalse(valid_final([1, -1]))
         self.assertFalse(valid_final([1, 2.5]))
         self.assertFalse(valid_final([True, 0]))
+
+
+    def test_published_pick_snapshot_and_result_use_original_prediction(self):
+        forecast = {"id": 42, "h": "Home", "a": "Away", "comp": "League",
+                    "utc": "2026-11-12T19:00:00Z",
+                    "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2}}
+        snap = snapshot_published_pick(forecast)
+        self.assertEqual(snap["pick_index"], 0)
+        self.assertEqual(pick_label(snap), "Home win: Home")
+        changed = dict(forecast, p={"ph": 0.1, "pd": 0.1, "pa": 0.8}, final=[1, 0])
+        results, state = resolve_published_picks({"pending": [snap], "sent_ids": ["42"]}, [changed])
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]["correct"])
+        self.assertEqual(results[0]["p"]["ph"], 0.6)
+        self.assertEqual(results[0]["final"], [1, 0])
+        self.assertEqual(state["pending"], [])
+
+    def test_unfinished_or_unpublished_matches_are_not_reported(self):
+        snap = snapshot_published_pick({"id": "m1", "h": "A", "a": "B", "comp": "L",
+            "utc": "2026-11-12T19:00:00Z", "p": {"ph": .5, "pd": .3, "pa": .2}})
+        results, state = resolve_published_picks({"pending": [snap]}, [
+            {"id": "m1", "final": None}, {"id": "other", "final": [3, 0]}])
+        self.assertEqual(results, [])
+        self.assertEqual([x["id"] for x in state["pending"]], ["m1"])
+
+    def test_pick_state_rejects_malformed_entries_and_duplicate_ids(self):
+        snap = snapshot_published_pick({"id": 7, "h": "A", "a": "B", "comp": "L",
+            "utc": "2026-11-12T19:00:00Z", "p": {"ph": .5, "pd": .3, "pa": .2}})
+        state = clean_pick_state({"pending": [snap, snap, None], "sent_ids": [7, True, "7", "x"]})
+        self.assertEqual(len(state["pending"]), 1)
+        self.assertEqual(state["sent_ids"], ["7", "x"])
 
 
 if __name__ == "__main__":
