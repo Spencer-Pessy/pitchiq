@@ -83,6 +83,16 @@ class BinaryMarketCalibrationWebTests(unittest.TestCase):
         self.assertIn("BTTS · Brier / ECE", source)
 
 
+class OutcomeClassCalibrationWebTests(unittest.TestCase):
+    def test_record_view_compares_home_draw_away_probabilities_separately(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const outcomeClassRows=", source)
+        self.assertIn("Home / draw / away calibration", source)
+        self.assertIn("Mean probability", source)
+        self.assertIn("Observed rate", source)
+        self.assertIn("one outcome as a yes/no event", source)
+
+
 class BaselineComparisonWebTests(unittest.TestCase):
     def test_record_view_discloses_rolling_prior_and_fair_bookmaker_comparison(self):
         source = Path("index.html").read_text(encoding="utf-8")
