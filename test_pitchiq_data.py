@@ -38,11 +38,14 @@ class CompetitionDataTests(unittest.TestCase):
             {"PL": 30, "WC": 4, "EC": 2},
             {"PL", "WC"},
             18,
+            {"EC"},
         )
         self.assertEqual(health["fixture_competitions"], 3)
         self.assertEqual(health["fixture_total"], 36)
         self.assertEqual(health["international_fixture_total"], 6)
         self.assertEqual(health["standings_competitions"], 2)
+        self.assertEqual(health["standings_failed"], ["EC"])
+        self.assertEqual(health["standings_failures"], 1)
         self.assertEqual(health["published_match_count"], 18)
         self.assertEqual(health["fixture_counts"], {"EC": 2, "PL": 30, "WC": 4})
 
@@ -51,6 +54,7 @@ class CompetitionDataTests(unittest.TestCase):
         self.assertEqual(health["fixture_total"], 0)
         self.assertEqual(health["international_fixture_total"], 0)
         self.assertEqual(health["standings_available"], [])
+        self.assertEqual(health["standings_failures"], 0)
 
 
 if __name__ == "__main__":
