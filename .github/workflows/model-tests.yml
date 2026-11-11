@@ -22,3 +22,17 @@ jobs:
         run: python -m py_compile update.py odds.py injuries.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py
       - name: Run offline model tests
         run: python -m unittest -v test_pitchiq_model test_pitchiq_data
+      - name: Check website JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\\s[^>]*)?>(.*?)</script>', html, re.S)
+          if not scripts:
+              raise SystemExit('No inline scripts found')
+          for number, script in enumerate(scripts):
+              Path(f'/tmp/pitchiq-{number}.js').write_text(script, encoding='utf-8')
+          print(f'Extracted {len(scripts)} inline scripts')
+          PY
+          for file in /tmp/pitchiq-*.js; do node --check "$file"; done
