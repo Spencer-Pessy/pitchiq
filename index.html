@@ -177,6 +177,7 @@ function international(){
  bind();
 }
 function list(){
+ if(tab=='intl')return international();
  if(tab=='rec')return record();
  if(tab=='pick')return picks();
  if(tab=='tab')return tables();
