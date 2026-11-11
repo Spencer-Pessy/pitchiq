@@ -53,9 +53,15 @@ class CompetitionDataTests(unittest.TestCase):
                       "teams": {"home": {}, "away": {}}}
         club_friendly = {"league": {"name": "Friendlies Clubs", "country": "World"},
                          "teams": {"home": {}, "away": {}}}
+        women's_club = {"league": {"name": "UEFA Champions League Women", "country": "World"},
+                       "teams": {"home": {}, "away": {}}}
+        women's_europa = {"league": {"name": "UEFA Europa Cup - Women", "country": "World"},
+                          "teams": {"home": {}, "away": {}}}
         self.assertTrue(is_international_fixture(world_cup))
         self.assertTrue(is_international_fixture(friendlies))
         self.assertFalse(is_international_fixture(club_friendly))
+        self.assertFalse(is_international_fixture(women_club))
+        self.assertFalse(is_international_fixture(women_europa))
 
     def test_player_scoring_rate_is_calculated_safely(self):
         self.assertEqual(player_goals_per_appearance(9, 10), 0.9)
