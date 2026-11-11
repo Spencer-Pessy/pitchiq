@@ -83,10 +83,14 @@ def news_post():
         print("\n(Dry run: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set, nothing sent.)")
         return
     try:
-        print("Telegram news post:", call("sendMessage", json.dumps({"chat_id": CHAT, "text": msg, "disable_web_page_preview": True}).encode(), "application/json").get("ok"))
-    except urllib.error.HTTPError as e:
-        print("Telegram error:", e.code, e.read().decode()[:200])
-        raise SystemExit(1)
+        response = call("sendMessage", json.dumps({"chat_id": CHAT, "text": msg, "disable_web_page_preview": True}).encode(), "application/json")
+        print("Telegram news post:", response.get("ok"))
+        if not response.get("ok"):
+            print("Telegram did not confirm news delivery; URLs remain eligible for a later retry.")
+            return
+    except Exception as e:
+        print("Telegram news post failed; URLs remain eligible for a later retry:", e)
+        return
     for v in picked.values():
         seen += [l for _, l in v]
     os.makedirs("daily", exist_ok=True)
@@ -189,7 +193,6 @@ if done:
 lines += ["Full forecasts: " + SITE, "Model estimates, not tips or guarantees. 18+ only."]
 text = "\n".join(lines)
 print(text)
-save_pick_state(pick_state)
 
 
 # ---------- picture ----------
@@ -277,13 +280,26 @@ def send_photo():
     return call("sendPhoto", body, f"multipart/form-data; boundary={b}")
 
 
+delivered = False
 try:
-    print("Telegram photo post:", send_photo().get("ok"))
+    photo_response = send_photo()
+    delivered = bool(photo_response.get("ok"))
+    print("Telegram photo post:", delivered)
+    if not delivered:
+        print("Telegram did not confirm photo delivery; trying text fallback.")
 except Exception as e:
     print("Photo failed, sending text only:", e)
+
+if not delivered:
     try:
-        r = call("sendMessage", json.dumps({"chat_id": CHAT, "text": text, "disable_web_page_preview": True}).encode(), "application/json")
-        print("Telegram text post:", r.get("ok"))
-    except urllib.error.HTTPError as e2:
-        print("Telegram error:", e2.code, e2.read().decode()[:200])
+        text_response = call("sendMessage", json.dumps({"chat_id": CHAT, "text": text, "disable_web_page_preview": True}).encode(), "application/json")
+        delivered = bool(text_response.get("ok"))
+        print("Telegram text post:", delivered)
+    except Exception as e:
+        print("Telegram text fallback failed:", e)
         raise SystemExit(1)
+    if not delivered:
+        raise RuntimeError("Telegram did not confirm either the photo or text pick post.")
+
+# Only record picks after Telegram confirms that the post was delivered.
+save_pick_state(pick_state)
