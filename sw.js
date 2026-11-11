@@ -1,4 +1,4 @@
-const CACHE = 'pitchiq-cache-v4';
+const CACHE = 'pitchiq-cache-v5';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './logo-banner-512.png'];
 
 self.addEventListener('install', event => {
@@ -25,7 +25,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  const isData = /\/(data|predictions|odds|injuries|international)\.json$/.test(url.pathname);
+  const isData = /\/(data|predictions|odds|international)\.json$/.test(url.pathname);
   if (isData) {
     // Ignore the page's cache-busting query string so offline copies remain reusable.
     const key = new Request(url.origin + url.pathname);
@@ -42,7 +42,6 @@ self.addEventListener('fetch', event => {
           const cached = await caches.match(key);
           if (cached) return cached;
           const empty = url.pathname.endsWith('/predictions.json') ? {} :
-            url.pathname.endsWith('/injuries.json') ? {items: []} :
             url.pathname.endsWith('/odds.json') ? {events: []} :
             url.pathname.endsWith('/international.json') ? {fixtures: []} :
             {updated: null, matches: [], tables: {}};
