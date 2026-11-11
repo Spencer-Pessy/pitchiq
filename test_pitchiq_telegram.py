@@ -1,6 +1,7 @@
 """Tests for Telegram input validation."""
 import unittest
-from pitchiq_telegram import (parse_kickoff, valid_probabilities, valid_forecast, valid_final, clean_seen_urls,\n                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
+from pitchiq_telegram import (parse_kickoff, valid_probabilities, valid_forecast, valid_final, clean_seen_urls,
+                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
 
 
 class TelegramValidationTests(unittest.TestCase):
