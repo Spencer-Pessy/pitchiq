@@ -85,6 +85,17 @@ class TelegramValidationTests(unittest.TestCase):
 
 
 class ResultsOnlyWorkflowTests(unittest.TestCase):
+    def test_results_tab_uses_only_published_pick_ledger_for_accuracy(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        start = source.index("function publishedResultsHtml()")
+        end = source.index("\nfunction list()", start)
+        panel = source[start:end]
+        self.assertIn("Q?.pending", panel)
+        self.assertIn("Q?.results", panel)
+        self.assertIn("hits=sorted.filter(r=>r.correct===true).length", panel)
+        self.assertIn("Pending picks are not counted in the accuracy rate.", panel)
+        self.assertIn("original fixture ID", panel)
+
     def test_published_pick_ledger_starts_with_valid_empty_schema(self):
         import json
         ledger = json.loads(Path("daily/published_picks.json").read_text(encoding="utf-8"))
