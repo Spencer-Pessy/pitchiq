@@ -48,6 +48,19 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
                 self.assertNotIn("${" + field + "}", self.html)
 
 
+
+
+class OddsFreshnessWebTests(unittest.TestCase):
+    def test_market_value_comparison_requires_fresh_snapshot(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const oddsFresh=Number.isFinite(oh)&&oh>=0&&oh<=36", source)
+        self.assertIn("if(oddsFresh&&Array.isArray(m.odds)", source)
+        self.assertIn("Market snapshot is stale", source)
+
+    def test_invalid_market_prices_are_not_used_for_value_comparison(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Number.isFinite(Number(x))&&Number(x)>1&&Number(x)<1000", source)
+
 if __name__ == "__main__":
     unittest.main()
 
