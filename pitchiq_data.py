@@ -55,6 +55,14 @@ def player_goals_per_appearance(goals, appearances):
     return round(goals / appearances, 3)
 
 
+
+def player_rate_stats(goals, assists, appearances):
+    """Return per-appearance scoring and contribution rates when data is valid."""
+    gpm = player_goals_per_appearance(goals, appearances)
+    apm = player_goals_per_appearance(assists, appearances)
+    gapm = None if gpm is None or apm is None else round(gpm + apm, 3)
+    return {"gpm": gpm, "apm": apm, "gapm": gapm}
+
 def is_international_fixture(item):
     """Identify senior/national-team fixtures from API-Football responses."""
     league = item.get("league") or {}
