@@ -27,7 +27,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 4. `telegram.py` posts the top three upcoming forecasts or a small set of linked football headlines to the configured Telegram destination.
 5. `index.html` reads the published JSON files and renders the website.
 
-The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.
+The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.\n\nThe forecasting calculations live in `pitchiq_model.py`, separate from API and file operations. Offline unit tests in `test_pitchiq_model.py` cover the probability model and evaluation metrics. Run them with `python -m unittest -v test_pitchiq_model`. Run `python model_metrics.py` to calculate accuracy, multiclass Brier score, log loss and expected-goals mean absolute error from the saved prediction ledger.
 
 ## GitHub Actions
 
@@ -56,7 +56,7 @@ Third-party API quotas and free-plan limits can change. PitchIQ's scheduled inte
 
 Python automation scripts use the Python standard library except `telegram.py`, which uses Pillow to create the forecast image. The GitHub Actions Telegram workflow installs Pillow at runtime.
 
-- Check Python syntax: `python -m py_compile update.py odds.py injuries.py telegram.py`
+- Check Python syntax: `python -m py_compile update.py odds.py injuries.py telegram.py pitchiq_model.py model_metrics.py test_pitchiq_model.py`
 - Run the website by serving the repository root over HTTP; opening `index.html` directly may prevent JSON fetches from working.
 - To test scheduled integrations, use the corresponding GitHub Actions workflow and inspect its logs.
 
