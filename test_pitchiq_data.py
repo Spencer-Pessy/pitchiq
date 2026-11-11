@@ -25,8 +25,8 @@ class TeamVenueStatsTests(unittest.TestCase):
         self.assertEqual(result["form_matches"], 3)
         self.assertEqual(result["form"], "DWW")
         self.assertEqual(result["form_scope"], "all_venues")
-        self.assertAlmostEqual(result["gf"], 2.0)
-        self.assertAlmostEqual(result["ga"], 0.7)
+        self.assertAlmostEqual(result["gf"], 1.8)
+        self.assertAlmostEqual(result["ga"], 0.88)
         self.assertEqual(result["elo"], 1600)
 
     def test_no_venue_history_uses_prior_and_discloses_zero_sample(self):
