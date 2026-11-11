@@ -24,33 +24,31 @@ def evaluate(predictions):
         if abs(sum(p) - 1.0) > 0.02:
             continue
         actual = 0 if home_goals > away_goals else 1 if home_goals == away_goals else 2
-        records.append((home_goals, away_goals, p, actual, probs))
+        records.append((home_goals, away_goals, p, actual, probs, str(item.get('utc') or item.get('made') or '')))
 
-    # Compare earlier and later forecasts in chronological order. This is a
-    # descriptive holdout split, not a retraining/backtest of the live model.
-    dated = sorted(
-        (item for item in predictions if item.get("final") and item.get("p")),
-        key=lambda item: str(item.get("utc") or item.get("made") or ""),
-    )
-    chronological = []
-    if len(records) >= 2:
-        # Reuse the same validity checks by evaluating each chronological half.
-        midpoint = len(dated) // 2
-        for label, subset in (("earlier", dated[:midpoint]), ("later", dated[midpoint:])):
-            subset_result = evaluate(subset) if len(subset) < len(predictions) else None
-            if subset_result is not None:
-                chronological.append({
-                    "period": label,
-                    "matches": subset_result["matches"],
-                    "accuracy": subset_result["accuracy"],
-                    "brier": subset_result["brier"],
-                    "log_loss": subset_result["log_loss"],
-                })
 
     n = len(records)
+    chronological = []
+    ordered = sorted(records, key=lambda row: row[5])
+    if n >= 2:
+        midpoint = n // 2
+        for label, subset in (("earlier", ordered[:midpoint]), ("later", ordered[midpoint:])):
+            count = len(subset)
+            hits = sum(row[2].index(max(row[2])) == row[3] for row in subset)
+            subset_brier = sum(
+                sum((value - (index == row[3]) ** 2 for index, value in enumerate(row[2]))
+                for row in subset
+            ) / count
+            subset_loss = sum(-math.log(max(row[2][row[3]], 1e-15)) for row in subset) / count
+            chronological.append({
+                "period": label, "matches": count,
+                "accuracy": round(hits / count, 4),
+                "brier": round(subset_brier, 4),
+                "log_loss": round(subset_loss, 4),
+            })
     if not n:
         return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None,
-                "home_goals_mae": None, "away_goals_mae": None}
+                "chronological_split": [], "home_goals_mae": None, "away_goals_mae": None}
 
     correct = 0
     confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
@@ -59,7 +57,7 @@ def evaluate(predictions):
     home_mae = 0.0
     away_mae = 0.0
     goal_n = 0
-    for home, away, p, actual, original in records:
+    for home, away, p, actual, original, _date in records:
         hit = p.index(max(p)) == actual
         correct += hit
         confidence = max(p)
