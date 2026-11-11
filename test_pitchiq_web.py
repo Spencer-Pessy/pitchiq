@@ -21,6 +21,13 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
         self.assertIn('complete league-wide assists ranking', self.html)
         self.assertIn("ps.onchange=e=>{playerSort=e.target.value;list()}", self.html)
 
+    def test_competition_breakdown_includes_home_and_away_expected_goals_error(self):
+        self.assertIn("homeError=0,awayError=0,goalN=0", self.html)
+        self.assertIn("homeMae:goalN?homeError/goalN:null", self.html)
+        self.assertIn("awayMae:goalN?awayError/goalN:null", self.html)
+        self.assertIn("xG MAE H/A", self.html)
+        self.assertIn("not a league ranking or proof of model strength", self.html)
+
     def test_provider_text_is_escaped_before_html_interpolation(self):
         fields = (
             "r.p.comp", "r.p.h", "r.p.a", "x.name", "x.m.comp", "x.m.h", "x.m.a",
