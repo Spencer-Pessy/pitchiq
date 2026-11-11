@@ -1,7 +1,8 @@
 name: Update odds
 on:
   schedule:
-    - cron: "0 7,16 * * *"
+    # One refresh per day to conserve the free API allowance.
+    - cron: "0 7 * * *"
   workflow_dispatch:
 permissions:
   contents: write
@@ -18,18 +19,25 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Refresh and publish odds with safe retry
+      - name: Fetch odds once
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          set -euo pipefail
+          python odds.py
+          # Keep the API response while publication retries use fresh Git history.
+          mkdir -p /tmp/pitchiq-odds
+          cp odds.json /tmp/pitchiq-odds/odds.json
+      - name: Publish odds snapshot with safe retry
         run: |
           set -euo pipefail
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           for attempt in 1 2 3; do
-            echo "Odds refresh/publication attempt $attempt of 3"
+            echo "Odds publication attempt $attempt of 3 (no additional API request)"
             git fetch origin main
             git reset --hard origin/main
-            python odds.py
+            cp /tmp/pitchiq-odds/odds.json odds.json
             git add odds.json
             if git diff --cached --quiet; then
               echo "No odds changes to publish."
@@ -40,7 +48,7 @@ jobs:
               echo "Odds snapshot published successfully."
               exit 0
             fi
-            echo "Push rejected; retrying from latest main."
+            echo "Push rejected; retrying publication from latest main."
             sleep 5
           done
           echo "Unable to publish odds after 3 fresh attempts."
