@@ -41,7 +41,7 @@ The workflows in `.github/workflows/` can be run on their schedules or manually 
 - **Update data** — every 30 minutes.
 - **Update odds** — twice daily.
 - **Update injuries** — twice daily.
-- **Update international fixtures** — every six hours (up to 32 API requests per day).
+- **Update international fixtures** — every six hours (up to 12 API requests per day).
 - **Telegram picks** — daily.
 
 The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
@@ -79,4 +79,4 @@ The published `data_health` object reports fixture counts by competition, total 
 
 ### International fixtures and free API quota
 
-The international feed uses the existing `API_FOOTBALL_KEY` secret and the API-Football fixtures endpoint. Its scheduled workflow queries eight calendar dates per refresh, four times daily (up to 32 fixture requests per day). The existing injury refresh uses four more requests per day, for an expected PitchIQ total of about 36 of the free plan's 100 daily requests. The script records the remaining-request header; monitor the API dashboard for any other usage. The feed is separate from the club prediction model: national-team fixtures are shown as fixtures only until historical international form can be built and validated. No API key is exposed in the website.
+The international feed uses the existing `API_FOOTBALL_KEY` secret and the API-Football fixtures endpoint. Its scheduled workflow queries eight calendar dates per refresh, four times daily (up to 12 fixture requests per day). The existing injury refresh uses four more requests per day, for an expected PitchIQ total of about 16 of the free plan's 100 daily requests. The free account's available fixture dates are limited to a rolling three-day window, so this feed currently shows yesterday, today and tomorrow only. The script records the remaining-request header; monitor the API dashboard for any other usage. The feed is separate from the club prediction model: national-team fixtures are shown as fixtures only until historical international form can be built and validated. No API key is exposed in the website.
