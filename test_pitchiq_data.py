@@ -135,6 +135,25 @@ class CompetitionDataTests(unittest.TestCase):
             "gpm": None, "apm": None, "gapm": None,
         })
 
+    def test_forecast_snapshot_preserves_schema_and_calibration(self):
+        stats = {
+            "h": {"gf": 1.4, "ga": 1.1, "elo": 1600, "form": "WWD",
+                  "venue_matches": 4, "form_matches": 3, "form_scope": "all_venues"},
+            "a": {"gf": 1.2, "ga": 1.3, "elo": 1500, "form": "LDW",
+                  "venue_matches": 5, "form_matches": 3, "form_scope": "all_venues"},
+            "lh": 1.5, "la": 1.2,
+        }
+        snapshot = forecast_input_snapshot(stats, {"kh": 1.05, "ka": 0.95})
+        self.assertEqual(snapshot["schema"], 2)
+        self.assertEqual(snapshot["calibration"], {"kh": 1.05, "ka": 0.95})
+        self.assertEqual(snapshot["home"]["venue_matches"], 4)
+        self.assertEqual(snapshot["league_home"], 1.5)
+
+    def test_forecast_snapshot_uses_neutral_calibration_by_default(self):
+        snapshot = forecast_input_snapshot({"h": {}, "a": {}, "lh": 1.5, "la": 1.2})
+        self.assertEqual(snapshot["schema"], 2)
+        self.assertEqual(snapshot["calibration"], {"kh": 1.0, "ka": 1.0})
+
     def test_feed_health_reports_competition_coverage(self):
         health = build_feed_health(
             {"PL": 30, "WC": 4, "EC": 2},
