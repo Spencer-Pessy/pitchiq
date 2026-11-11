@@ -61,6 +61,18 @@ class OddsFreshnessWebTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("Number.isFinite(Number(x))&&Number(x)>1&&Number(x)<1000", source)
 
+class PublishedPicksResultsWebTests(unittest.TestCase):
+    def test_results_tab_shows_only_published_picks_and_keeps_pending_separate(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("fetch('daily/published_picks.json?'", source)
+        self.assertIn("function publishedResultsHtml()", source)
+        self.assertIn("Q?.pending", source)
+        self.assertIn("Q?.results", source)
+        self.assertIn("Awaiting full time", source)
+        self.assertIn("Settled published picks", source)
+        self.assertIn("Pending picks are not counted in the accuracy rate", source)
+        self.assertIn("original fixture ID", source)
+
 if __name__ == "__main__":
     unittest.main()
 
