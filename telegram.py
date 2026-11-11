@@ -2,7 +2,7 @@ import glob, json, os, re, urllib.request, urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
-from pitchiq_telegram import parse_kickoff, valid_forecast, valid_final, clean_seen_urls
+from pitchiq_telegram import (parse_kickoff, valid_forecast, valid_final, clean_seen_urls,\n                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
 from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -94,21 +94,71 @@ def news_post():
         json.dump(clean_seen_urls(seen), f)
 
 
+
+def load_pick_state():
+    try:
+        with open("daily/published_picks.json", encoding="utf-8") as f:
+            return clean_pick_state(json.load(f))
+    except Exception:
+        return clean_pick_state({})
+
+
+def save_pick_state(state):
+    os.makedirs("daily", exist_ok=True)
+    with open("daily/published_picks.json", "w", encoding="utf-8") as f:
+        json.dump(clean_pick_state(state), f, ensure_ascii=False, indent=2)
+
+
+pick_state = load_pick_state()
+completed_picks, resolved_state = resolve_published_picks(pick_state, preds)
+if completed_picks:
+    result_lines = ["✅ PitchIQ — Results for our published picks", now.strftime("%a %d %b") + " · Full-time scores", ""]
+    for item in completed_picks:
+        mark = "✓ CORRECT" if item["correct"] else "✗ MISSED"
+        result_lines += [
+            f'{item["h"]} {item["final"][0]}–{item["final"][1]} {item["a"]}',
+            f'   Pick: {pick_label(item)} ({round(item["p"][("ph", "pd", "pa")[item["pick_index"]]] * 100)}%) · {mark}',
+            f'   {item["comp"]}', ""
+        ]
+    result_lines += ["These are the results of the exact picks previously published by PitchIQ.",
+                     "Original probabilities are preserved. Model estimates, not guarantees."]
+    result_message = "\\n".join(result_lines)
+    print(result_message)
+    if TOKEN and CHAT:
+        response = call("sendMessage", json.dumps({"chat_id": CHAT, "text": result_message,
+                           "disable_web_page_preview": True}).encode(), "application/json")
+        if not response.get("ok"):
+            raise RuntimeError("Telegram did not confirm the results message.")
+        pick_state = resolved_state
+    else:
+        print("(Dry run: results remain pending because Telegram credentials are unavailable.)")
+        pick_state = clean_pick_state(pick_state)
+
+
 up = [p for p in preds if valid_forecast(p) and not p.get("final")
       and now < when(p) < lim]
 if not up:
     print("No matches in the next 36 hours; posting news instead.")
+    save_pick_state(pick_state)
     news_post()
     raise SystemExit
 
 rows = []
 for p in up:
+    if str(p.get('id')) in pick_state['sent_ids']:
+        continue
     v = [p["p"]["ph"], p["p"]["pd"], p["p"]["pa"]]
     i = v.index(max(v))
     pick = ["Home win: " + p["h"], "Draw", "Away win: " + p["a"]][i]
     rows.append((v[i], p, pick))
 rows.sort(key=lambda r: -r[0])
 top = rows[:3]
+for _, record, _ in top:
+    snap = snapshot_published_pick(record)
+    if snap and snap["id"] not in pick_state["sent_ids"]:
+        pick_state["pending"].append(snap)
+        pick_state["sent_ids"].append(snap["id"])
+pick_state = clean_pick_state(pick_state)
 
 # ---------- message text ----------
 lines = [f"⚽ PitchIQ - Top {len(top)} pick{'s' if len(top) > 1 else ''}", now.strftime("%a %d %b") + " (times in UTC)", ""]
@@ -128,6 +178,7 @@ if done:
 lines += ["Full forecasts: " + SITE, "Model estimates, not tips or guarantees. 18+ only."]
 text = "\n".join(lines)
 print(text)
+save_pick_state(pick_state)
 
 
 # ---------- picture ----------
