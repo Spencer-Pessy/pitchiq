@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics, ablation_comparison, wilson_interval
+from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics, ablation_comparison, wilson_interval, paired_bootstrap_interval
 
 
 
@@ -29,6 +29,14 @@ class MetricsTests(unittest.TestCase):
 
 
 
+    def test_paired_bootstrap_interval_is_deterministic_and_requires_pairs(self):
+        self.assertIsNone(paired_bootstrap_interval([0.1]))
+        values = [0.1, -0.05, 0.02, 0.08, -0.01]
+        first = paired_bootstrap_interval(values)
+        second = paired_bootstrap_interval(values)
+        self.assertEqual(first, second)
+        self.assertLessEqual(first[0], first[1])
+
     def test_ablation_replays_only_schema_two_snapshots_on_same_sample(self):
         stats = {
             "h": {"gf": 1.7, "ga": 0.9, "elo": 1620, "form": "WWDLW"},
@@ -52,6 +60,7 @@ class MetricsTests(unittest.TestCase):
         })
         self.assertEqual(result["variants"]["full_model"]["matches"], 1)
         self.assertEqual(result["variants"]["full_model"]["brier_delta_vs_full"], 0.0)
+        self.assertIsNone(result["variants"]["without_elo"]["brier_delta_ci_95"])
         self.assertTrue(all(value["matches"] == 1 for value in result["variants"].values()))
         self.assertEqual(result["variants"]["full_model"]["accuracy"], 1.0)
 
