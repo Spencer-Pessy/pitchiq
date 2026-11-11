@@ -221,7 +221,7 @@ function detail(){
   $('#bk').onclick=()=>{sel=null;tab='intl';list()};
   return;
  }
- const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
+ const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3><p class="note">${Number(s[k].venue_matches??0)} ${k=='h'?'home':'away'} matches support scoring rates · form uses ${Number(s[k].form_matches??0)} recent matches across venues</p>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
  $('#app').innerHTML=`<button class="back" id="bk">← Matches</button>
  <div class="comp">${esc(f.comp)} · ${dy(f)} ${tm(f)}</div><h2>${esc(f.h)} vs ${esc(f.a)}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
  ${f.goals&&f.goals.length?`<div class="panel"><h2>Goals</h2>${f.goals.map(g=>`<div class="gl"><span>⚽ ${g.min?g.min+(g.extra?'+'+g.extra:'')+"′ ":''}${esc(g.scorer||'Goal')}</span><span>${g.assist?'Assist: '+esc(g.assist)+' · ':''}${esc(g.team)}</span></div>`).join('')}</div>`:''}
