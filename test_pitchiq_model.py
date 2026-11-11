@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics
+from model_metrics import evaluate, input_diagnostics, input_diagnostics
 
 
 
@@ -56,6 +56,33 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["missing_or_invalid_snapshots"], 1)
         self.assertTrue(all(row["matches"] == 0
                             for row in result["groups"]["home_venue_sample"]))
+
+
+    def test_input_diagnostics_group_saved_forecast_snapshots(self):
+        rows = []
+        for index in range(12):
+            rows.append({
+                "final": [2, 0] if index < 6 else [0, 1],
+                "utc": f"2026-11-{index + 1:02d}T12:00:00Z",
+                "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1},
+                "inputs": {"schema": 1,
+                    "home": {"venue_matches": 8 if index < 6 else 2, "form": "WWDWW"},
+                    "away": {"venue_matches": 7 if index < 6 else 1, "form": "LLDLL"}},
+            })
+        rows.append({"final": [1, 0], "p": {"ph": 1, "pd": 0, "pa": 0}})
+        result = input_diagnostics(rows)
+        self.assertEqual(result["snapshot_matches"], 12)
+        venue = {x["group"]: x for x in result["venue_support"]}
+        self.assertEqual(venue["6+"]["matches"], 6)
+        self.assertEqual(venue["0–2"]["matches"], 6)
+        self.assertEqual(venue["6+"]["interpretation"], "monitoring_only")
+        form = {x["group"]: x for x in result["form_edge"]}
+        self.assertEqual(form["Home stronger"]["matches"], 12)
+
+    def test_input_diagnostics_ignores_old_records_without_snapshots(self):
+        result = input_diagnostics([{"final": [1, 0], "p": {"ph": 1, "pd": 0, "pa": 0}}])
+        self.assertEqual(result["snapshot_matches"], 0)
+        self.assertTrue(all(x["matches"] == 0 for x in result["venue_support"]))
 
     def test_chronological_split_uses_earlier_and_later_forecasts(self):
         rows = [
