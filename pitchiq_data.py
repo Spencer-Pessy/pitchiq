@@ -115,3 +115,17 @@ def is_international_fixture(item):
     if country in {"world", "international"}:
         return any(term in name for term in international_terms)
     return any(term in name for term in international_terms)
+
+
+def forecast_input_snapshot(stats):
+    """Capture the exact team and league inputs used for a new forecast."""
+    team_fields = ("gf", "ga", "elo", "form", "out", "venue_matches", "form_matches", "form_scope")
+    def team_snapshot(team):
+        return {key: team.get(key) for key in team_fields if key in team}
+    return {
+        "schema": 1,
+        "home": team_snapshot(stats.get("h", {})),
+        "away": team_snapshot(stats.get("a", {})),
+        "league_home": stats.get("lh"),
+        "league_away": stats.get("la"),
+    }
