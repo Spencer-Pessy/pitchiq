@@ -240,11 +240,13 @@ def baseline_comparison(predictions):
                         market = [value / total for value in implied]
             except (TypeError, ValueError):
                 pass
-        records.append({"date": date, "actual": actual, "model": model, "market": market})
+        records.append({"date": date, "actual": actual, "model": model, "market": market,
+                        "competition": item.get("code") or item.get("comp") or "Other"})
 
     records.sort(key=lambda row: row["date"])
     counts = [1, 1, 1]
-    prior_rows, model_market_rows, market_rows = [], [], []
+    prior_rows, competition_prior_rows, model_market_rows, market_rows = [], [], [], []
+    competition_counts = {}
     index = 0
     while index < len(records):
         # Matches sharing a kickoff timestamp all receive the same prior;
@@ -256,18 +258,31 @@ def baseline_comparison(predictions):
         prior = [value / total for value in counts]
         for row in records[index:end]:
             prior_rows.append((prior, row["actual"]))
+            code = str(row.get("competition") or "Other")
+            comp_counts = competition_counts.get(code, [0, 0, 0])
+            comp_total = sum(comp_counts)
+            shrink = 5.0
+            competition_prior = [
+                (comp_counts[outcome] + shrink * prior[outcome]) / (comp_total + shrink)
+                for outcome in range(3)
+            ]
+            competition_prior_rows.append((competition_prior, row["actual"]))
             if row["market"] is not None:
                 model_market_rows.append((row["model"], row["actual"]))
                 market_rows.append((row["market"], row["actual"]))
         for row in records[index:end]:
             counts[row["actual"]] += 1
+            code = str(row.get("competition") or "Other")
+            competition_counts.setdefault(code, [0, 0, 0])[row["actual"]] += 1
         index = end
 
     prior_scores = _probability_scores(prior_rows)
+    competition_prior_scores = _probability_scores(competition_prior_rows)
     market_scores = _probability_scores(market_rows)
     model_market_scores = _probability_scores(model_market_rows)
     return {
         "rolling_prior": prior_scores,
+        "competition_rolling_prior": competition_prior_scores,
         "model_on_odds_sample": model_market_scores,
         "bookmaker_consensus": market_scores,
         "model_minus_bookmaker_brier": (
