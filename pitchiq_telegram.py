@@ -91,6 +91,20 @@ def clean_pick_state(value):
             snap["pick_index"] = item["pick_index"]
             pending.append(snap)
             seen.add(snap["id"])
+    results = []
+    raw_results = value.get("results", [])
+    if isinstance(raw_results, list):
+        for item in raw_results:
+            if not isinstance(item, dict):
+                continue
+            snap = snapshot_published_pick(item)
+            final = item.get("final")
+            if snap is None or not valid_final(final) or item.get("pick_index") not in (0, 1, 2):
+                continue
+            actual = 0 if final[0] > final[1] else 1 if final[0] == final[1] else 2
+            snap["pick_index"] = item["pick_index"]
+            results.append({**snap, "final": list(final), "actual_index": actual,
+                            "correct": snap["pick_index"] == actual})
     raw_ids = value.get("sent_ids", [])
     sent_ids = []
     if isinstance(raw_ids, list):
@@ -99,7 +113,7 @@ def clean_pick_state(value):
                 key = str(item)
                 if key not in sent_ids:
                     sent_ids.append(key)
-    return {"version": 1, "pending": pending[-300:], "sent_ids": sent_ids[-500:]}
+    return {"version": 1, "pending": pending[-300:], "results": results[-100:], "sent_ids": sent_ids[-500:]}
 
 
 def resolve_published_picks(state, predictions):
@@ -122,6 +136,7 @@ def resolve_published_picks(state, predictions):
             "correct": snap["pick_index"] == actual
         })
     state["pending"] = pending
+    state["results"] = (state["results"] + completed)[-100:]
     return completed, state
 
 
