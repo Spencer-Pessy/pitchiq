@@ -92,3 +92,5 @@ class BaselineComparisonWebTests(unittest.TestCase):
         self.assertIn("overround removed", source)
         self.assertIn("PitchIQ and bookmaker rows use the exact same odds-available matches", source)
         self.assertIn("PitchIQ minus bookmaker · Brier", source)
+        self.assertIn("Bookmaker comparison by competition", source)
+        self.assertIn("small samples (especially below 20)", source)
