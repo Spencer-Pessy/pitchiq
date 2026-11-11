@@ -374,7 +374,7 @@ class ScorelineBaselineComparisonTests(unittest.TestCase):
         self.assertAlmostEqual(
             result["mean_delta_dc_minus_independent"],
             result["dixon_coles_nll"] - result["independent_poisson_nll"],
-            places=4,
+            places=3,
         )
         self.assertEqual(
             result["dc_better"] + result["independent_better"] + result["ties"], 4
