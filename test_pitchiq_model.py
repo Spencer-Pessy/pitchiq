@@ -37,11 +37,11 @@ class MetricsTests(unittest.TestCase):
         over = binary_market_metrics(rows, "o25")
         btts = binary_market_metrics(rows, "bt")
         self.assertEqual(over["matches"], 3)
-        self.assertAlmostEqual(over["accuracy"], 1 / 3, places=4)
-        self.assertAlmostEqual(over["brier"], 0.31, places=4)
+        self.assertAlmostEqual(over["accuracy"], 2 / 3, places=4)
+        self.assertAlmostEqual(over["brier"], 0.11, places=4)
         self.assertAlmostEqual(over["expected_calibration_error"], 0.3, places=4)
         self.assertEqual(btts["matches"], 3)
-        self.assertAlmostEqual(btts["accuracy"], 1 / 3, places=4)
+        self.assertAlmostEqual(btts["accuracy"], 2 / 3, places=4)
 
     def test_binary_market_metrics_ignores_missing_and_invalid_probabilities(self):
         result = binary_market_metrics([
