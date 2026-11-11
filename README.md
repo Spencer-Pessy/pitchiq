@@ -17,7 +17,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 - Likeliest scorelines and expected goals.
 - Optional bookmaker-odds comparison from The Odds API.
 - Manual key-player absence adjustments in match details. Automated injury reports are currently unavailable; PitchIQ does not guess or fabricate injury information.
-- Historical prediction ledger and a public performance record showing 1X2 accuracy, Brier score, log loss, expected-goals MAE and additional market hit rates.
+- Historical prediction ledger and a public performance record showing 1X2 accuracy, Brier score, log loss, overall and competition-level home/away expected-goals MAE, and additional market hit rates. Competition samples are displayed as monitoring signals, not league rankings.
 - Telegram match-day forecasts and football headlines when there are no eligible matches.
 - Shareable forecast/record graphics, match reminders, phone-local notes and a mobile-friendly installable web app with offline shell and last-known-data caching.
 
