@@ -11,12 +11,12 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 ## Current features
 
 - Fixtures, scores, standings and scorers from football-data.org, including free-tier FIFA World Cup and UEFA European Championship tournament coverage (where fixtures are available).
-- A separate API-Football national-team fixtures feed covering international friendlies, qualifiers and tournaments where available. These fixtures are listed without model forecasts until a reliable national-team history dataset is integrated.
+- A separate no-key OpenFootball World Cup 2026 fixtures/results feed (CC0). It is tournament-only, not a complete international calendar; football-data.org separately supplies its free World Cup and EURO coverage. International fixtures are listed without model forecasts until a reliable national-team history dataset is integrated.
 - Competition top-scorer comparison with goals, assists, appearances, goals per appearance, assists per appearance and combined goal contributions per appearance (not per 90; minutes played are not supplied by this source).
 - Home/draw/away, over 2.5 goals and both-teams-to-score probabilities.
 - Likeliest scorelines and expected goals.
 - Optional bookmaker-odds comparison from The Odds API.
-- Reported absences from API-Football, displayed as information; users can manually adjust key-player absences.
+- Manual key-player absence adjustments in match details. Automated injury reports are currently unavailable; PitchIQ does not guess or fabricate injury information.
 - Historical prediction ledger and a public performance record showing 1X2 accuracy, Brier score, log loss, expected-goals MAE and additional market hit rates.
 - Telegram match-day forecasts and football headlines when there are no eligible matches.
 - Shareable forecast/record graphics, match reminders, phone-local notes and a mobile-friendly installable web app with offline shell and last-known-data caching.
@@ -25,9 +25,8 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 
 1. `update.py` retrieves competition fixtures/results and standings, calculates team statistics and forecasts, and updates `data.json` and `predictions.json`.
 2. `odds.py` refreshes the optional odds snapshot in `odds.json`.
-3. `injuries.py` refreshes reported absences in `injuries.json`.
-4. `international.py` refreshes a separate national-team fixture snapshot from API-Football; it filters out club fixtures and preserves the last good file if the source fails.
-5. `telegram.py` posts the top three upcoming forecasts or a small set of linked football headlines to the configured Telegram destination.
+3. `international.py` refreshes a separate World Cup 2026 fixture/results snapshot from OpenFootball's public-domain JSON dataset; it validates the response and preserves the last good file if the source fails.
+4. `telegram.py` posts the top three upcoming forecasts or a small set of linked football headlines to the configured Telegram destination.
 5. `index.html` reads the published JSON files and renders the website.
 
 The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.
@@ -40,8 +39,7 @@ The workflows in `.github/workflows/` can be run on their schedules or manually 
 
 - **Update data** — every 30 minutes.
 - **Update odds** — twice daily.
-- **Update injuries** — twice daily.
-- **Update international fixtures** — every six hours (up to 12 API requests per day).
+- **Update international fixtures** — daily; one public JSON download, no API key.
 - **Telegram picks** — daily.
 
 The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
@@ -52,7 +50,6 @@ Configure secrets under **Settings → Secrets and variables → Actions**. Neve
 
 - `FOOTBALL_DATA_KEY` — football-data.org.
 - `ODDS_API_KEY` — The Odds API.
-- `API_FOOTBALL_KEY` — API-Football.
 - `TELEGRAM_BOT_TOKEN` — Telegram bot token.
 - `TELEGRAM_CHAT_ID` — destination chat/channel ID.
 
@@ -79,4 +76,4 @@ The published `data_health` object reports fixture counts by competition, total 
 
 ### International fixtures and free API quota
 
-The international feed uses the existing `API_FOOTBALL_KEY` secret and the API-Football fixtures endpoint. Its scheduled workflow queries yesterday, today and tomorrow once each per refresh, four times daily (up to 12 fixture requests per day). The existing injury refresh uses four more requests per day, for an expected PitchIQ total of about 16 of the free plan's 100 daily requests. The free account's available fixture dates are limited to a rolling three-day window, so this feed currently shows yesterday, today and tomorrow only. The script records the remaining-request header; monitor the API dashboard for any other usage. The feed is separate from the club prediction model: national-team fixtures are shown as fixtures only until historical international form can be built and validated. No API key is exposed in the website.
+The international feed downloads the 2026 FIFA World Cup dataset from OpenFootball's public-domain (CC0) repository once daily. It requires no API key, account, or subscription. Its scope is the World Cup tournament only; it does not provide a live calendar of friendlies or qualifiers. football-data.org's free tier separately includes World Cup and European Championship coverage. Automated injury reports are paused because no sufficiently reliable, unrestricted free replacement has been validated; users can still adjust key-player absences manually. No API-Football secret is required by PitchIQ.
