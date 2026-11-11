@@ -31,8 +31,8 @@ def tau(home_goals, away_goals, home_rate, away_rate, rho):
     return 1
 
 
-def predict(stats, calibration=None):
-    """Return 1X2 and goal-market probabilities plus expected goals."""
+def predict(stats, calibration=None, use_elo=True, use_form=True):
+    """Return probabilities; optional ablations disable Elo and/or recent form."""
     calibration = calibration or {"kh": 1.0, "ka": 1.0}
     home, away = stats["h"], stats["a"]
     league_home = max(stats["lh"], 0.3)
@@ -40,10 +40,12 @@ def predict(stats, calibration=None):
 
     home_rate = home["gf"] * away["ga"] / league_home
     away_rate = away["gf"] * home["ga"] / league_away
-    elo_difference = (home["elo"] - away["elo"]) / 400
+    elo_difference = (home["elo"] - away["elo"]) / 400 if use_elo else 0.0
 
-    home_rate *= 1.15 ** elo_difference * (1 + (ppg(home["form"]) - 1.5) * 0.04)
-    away_rate *= 1.15 ** -elo_difference * (1 + (ppg(away["form"]) - 1.5) * 0.04)
+    home_form = ppg(home["form"]) if use_form else 1.5
+    away_form = ppg(away["form"]) if use_form else 1.5
+    home_rate *= 1.15 ** elo_difference * (1 + (home_form - 1.5) * 0.04)
+    away_rate *= 1.15 ** -elo_difference * (1 + (away_form - 1.5) * 0.04)
     home_rate, away_rate = max(home_rate, 0.05), max(away_rate, 0.05)
 
     raw_home_rate, raw_away_rate = home_rate, away_rate
