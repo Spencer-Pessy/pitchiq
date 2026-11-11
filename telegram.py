@@ -4,7 +4,6 @@ from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 from pitchiq_telegram import (parse_kickoff, valid_forecast, valid_final, clean_seen_urls,
                               snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
-from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT = os.environ.get("TELEGRAM_CHAT_ID")
@@ -136,6 +135,11 @@ if completed_picks:
         pick_state = clean_pick_state(pick_state)
 
 
+if os.environ.get("PITCHIQ_RESULTS_ONLY") == "1":
+    save_pick_state(pick_state)
+    print("Results-only check complete; no new picks or news posts were requested.")
+    raise SystemExit(0)
+
 up = [p for p in preds if valid_forecast(p) and not p.get("final")
       and now < when(p) < lim]
 if not up:
@@ -189,6 +193,7 @@ save_pick_state(pick_state)
 
 
 # ---------- picture ----------
+from PIL import Image, ImageDraw, ImageFont
 def font(bold, size):
     names = ["DejaVuSansCondensed-Bold.ttf", "DejaVuSans-Bold.ttf"] if bold else ["DejaVuSansCondensed.ttf", "DejaVuSans.ttf"]
     for n in names:
