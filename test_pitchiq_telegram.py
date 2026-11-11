@@ -102,5 +102,26 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertNotIn("odds.py", workflow)
         self.assertIn("group: pitchiq-publish", workflow)
 
-if __name__ == "__main__":
+
+class TelegramDeliverySafetyTests(unittest.TestCase):
+    def test_pick_ledger_is_saved_only_after_confirmed_photo_or_text_delivery(self):
+        source = Path("telegram.py").read_text(encoding="utf-8")
+        save_at = source.rindex("save_pick_state(pick_state)")
+        send_at = source.index("delivered = False")
+        self.assertGreater(save_at, send_at)
+        self.assertIn("if not delivered:", source)
+        self.assertIn("Telegram did not confirm either the photo or text pick post.", source)
+        self.assertIn("Only record picks after Telegram confirms", source)
+
+    def test_failed_news_post_does_not_mark_headlines_as_seen_or_abort_pick_ledger(self):
+        source = Path("telegram.py").read_text(encoding="utf-8")
+        news_start = source.index("def news_post():")
+        news_end = source.index("def load_pick_state():")
+        news = source[news_start:news_end]
+        self.assertIn("if not response.get(\"ok\"):", news)
+        self.assertIn("return", news)
+        self.assertIn("URLs remain eligible for a later retry", news)
+        self.assertLess(news.index("if not response.get(\"ok\"):"),
+                        news.index("seen += [l for _, l in v]"))
+\nif __name__ == "__main__":
     unittest.main()
