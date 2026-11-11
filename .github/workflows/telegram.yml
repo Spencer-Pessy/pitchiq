@@ -22,6 +22,8 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y fonts-dejavu-extra
           pip install pillow
+      - name: Validate Telegram script syntax
+        run: python -m py_compile telegram.py
       - run: python telegram.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -29,7 +31,7 @@ jobs:
       - run: |
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add -A daily || true
+          if [ -d daily ]; then git add -A daily; fi
           if git diff --cached --quiet; then
             echo "No changes to publish."
             exit 0
