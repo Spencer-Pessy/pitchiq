@@ -1,0 +1,56 @@
+name: Telegram published-pick results
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: pitchiq-publish
+  cancel-in-progress: false
+jobs:
+  results:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate Telegram results script
+        run: python -m py_compile telegram.py pitchiq_telegram.py
+      - name: Check and post results of previously published picks only
+        run: python telegram.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PITCHIQ_RESULTS_ONLY: "1"
+      - name: Publish results ledger with safe retry
+        run: |
+          set -euo pipefail
+          git config user.name "pitchiq-bot"
+          git config user.email "bot@users.noreply.github.com"
+          rm -rf /tmp/pitchiq-results
+          mkdir -p /tmp/pitchiq-results
+          if [ -d daily ]; then cp -a daily/. /tmp/pitchiq-results/; fi
+          for attempt in 1 2 3; do
+            echo "Results ledger publication attempt $attempt of 3"
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p daily
+            cp -a /tmp/pitchiq-results/. daily/
+            git add -A daily
+            if git diff --cached --quiet; then
+              echo "No new published-pick results to save."
+              exit 0
+            fi
+            git commit -m "Record published pick results"
+            if git push; then
+              echo "Published-pick results ledger saved."
+              exit 0
+            fi
+            echo "Push rejected; retrying from latest main without resending Telegram."
+            sleep 5
+          done
+          echo "Unable to publish results ledger after 3 fresh attempts."
+          exit 1
