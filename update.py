@@ -2,7 +2,7 @@ import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.er
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
-from model_metrics import ablation_comparison
+from model_metrics import ablation_comparison, scoreline_baseline_comparison
 from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
@@ -218,27 +218,6 @@ print("calibration:", CAL, "from", len(_pp), "results")
 def predict(s):
     return model_predict(s, CAL)
 
-# Injuries (from injuries.json, refreshed by a separate workflow)
-try:
-    with open("injuries.json") as f:
-        inj_data = json.load(f)
-except Exception:
-    inj_data = {"updated": None, "items": []}
-
-for x in out:
-    if x["status"] not in ("SCHEDULED", "TIMED") or not inj_data["items"]:
-        continue
-    m = mid[x["id"]]
-    when = datetime.fromisoformat(x["utc"].replace("Z", "+00:00"))
-    res = {}
-    for side, key in (("h", "homeTeam"), ("a", "awayTeam")):
-        names = [m[key].get("name"), tname(m[key])]
-        res[side] = [{"n": i["player"], "r": i["reason"]} for i in inj_data["items"]
-                     if abs((datetime.fromisoformat(i["date"].replace("Z", "+00:00")) - when).total_seconds()) < 36 * 3600
-                     and any(same(i["team"], n) for n in names)][:8]
-    if res["h"] or res["a"]:
-        x["inj"] = res
-
 # Results tracker: save each prediction before kickoff, score it after full time
 try:
     with open("predictions.json") as f:
@@ -298,5 +277,6 @@ with open("data.json", "w") as f:
             "forecasts": len(evaluation_rows), "completed": evaluation_completed,
         },
         "ablation": ablation_comparison(evaluation_rows),
+        "scoreline_baseline": scoreline_baseline_comparison(list(preds.values())),
     }, f, ensure_ascii=False)
 print("matches written:", len(out))
