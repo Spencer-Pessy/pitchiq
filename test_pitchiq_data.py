@@ -49,11 +49,12 @@ class ForecastSnapshotTests(unittest.TestCase):
             "lh": 1.55, "la": 1.25,
         }
         snapshot = forecast_input_snapshot(stats)
-        self.assertEqual(snapshot["schema"], 1)
+        self.assertEqual(snapshot["schema"], 2)
         self.assertEqual(snapshot["home"]["venue_matches"], 8)
         self.assertEqual(snapshot["away"]["form"], "LDWDL")
         self.assertEqual(snapshot["league_home"], 1.55)
         self.assertEqual(snapshot["league_away"], 1.25)
+        self.assertEqual(snapshot["calibration"], {"kh": 1.0, "ka": 1.0})
         self.assertNotIn("unrelated", snapshot["home"])
 
     def test_snapshot_supports_older_or_partial_team_inputs(self):
