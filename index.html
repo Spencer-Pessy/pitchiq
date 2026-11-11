@@ -145,6 +145,7 @@ function record(){
   return name==='Home stronger'?h>a:name==='Away stronger'?a>h:h===a;
  })));
  const confBins=[.3,.4,.5,.6,.7,.8,.9].map((lo,i)=>{const bin=rows.filter(r=>Math.max(...r.v)>=lo&&(i===6?Math.max(...r.v)<=1:Math.max(...r.v)<lo+.1));return{lo,n:bin.length,confidence:bin.length?bin.reduce((z,r)=>z+Math.max(...r.v),0)/bin.length:0,accuracy:bin.length?bin.filter(r=>r.ok).length/bin.length:0}}).filter(x=>x.n);
+ const ece=n?confBins.reduce((sum,x)=>sum+x.n*Math.abs(x.confidence-x.accuracy),0)/n:0,maxCalibrationGap=confBins.length?Math.max(...confBins.map(x=>Math.abs(x.confidence-x.accuracy))):0;
  $('#app').innerHTML=head()+tabsHtml()+(n?`<h2>Model performance</h2><div class="big">
  <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span></div>
  <div><b>${(br/n).toFixed(3)}</b><span>Brier score · lower is better</span></div>
