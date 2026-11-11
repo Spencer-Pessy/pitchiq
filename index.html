@@ -203,7 +203,7 @@ function list(){
   <span class="pill">${Math.round(r.ph*100)} / ${Math.round(r.pd*100)} / ${Math.round(r.pa*100)}</span></button>`;
  }
  $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${esc(n)}</option>`).join('')}</select>
- ${html||(tab=='up'?'<div class="panel"><h3>No upcoming fixtures in the next 7 days</h3><p class="note">The main match feed refreshed '+(D.updated?new Date(D.updated).toLocaleString():'recently')+'. The competitions currently covered by PitchIQ have no fixtures inside this window. International national-team fixtures are listed separately under International.</p><p class="note">The match feed checks for new fixtures every 30 minutes.</p></div>':'<p class="note">No recently completed results in the current 48-hour window.</p>')}`;
+ ${html||(tab=='up'?'<div class="panel"><h3>No upcoming fixtures in the next 30 days</h3><p class="note">The main match feed refreshed '+(D.updated?new Date(D.updated).toLocaleString():'recently')+'. No eligible fixtures were found inside this 30-day window. International national-team fixtures are listed separately under International.</p><p class="note">The match feed checks for new fixtures every 30 minutes.</p></div>':'<p class="note">No recently completed results in the current 48-hour window.</p>')}`;
  bind();
 }
 const fld=[['gf','Goals scored / game'],['ga','Goals conceded / game'],['elo','Rating (Elo)'],['form','Last 5 (W D L)'],['out','Key players out']];
