@@ -65,3 +65,8 @@ Python automation scripts use the Python standard library except `telegram.py`, 
 ## Privacy and limitations
 
 There are no user accounts. Match notes and manual absence adjustments are stored in the visitor's browser. External data may be delayed or incomplete; reported absences do not automatically alter model probabilities. Odds and injury coverage depend on the relevant provider's availability and quota.
+
+
+### Feed-health diagnostics
+
+The published `data_health` object reports fixture counts by competition, total and international fixture counts, available standings competitions, and the names/count of standings feeds that failed. A failed or malformed fixture response aborts the update so the last good `data.json` is preserved; standings failures are recorded explicitly because tables are optional to fixture forecasts. The website surfaces unavailable standings feeds instead of presenting coverage as complete.
