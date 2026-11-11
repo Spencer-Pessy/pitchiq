@@ -26,6 +26,27 @@ def evaluate(predictions):
         actual = 0 if home_goals > away_goals else 1 if home_goals == away_goals else 2
         records.append((home_goals, away_goals, p, actual, probs))
 
+    # Compare earlier and later forecasts in chronological order. This is a
+    # descriptive holdout split, not a retraining/backtest of the live model.
+    dated = sorted(
+        (item for item in predictions if item.get("final") and item.get("p")),
+        key=lambda item: str(item.get("utc") or item.get("made") or ""),
+    )
+    chronological = []
+    if len(records) >= 2:
+        # Reuse the same validity checks by evaluating each chronological half.
+        midpoint = len(dated) // 2
+        for label, subset in (("earlier", dated[:midpoint]), ("later", dated[midpoint:])):
+            subset_result = evaluate(subset) if len(subset) < len(predictions) else None
+            if subset_result is not None:
+                chronological.append({
+                    "period": label,
+                    "matches": subset_result["matches"],
+                    "accuracy": subset_result["accuracy"],
+                    "brier": subset_result["brier"],
+                    "log_loss": subset_result["log_loss"],
+                })
+
     n = len(records)
     if not n:
         return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None,
@@ -63,6 +84,7 @@ def evaluate(predictions):
     return {
         "matches": n,
         "accuracy": round(correct / n, 4),
+        "chronological_split": chronological,
         "confidence_bins": [
             {"lower": lo, "upper": hi, "matches": len(confidences),
              "mean_confidence": round(sum(confidences) / len(confidences), 4),
