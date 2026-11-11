@@ -264,13 +264,14 @@ let pk='conf';
 function picks(){
  const lim=Date.now()+36*3600e3;
  const nm=m=>['Home win: '+esc(m.h),'Draw','Away win: '+esc(m.a)];
+ const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null;
+ const oddsFresh=Number.isFinite(oh)&&oh>=0&&oh<=36;
  const ms=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{
   const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));let g=null,gi=-1;
-  if(m.odds&&m.odds.every(x=>x>1)){const inv=m.odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*m.odds[k]-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
+  if(oddsFresh&&Array.isArray(m.odds)&&m.odds.length===3&&m.odds.every(x=>Number.isFinite(Number(x))&&Number(x)>1&&Number(x)<1000)){const inv=m.odds.map(x=>1/Number(x)),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*Number(m.odds[k])-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
   return{m,r,i,c:v[i],g,gi}}).sort((a,b)=>pk=='gap'?((b.g?b.g.e:-9)-(a.g?a.g.e:-9)):b.c-a.c);
- const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null;
  $('#app').innerHTML=head()+tabsHtml()+`<div class="tabs"><button data-p="conf" aria-pressed="${pk=='conf'}">Most confident</button><button data-p="gap" aria-pressed="${pk=='gap'}">Biggest gap vs market</button></div>
- <p class="note">Matches in the next 36 hours. ${oh===null?'Odds aren’t loaded yet.':'Odds updated '+oh+' h ago, averaged across bookmakers.'} If the model and the market disagree a lot, trust the market more. Sure doesn’t mean certain.</p>`+(ms.map((x,k)=>`<button class="card" data-id="${x.m.id}"><div class="pk"><span class="rk">${k+1}</span><div><div class="comp">${esc(x.m.comp)} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${esc(x.m.h)} vs ${esc(x.m.a)}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span>${x.g?`<div class="note" style="margin-top:4px">Best value: <b class="${x.g.e>=.05?'ok':'no'}">${nm(x.m)[x.gi]} (${x.g.e>0?'+':''}${(x.g.e*100).toFixed(1)}%)</b> · market ${Math.round(x.g.mk*100)}%</div>`:''}</div></div></button>`).join('')||'<p class="note">No matches in the next 36 hours.</p>');
+ <p class="note">Matches in the next 36 hours. ${oh===null?'Odds aren’t loaded yet.':!oddsFresh?'Market snapshot is stale ('+oh+' h old); value comparisons are paused.':'Odds updated '+oh+' h ago, averaged across bookmakers.'} If the model and the market disagree a lot, trust the market more. Sure doesn’t mean certain.</p>`+(ms.map((x,k)=>`<button class="card" data-id="${x.m.id}"><div class="pk"><span class="rk">${k+1}</span><div><div class="comp">${esc(x.m.comp)} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${esc(x.m.h)} vs ${esc(x.m.a)}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span>${x.g?`<div class="note" style="margin-top:4px">Best value: <b class="${x.g.e>=.05?'ok':'no'}">${nm(x.m)[x.gi]} (${x.g.e>0?'+':''}${(x.g.e*100).toFixed(1)}%)</b> · market ${Math.round(x.g.mk*100)}%</div>`:''}</div></div></button>`).join('')||'<p class="note">No matches in the next 36 hours.</p>');
  bind();
 }
 function tables(){
