@@ -28,6 +28,10 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
         self.assertIn("xG MAE H/A", self.html)
         self.assertIn("not a league ranking or proof of model strength", self.html)
 
+    def test_retired_api_football_injury_panel_is_not_rendered(self):
+        self.assertNotIn("From API-Football", self.html)
+        self.assertNotIn("if(f.inj)", self.html)
+
     def test_provider_text_is_escaped_before_html_interpolation(self):
         fields = (
             "r.p.comp", "r.p.h", "r.p.a", "x.name", "x.m.comp", "x.m.h", "x.m.a",
