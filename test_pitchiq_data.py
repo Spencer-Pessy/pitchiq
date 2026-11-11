@@ -7,7 +7,35 @@ from pitchiq_data import (
     build_feed_health,
     player_goals_per_appearance,
     player_rate_stats,
+    team_venue_stats,
 )
+
+
+class TeamVenueStatsTests(unittest.TestCase):
+    def test_venue_rates_are_shrunk_and_sample_sizes_are_exposed(self):
+        history = [
+            (True, 3, 1, "W"),
+            (False, 0, 2, "L"),
+            (True, 1, 1, "D"),
+            (False, 2, 0, "W"),
+            (True, 2, 0, "W"),
+        ]
+        result = team_venue_stats(history, True, 1.5, 1.2, 1600, shrink=2, form_limit=3)
+        self.assertEqual(result["venue_matches"], 3)
+        self.assertEqual(result["form_matches"], 3)
+        self.assertEqual(result["form"], "DWW")
+        self.assertEqual(result["form_scope"], "all_venues")
+        self.assertAlmostEqual(result["gf"], 2.0)
+        self.assertAlmostEqual(result["ga"], 0.7)
+        self.assertEqual(result["elo"], 1600)
+
+    def test_no_venue_history_uses_prior_and_discloses_zero_sample(self):
+        result = team_venue_stats([], False, 1.4, 1.1, 1500)
+        self.assertEqual(result["gf"], 1.4)
+        self.assertEqual(result["ga"], 1.1)
+        self.assertEqual(result["venue_matches"], 0)
+        self.assertEqual(result["form_matches"], 0)
+        self.assertEqual(result["form"], "")
 
 
 class CompetitionDataTests(unittest.TestCase):
