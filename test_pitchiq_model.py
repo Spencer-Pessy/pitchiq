@@ -29,6 +29,40 @@ class MetricsTests(unittest.TestCase):
 
 
 
+    def test_ablation_replays_only_schema_two_snapshots_on_same_sample(self):
+        stats = {
+            "h": {"gf": 1.7, "ga": 0.9, "elo": 1620, "form": "WWDLW"},
+            "a": {"gf": 1.2, "ga": 1.4, "elo": 1510, "form": "LDWDL"},
+            "lh": 1.5, "la": 1.2,
+        }
+        calibration = {"kh": 1.05, "ka": 0.97}
+        forecast = predict(stats, calibration)
+        row = {
+            "final": [2, 0],
+            "inputs": {"schema": 2, "home": stats["h"], "away": stats["a"],
+                       "league_home": stats["lh"], "league_away": stats["la"],
+                       "calibration": calibration},
+            "p": forecast,
+        }
+        legacy = {"final": [1, 0], "inputs": {"schema": 1}}
+        result = ablation_comparison([row, legacy])
+        self.assertEqual(result["matches"], 1)
+        self.assertEqual(set(result["variants"]), {
+            "full_model", "without_elo", "without_form", "without_elo_or_form"
+        })
+        self.assertEqual(result["variants"]["full_model"]["matches"], 1)
+        self.assertEqual(result["variants"]["full_model"]["brier_delta_vs_full"], 0.0)
+        self.assertTrue(all(value["matches"] == 1 for value in result["variants"].values()))
+        self.assertEqual(result["variants"]["full_model"]["accuracy"], 1.0)
+
+    def test_ablation_comparison_is_empty_without_schema_two_snapshots(self):
+        result = ablation_comparison([
+            {"final": [1, 0], "inputs": {"schema": 1}},
+            {"final": None, "inputs": {"schema": 2}},
+        ])
+        self.assertEqual(result["matches"], 0)
+        self.assertTrue(all(row["brier"] is None for row in result["variants"].values()))
+
     def test_outcome_class_metrics_scores_each_one_vs_rest_probability(self):
         rows = [
             {"final": [2, 0], "p": {"ph": 0.8, "pd": 0.1, "pa": 0.1}},
