@@ -72,8 +72,6 @@ def is_international_fixture(item):
     country = str(league.get("country") or "").strip().casefold()
     if "club" in name:
         return False
-    if country in {"world", "international"}:
-        return True
 
     international_terms = (
         "world cup", "euro championship", "european championship",
@@ -85,4 +83,8 @@ def is_international_fixture(item):
         "caribbean cup", "baltic cup", "kirin cup", "saff championship",
         "shebelieves cup", "finalissima",
     )
+    # A global competition label alone is not enough: API-Football also
+    # tags some women's club tournaments as World/International.
+    if country in {"world", "international"}:
+        return any(term in name for term in international_terms)
     return any(term in name for term in international_terms)
