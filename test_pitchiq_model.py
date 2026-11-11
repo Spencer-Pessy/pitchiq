@@ -239,6 +239,39 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["accuracy"], 0.5)
         self.assertEqual(result["accuracy_ci_95"], wilson_interval(1, 2))
 
+
+class ExpectedGoalsCalibrationTests(unittest.TestCase):
+    def test_expected_goals_calibration_groups_home_and_away_separately(self):
+        rows = [
+            {"final": [2, 0], "p": {"lh": 1.8, "la": 0.4}},
+            {"final": [1, 2], "p": {"lh": 1.2, "la": 1.7}},
+            {"final": [3, 1], "p": {"lh": 2.2, "la": 0.8}},
+            {"final": [0, 0], "p": {"lh": 1.8, "la": 0.4}},
+        ]
+        result = expected_goals_calibration(rows)
+        home = next(x for x in result["home"] if x["band"] == "1.50–1.99")
+        away = next(x for x in result["away"] if x["band"] == "0–0.49")
+        self.assertEqual(home["matches"], 2)
+        self.assertAlmostEqual(home["mean_predicted"], 1.8)
+        self.assertAlmostEqual(home["mean_actual"], 1.0)
+        self.assertAlmostEqual(home["bias"], 0.8)
+        self.assertAlmostEqual(home["mae"], 1.0)
+        self.assertEqual(away["matches"], 2)
+        self.assertAlmostEqual(away["mean_actual"], 0.0)
+        self.assertEqual(home["interpretation"], "monitoring_only")
+
+    def test_expected_goals_calibration_ignores_invalid_or_unfinished_rows(self):
+        rows = [
+            {"final": None, "p": {"lh": 1.0, "la": 1.0}},
+            {"final": [1, 0], "p": {"lh": float("nan"), "la": 1.0}},
+            {"final": [1, 0], "p": {"lh": -1, "la": 1.0}},
+            {"final": [1, 0], "p": {"lh": 1.0}},
+        ]
+        result = expected_goals_calibration(rows)
+        self.assertEqual(sum(x["matches"] for x in result["home"]), 0)
+        self.assertEqual(sum(x["matches"] for x in result["away"]), 0)
+
+
 class ModelTests(unittest.TestCase):
     def setUp(self):
         self.stats = {
