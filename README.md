@@ -41,6 +41,7 @@ The workflows in `.github/workflows/` can be run on their schedules or manually 
 - **Update odds** — once daily (07:00 UTC) to conserve the free API allowance. Each run makes one sports-discovery request and up to six league-odds requests; publication retries reuse the saved response and do not make extra odds API calls.
 - **Update international fixtures** — daily; one public JSON download, no API key.
 - **Telegram picks** — daily.
+- **Published-pick results** — hourly; checks only the saved picks ledger and does not call odds services or post new picks.
 
 The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
 
