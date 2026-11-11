@@ -258,7 +258,7 @@ for x in out:
         preds[key] = {
             "id": x["id"], "comp": x["comp"], "code": x["code"], "utc": x["utc"],
             "h": x["h"], "a": x["a"], "p": predict(x["s"]), "odds": x.get("odds"),
-            "inputs": forecast_input_snapshot(x["s"]),
+            "inputs": forecast_input_snapshot(x["s"], CAL),
             "final": None, "made": now.isoformat(),
         }
 
