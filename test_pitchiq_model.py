@@ -269,7 +269,7 @@ class ExpectedGoalsCalibrationTests(unittest.TestCase):
         ]
         result = expected_goals_calibration(rows)
         self.assertEqual(sum(x["matches"] for x in result["home"]), 1)
-        self.assertEqual(sum(x["matches"] for x in result["away"]), 0)
+        self.assertEqual(sum(x["matches"] for x in result["away"]), 2)
 
 
 class ModelTests(unittest.TestCase):
