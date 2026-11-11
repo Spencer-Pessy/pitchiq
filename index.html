@@ -112,6 +112,8 @@ function record(){
   return{p,pick,v,ok,t:new Date(p.utc)};
  }).sort((x,y)=>y.t-x.t);
  const n=rows.length,f=(a,c)=>c?Math.round(a/c*100)+'%':'–',nm=['home win','draw','away win'];
+ const wilson=(successes,total)=>{if(!total)return null;const z=1.96,z2=z*z,p=successes/total,den=1+z2/total,center=(p+z2/(2*total))/den,margin=z*Math.sqrt((p*(1-p)+z2/(4*total))/total)/den;return[Math.max(0,center-margin),Math.min(1,center+margin)]};
+ const accuracyCI=wilson(hit,n);
  const mae=gn?(hm/gn).toFixed(2)+' / '+(am/gn).toFixed(2):'–';
  const byComp=new Map();
  rows.forEach(r=>{const k=r.p.comp||'Other';if(!byComp.has(k))byComp.set(k,[]);byComp.get(k).push(r)});
@@ -198,7 +200,7 @@ function record(){
  });
  const overMetric=binaryMetric("o25"),bttsMetric=binaryMetric("bt");
  $('#app').innerHTML=head()+tabsHtml()+(n?`<h2>Model performance</h2><div class="big">
- <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span></div>
+ <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span><small class="note">95% Wilson interval: ${accuracyCI?Math.round(accuracyCI[0]*100)+"–"+Math.round(accuracyCI[1]*100)+"%":"–"}</small></div>
  <div><b>${(br/n).toFixed(3)}</b><span>Brier score · lower is better</span></div>
  <div><b>${(ll/n).toFixed(3)}</b><span>Log loss · lower is better</span></div>
  <div><b>${mae}</b><span>Expected-goals MAE · home / away</span></div>
