@@ -1,6 +1,12 @@
 name: Update international fixtures
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - international.py
+      - pitchiq_data.py
+      - .github/workflows/international.yml
   schedule:
     - cron: "15 */6 * * *"
   workflow_dispatch:
