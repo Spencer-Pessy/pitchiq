@@ -2,6 +2,7 @@ import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.er
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
+from model_metrics import ablation_comparison
 from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
@@ -238,10 +239,6 @@ for x in out:
     if res["h"] or res["a"]:
         x["inj"] = res
 
-with open("data.json", "w") as f:
-    json.dump({"updated": now.isoformat(), "odds_updated": odds_data["updated"], "calib": CAL, "data_health": build_feed_health(fixture_counts, tables.keys(), len(out), standings_failed), "matches": out, "tables": tables}, f, ensure_ascii=False)
-print("matches written:", len(out))
-
 # Results tracker: save each prediction before kickoff, score it after full time
 try:
     with open("predictions.json") as f:
@@ -271,3 +268,14 @@ for p in preds.values():
 with open("predictions.json", "w") as f:
     json.dump(preds, f, ensure_ascii=False)
 print("predictions stored:", len(preds))
+
+# Publish controlled model ablation scores from completed schema-2 snapshots.
+with open("data.json", "w") as f:
+    json.dump({
+        "updated": now.isoformat(), "odds_updated": odds_data["updated"],
+        "calib": CAL,
+        "data_health": build_feed_health(fixture_counts, tables.keys(), len(out), standings_failed),
+        "matches": out, "tables": tables,
+        "ablation": ablation_comparison(list(preds.values())),
+    }, f, ensure_ascii=False)
+print("matches written:", len(out))
