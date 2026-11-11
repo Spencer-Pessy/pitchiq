@@ -61,6 +61,14 @@ class ModelTests(unittest.TestCase):
         result = predict(self.stats)
         self.assertAlmostEqual(result["ph"] + result["pd"] + result["pa"], 1.0, delta=0.001)
 
+    def test_reference_forecast_is_stable(self):
+        result = predict(self.stats)
+        self.assertEqual(result["ph"], 0.5597)
+        self.assertEqual(result["pd"], 0.2637)
+        self.assertEqual(result["pa"], 0.1766)
+        self.assertEqual(result["o25"], 0.4638)
+        self.assertEqual(result["bt"], 0.477)
+
     def test_all_market_probabilities_are_bounded(self):
         result = predict(self.stats)
         for key in ("ph", "pd", "pa", "o25", "bt"):
