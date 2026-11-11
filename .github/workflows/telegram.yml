@@ -28,14 +28,34 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      - run: |
+      # Send the Telegram post exactly once. Preserve its generated files
+      # outside the checkout so publication retries never resend the message.
+      - name: Publish Telegram artifacts with safe retry
+        run: |
+          set -euo pipefail
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
-          if [ -d daily ]; then git add -A daily; fi
-          if git diff --cached --quiet; then
-            echo "No changes to publish."
-            exit 0
-          fi
-          git commit -m "Daily picture"
-          git pull --rebase
-          git push
+          rm -rf /tmp/pitchiq-daily
+          mkdir -p /tmp/pitchiq-daily
+          if [ -d daily ]; then cp -a daily/. /tmp/pitchiq-daily/; fi
+          for attempt in 1 2 3; do
+            echo "Telegram artifact publication attempt $attempt of 3"
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p daily
+            cp -a /tmp/pitchiq-daily/. daily/
+            git add -A daily
+            if git diff --cached --quiet; then
+              echo "No Telegram artifacts to publish."
+              exit 0
+            fi
+            git commit -m "Daily picture"
+            if git push; then
+              echo "Telegram artifacts published successfully."
+              exit 0
+            fi
+            echo "Push rejected; retrying from latest main without resending Telegram."
+            sleep 5
+          done
+          echo "Unable to publish Telegram artifacts after 3 fresh attempts."
+          exit 1
