@@ -23,6 +23,20 @@ class MetricsTests(unittest.TestCase):
         self.assertAlmostEqual(result["home_goals_mae"], 0.1, places=4)
         self.assertAlmostEqual(result["away_goals_mae"], 0.4, places=4)
 
+    def test_chronological_split_uses_earlier_and_later_forecasts(self):
+        rows = [
+            {"utc": "2026-11-01T12:00:00Z", "final": [1, 0], "p": {"ph": 0.8, "pd": 0.1, "pa": 0.1}},
+            {"utc": "2026-11-02T12:00:00Z", "final": [0, 1], "p": {"ph": 0.8, "pd": 0.1, "pa": 0.1}},
+            {"utc": "2026-11-03T12:00:00Z", "final": [0, 1], "p": {"ph": 0.1, "pd": 0.1, "pa": 0.8}},
+            {"utc": "2026-11-04T12:00:00Z", "final": [0, 1], "p": {"ph": 0.1, "pd": 0.1, "pa": 0.8}},
+        ]
+        result = evaluate(rows)
+        self.assertEqual([x["period"] for x in result["chronological_split"]], ["earlier", "later"])
+        self.assertEqual([x["matches"] for x in result["chronological_split"]], [2, 2])
+        self.assertEqual(result["chronological_split"][0]["accuracy"], 0.5)
+        self.assertEqual(result["chronological_split"][1]["accuracy"], 1.0)
+        self.assertAlmostEqual(result["chronological_split"][1]["brier"], 0.06, places=4)
+
     def test_perfect_confidence_is_included_in_final_bin(self):
         result = evaluate([{"final": [1, 0], "p": {"ph": 1.0, "pd": 0.0, "pa": 0.0}}])
         self.assertEqual(result["matches"], 1)
