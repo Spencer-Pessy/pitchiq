@@ -171,5 +171,5 @@ class ScorelineBaselineComparisonWebTests(unittest.TestCase):
         self.assertIn("Dixon–Coles vs independent Poisson", source)
         self.assertIn("mean_delta_dc_minus_independent", source)
         self.assertIn("delta_ci_95", source)
-        self.assertIn("Negative NLL difference favours Dixon-Coles", source)
+        self.assertIn("Negative NLL difference favours Dixon–Coles", source)
         self.assertIn("D.scoreline_baseline", source)
