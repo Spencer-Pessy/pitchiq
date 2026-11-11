@@ -17,7 +17,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Validate Python syntax
-        run: python -m py_compile update.py odds.py injuries.py telegram.py
+        run: python -m py_compile update.py odds.py injuries.py telegram.py pitchiq_model.py model_metrics.py test_pitchiq_model.py
+      - name: Run offline model tests
+        run: python -m unittest -v test_pitchiq_model
       - run: python update.py
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
