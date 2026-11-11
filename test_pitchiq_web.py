@@ -58,6 +58,8 @@ class InputSignalDiagnosticsWebTests(unittest.TestCase):
         self.assertIn("Input-signal diagnostics", source)
         self.assertIn("const snapRows=rows.filter(r=>r.p.inputs?.schema===1)", source)
         self.assertIn("const diagSummary=(name,items)=>", source)
+        self.assertIn("The existing ledger predates snapshot capture", source)
+        self.assertIn("new forecasts will populate these checks as their matches finish", source)
         self.assertIn("Groups below 10 matches are monitoring-only", source)
         self.assertIn("Venue sample (weaker side)", source)
         self.assertIn("Recent form edge", source)
