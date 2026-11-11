@@ -73,6 +73,8 @@ class OddsMarketValidationTests(unittest.TestCase):
             [{"home_team": "Arsenal", "away_team": "Chelsea",
               "commence_time": "not-a-date", "bookmakers": []}],
             [{"home_team": "Arsenal", "away_team": "Chelsea",
+              "commence_time": "2026-11-22T15:00:00", "bookmakers": []}],
+            [{"home_team": "Arsenal", "away_team": "Chelsea",
               "commence_time": "2026-11-22T15:00:00Z", "bookmakers": {}}],
             [{"home_team": "Arsenal", "away_team": "Chelsea",
               "commence_time": "2026-11-22T15:00:00Z",
@@ -84,6 +86,20 @@ class OddsMarketValidationTests(unittest.TestCase):
         for payload in cases:
             with self.subTest(payload=payload), self.assertRaises(ValueError):
                 market_events(payload)
+
+    def test_rejects_duplicate_outcomes_within_one_bookmaker_market(self):
+        payload = [{
+            "home_team": "Arsenal", "away_team": "Chelsea",
+            "commence_time": "2026-11-22T15:00:00Z",
+            "bookmakers": [{"markets": [{"key": "h2h", "outcomes": [
+                {"name": "Arsenal", "price": 1.8},
+                {"name": "Arsenal", "price": 1.9},
+                {"name": "Draw", "price": 3.7},
+                {"name": "Chelsea", "price": 4.5},
+            ]}]}],
+        }]
+        with self.assertRaisesRegex(ValueError, "duplicate outcome"):
+            market_events(payload)
 
     def test_rejects_invalid_prices_instead_of_publishing_partial_data(self):
         for price in (True, 1, 1000, float("nan"), float("inf"), "2.0", None):
