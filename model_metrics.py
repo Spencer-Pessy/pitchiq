@@ -148,6 +148,63 @@ def input_diagnostics(predictions):
     }
 
 
+def outcome_class_metrics(predictions):
+    """Measure one-vs-rest probability calibration for home/draw/away outcomes."""
+    names = ("home", "draw", "away")
+    rows = []
+    for item in predictions:
+        final = item.get("final")
+        probs = item.get("p") or {}
+        if not isinstance(final, list) or len(final) != 2:
+            continue
+        try:
+            home, away = float(final[0]), float(final[1])
+            values = [float(probs[key]) for key in ("ph", "pd", "pa")]
+        except (KeyError, TypeError, ValueError):
+            continue
+        if (not all(math.isfinite(x) for x in [home, away] + values)
+                or min(home, away) < 0 or any(x < 0 or x > 1 for x in values)
+                or abs(sum(values) - 1.0) > 0.02):
+            continue
+        actual = 0 if home > away else 1 if home == away else 2
+        rows.append((values, actual))
+
+    result = {}
+    for index, name in enumerate(names):
+        samples = [(values[index], float(actual == index)) for values, actual in rows]
+        count = len(samples)
+        if not count:
+            result[name] = {"matches": 0, "mean_probability": None,
+                            "observed_rate": None, "brier": None,
+                            "log_loss": None, "expected_calibration_error": None}
+            continue
+        brier = sum((probability - actual) ** 2 for probability, actual in samples) / count
+        loss = sum(
+            -math.log(max(probability, 1e-15)) if actual
+            else -math.log(max(1 - probability, 1e-15))
+            for probability, actual in samples
+        ) / count
+        bins = []
+        for lower in (0.0, 0.2, 0.4, 0.6, 0.8):
+            upper = lower + 0.2
+            subset = [(p, y) for p, y in samples
+                      if lower <= p < upper or (upper == 1.0 and p == 1.0)]
+            if subset:
+                bins.append((len(subset),
+                             sum(p for p, _ in subset) / len(subset),
+                             sum(y for _, y in subset) / len(subset)))
+        ece = sum(n * abs(mean_p - observed) for n, mean_p, observed in bins) / count
+        result[name] = {
+            "matches": count,
+            "mean_probability": round(sum(p for p, _ in samples) / count, 4),
+            "observed_rate": round(sum(y for _, y in samples) / count, 4),
+            "brier": round(brier, 4),
+            "log_loss": round(loss, 4),
+            "expected_calibration_error": round(ece, 4),
+        }
+    return result
+
+
 def binary_market_metrics(predictions, key):
     """Score a saved binary market probability against its completed outcome."""
     rows = []
@@ -346,6 +403,7 @@ def evaluate(predictions):
                 "input_diagnostics": input_diagnostics(predictions),
                 "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
                                    "btts": binary_market_metrics(predictions, "bt")},
+                "outcome_classes": outcome_class_metrics(predictions),
                 "baseline_comparison": baseline_comparison(predictions)}
 
     correct = 0
@@ -406,6 +464,7 @@ def evaluate(predictions):
         "input_diagnostics": input_diagnostics(predictions),
         "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
                            "btts": binary_market_metrics(predictions, "bt")},
+        "outcome_classes": outcome_class_metrics(predictions),
         "baseline_comparison": baseline_comparison(predictions),
     }
 
