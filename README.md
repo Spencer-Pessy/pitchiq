@@ -77,3 +77,8 @@ The published `data_health` object reports fixture counts by competition, total 
 ### International fixtures and free API quota
 
 The international feed downloads the 2026 FIFA World Cup dataset from OpenFootball's public-domain (CC0) repository once daily. It requires no API key, account, or subscription. Its scope is the World Cup tournament only; it does not provide a live calendar of friendlies or qualifiers. football-data.org's free tier separately includes World Cup and European Championship coverage. Automated injury reports are paused because no sufficiently reliable, unrestricted free replacement has been validated; users can still adjust key-player absences manually. No API-Football secret is required by PitchIQ.
+
+
+### Exact-scoreline diagnostics
+
+The Record tab replays the model's normalised 8×8 Poisson + Dixon–Coles score grid from each completed forecast's saved pre-match expected-goal rates. It reports exact-score negative log likelihood and the most-likely exact-score hit rate. Rates are stored rounded to four decimals, so this is a close retrospective replay rather than a bit-for-bit reconstruction of the original unrounded matrix. Results outside the 0–7 goals-per-team grid and rows without valid saved rates are excluded and counted. Exact-score hit rate is a secondary diagnostic; negative log likelihood is the more informative probability score. Neither metric establishes betting value or future performance.
