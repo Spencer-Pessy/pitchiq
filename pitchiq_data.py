@@ -18,3 +18,21 @@ def average_bucket(code, counts):
     if code == "CL" or count < 20:
         return "ALL"
     return code
+
+
+def build_feed_health(fixture_counts, standings_codes, published_match_count):
+    """Summarize source coverage without exposing credentials or raw responses."""
+    fixture_counts = dict(sorted(fixture_counts.items()))
+    standings_codes = sorted(set(standings_codes))
+    return {
+        "fixture_competitions": len(fixture_counts),
+        "fixture_counts": fixture_counts,
+        "fixture_total": sum(fixture_counts.values()),
+        "international_fixture_total": sum(
+            count for code, count in fixture_counts.items()
+            if code in INTERNATIONAL_COMPETITIONS
+        ),
+        "standings_available": standings_codes,
+        "standings_competitions": len(standings_codes),
+        "published_match_count": published_match_count,
+    }
