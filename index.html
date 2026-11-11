@@ -18,8 +18,8 @@ h1{font:700 34px/1 'Arial Narrow',Impact,sans-serif;margin:0}
 h1 span{color:var(--home)}
 h2{font:700 22px/1.1 'Arial Narrow',Impact,sans-serif;margin:0 0 10px}
 .tag{color:var(--mute);font-size:13px;text-align:right}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tabs button{flex:1;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 0;cursor:pointer}
+.tabs{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:thin}
+.tabs button{flex:0 0 auto;min-width:76px;white-space:nowrap;font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 10px;cursor:pointer}
 .tabs button[aria-pressed="true"]{background:var(--home);border-color:var(--home);color:#fff}
 select{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:12px}
 .day{font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 6px}
@@ -166,7 +166,8 @@ function tables(){
  bind();
 }
 function international(){
- const fixtures=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a);
+ const rank=f=>['NS','TBD'].includes(f.status)?0:['1H','HT','2H','ET','P'].includes(f.status)?1:2;
+ const fixtures=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a).sort((a,b)=>rank(a)-rank(b)||new Date(a.utc)-new Date(b.utc));
  const age=I.updated?Math.max(0,Math.round((Date.now()-new Date(I.updated))/36e5)):null;
  const label=f=>({NS:'UPCOMING',TBD:'TIME TO BE CONFIRMED','1H':'LIVE',HT:'HALF TIME','2H':'LIVE',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED'}[f.status]||f.status||'SCHEDULED');
  const cards=fixtures.map(f=>{
