@@ -4,7 +4,7 @@ import math
 import random
 import sys
 
-from pitchiq_model import predict as model_predict
+from pitchiq_model import predict as model_predict, pois, tau
 
 
 
@@ -518,6 +518,91 @@ def expected_goals_calibration(predictions):
         ]
     return result
 
+
+def scoreline_baseline_comparison(predictions):
+    """Compare Dixon–Coles with independent Poisson on identical saved forecasts."""
+    deltas = []
+    dc_losses = []
+    independent_losses = []
+    excluded = 0
+    for item in predictions:
+        final = item.get("final")
+        if not isinstance(final, list) or len(final) != 2:
+            continue
+        try:
+            home_goals, away_goals = float(final[0]), float(final[1])
+            probs = item.get("p") or {}
+            home_rate, away_rate = float(probs["lh"]), float(probs["la"])
+        except (KeyError, TypeError, ValueError):
+            excluded += 1
+            continue
+        if (not all(math.isfinite(value) for value in
+                    (home_goals, away_goals, home_rate, away_rate))
+                or not home_goals.is_integer() or not away_goals.is_integer()
+                or min(home_goals, away_goals) < 0
+                or home_goals >= 8 or away_goals >= 8
+                or not 0 < home_rate <= 10 or not 0 < away_rate <= 10):
+            excluded += 1
+            continue
+
+        home_goals, away_goals = int(home_goals), int(away_goals)
+        dc_total = independent_total = 0.0
+        dc_actual = independent_actual = 0.0
+        valid = True
+        for home_score in range(8):
+            for away_score in range(8):
+                base = pois(home_rate, home_score) * pois(away_rate, away_score)
+                independent_total += base
+                dc_value = base * tau(home_score, away_score, home_rate, away_rate, -0.1)
+                if not math.isfinite(dc_value) or dc_value < 0:
+                    valid = False
+                    break
+                dc_total += dc_value
+                if home_score == home_goals and away_score == away_goals:
+                    independent_actual = base
+                    dc_actual = dc_value
+            if not valid:
+                break
+        if (not valid or dc_total <= 0 or independent_total <= 0
+                or dc_actual <= 0 or independent_actual <= 0):
+            excluded += 1
+            continue
+        dc_loss = -math.log(dc_actual / dc_total)
+        independent_loss = -math.log(independent_actual / independent_total)
+        dc_losses.append(dc_loss)
+        independent_losses.append(independent_loss)
+        deltas.append(dc_loss - independent_loss)
+
+    count = len(deltas)
+    if not count:
+        return {
+            "matches": 0, "excluded": excluded,
+            "dixon_coles_nll": None, "independent_poisson_nll": None,
+            "mean_delta_dc_minus_independent": None, "delta_ci_95": None,
+            "dc_better": 0, "independent_better": 0, "ties": 0,
+            "interpretation": "insufficient_data",
+        }
+    mean_delta = sum(deltas) / count
+    interval = paired_bootstrap_interval(deltas)
+    return {
+        "matches": count,
+        "excluded": excluded,
+        "dixon_coles_nll": round(sum(dc_losses) / count, 4),
+        "independent_poisson_nll": round(sum(independent_losses) / count, 4),
+        "mean_delta_dc_minus_independent": round(mean_delta, 4),
+        "delta_ci_95": interval,
+        "dc_better": sum(value < -1e-12 for value in deltas),
+        "independent_better": sum(value > 1e-12 for value in deltas),
+        "ties": sum(abs(value) <= 1e-12 for value in deltas),
+        "interpretation": (
+            "dixon_coles_better" if interval and interval[1] < 0 else
+            "independent_poisson_better" if interval and interval[0] > 0 else
+            "no_clear_difference"
+        ),
+        "note": "Paired replay of saved pre-match rates on the same completed matches; negative delta favours Dixon–Coles. The 8×8 score grid is normalised separately for each model.",
+    }
+
+
 def evaluate(predictions):
     """Calculate outcome accuracy, multiclass Brier/log loss and goal MAE."""
     records = []
@@ -571,7 +656,8 @@ def evaluate(predictions):
                                    "btts": binary_market_metrics(predictions, "bt")},
                 "outcome_classes": outcome_class_metrics(predictions),
                 "baseline_comparison": baseline_comparison(predictions),
-                "ablation_comparison": ablation_comparison(predictions)}
+                "ablation_comparison": ablation_comparison(predictions),
+                "scoreline_baseline_comparison": scoreline_baseline_comparison(predictions)}
 
     correct = 0
     confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
@@ -636,6 +722,7 @@ def evaluate(predictions):
         "outcome_classes": outcome_class_metrics(predictions),
         "baseline_comparison": baseline_comparison(predictions),
         "ablation_comparison": ablation_comparison(predictions),
+        "scoreline_baseline_comparison": scoreline_baseline_comparison(predictions),
     }
 
 
