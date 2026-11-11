@@ -53,3 +53,77 @@ def clean_seen_urls(value, limit=200):
         return []
     return [item.strip() for item in value
             if isinstance(item, str) and item.strip()][-limit:]
+
+
+def snapshot_published_pick(record):
+    """Freeze the exact pre-match pick and probabilities that were published."""
+    if not valid_forecast(record):
+        return None
+    match_id = record.get("id")
+    if isinstance(match_id, bool) or not isinstance(match_id, (str, int)) or not str(match_id).strip():
+        return None
+    probabilities = record["p"]
+    values = {key: float(probabilities[key]) for key in ("ph", "pd", "pa")}
+    index = max(range(3), key=lambda i: values[("ph", "pd", "pa")[i]])
+    return {
+        "id": str(match_id), "h": record["h"], "a": record["a"],
+        "comp": record["comp"], "utc": record["utc"], "p": values,
+        "pick_index": index
+    }
+
+
+def clean_pick_state(value):
+    """Validate the small persistent ledger of published picks."""
+    if not isinstance(value, dict):
+        value = {}
+    pending, seen = [], set()
+    raw_pending = value.get("pending", [])
+    if isinstance(raw_pending, list):
+        for item in raw_pending:
+            if not isinstance(item, dict):
+                continue
+            snap = snapshot_published_pick(item)
+            if snap is None or snap["id"] in seen:
+                continue
+            # Preserve the original stored pick, never recompute it from a new forecast.
+            if item.get("pick_index") not in (0, 1, 2):
+                continue
+            snap["pick_index"] = item["pick_index"]
+            pending.append(snap)
+            seen.add(snap["id"])
+    raw_ids = value.get("sent_ids", [])
+    sent_ids = []
+    if isinstance(raw_ids, list):
+        for item in raw_ids:
+            if isinstance(item, (str, int)) and not isinstance(item, bool) and str(item).strip():
+                key = str(item)
+                if key not in sent_ids:
+                    sent_ids.append(key)
+    return {"version": 1, "pending": pending[-300:], "sent_ids": sent_ids[-500:]}
+
+
+def resolve_published_picks(state, predictions):
+    """Match only previously published IDs to valid final scores."""
+    state = clean_pick_state(state)
+    by_id = {}
+    for record in predictions if isinstance(predictions, list) else []:
+        if isinstance(record, dict) and record.get("id") is not None:
+            by_id[str(record["id"])] = record
+    completed, pending = [], []
+    for snap in state["pending"]:
+        current = by_id.get(snap["id"])
+        final = current.get("final") if isinstance(current, dict) else None
+        if not valid_final(final):
+            pending.append(snap)
+            continue
+        actual = 0 if final[0] > final[1] else 1 if final[0] == final[1] else 2
+        completed.append({
+            **snap, "final": list(final), "actual_index": actual,
+            "correct": snap["pick_index"] == actual
+        })
+    state["pending"] = pending
+    return completed, state
+
+
+def pick_label(snapshot):
+    return ("Home win: " + snapshot["h"], "Draw", "Away win: " + snapshot["a"])[snapshot["pick_index"]]
