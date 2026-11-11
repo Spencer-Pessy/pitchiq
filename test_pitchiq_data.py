@@ -6,6 +6,7 @@ from pitchiq_data import (
     goal_average_keys,
     build_feed_health,
     player_goals_per_appearance,
+    player_rate_stats,
 )
 
 
@@ -69,6 +70,17 @@ class CompetitionDataTests(unittest.TestCase):
         self.assertIsNone(player_goals_per_appearance(4, 0))
         self.assertIsNone(player_goals_per_appearance(None, 10))
         self.assertIsNone(player_goals_per_appearance(-1, 5))
+
+    def test_player_contribution_rates_handle_missing_assists(self):
+        self.assertEqual(player_rate_stats(9, 3, 10), {
+            "gpm": 0.9, "apm": 0.3, "gapm": 1.2,
+        })
+        self.assertEqual(player_rate_stats(4, None, 8), {
+            "gpm": 0.5, "apm": None, "gapm": None,
+        })
+        self.assertEqual(player_rate_stats(4, 2, 0), {
+            "gpm": None, "apm": None, "gapm": None,
+        })
 
     def test_feed_health_reports_competition_coverage(self):
         health = build_feed_health(
