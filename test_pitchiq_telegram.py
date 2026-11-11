@@ -85,6 +85,14 @@ class TelegramValidationTests(unittest.TestCase):
 
 
 class ResultsOnlyWorkflowTests(unittest.TestCase):
+    def test_published_pick_ledger_starts_with_valid_empty_schema(self):
+        import json
+        ledger = json.loads(Path("daily/published_picks.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(ledger), {"pending", "results", "sent_ids"})
+        self.assertEqual(ledger["pending"], [])
+        self.assertEqual(ledger["results"], [])
+        self.assertEqual(ledger["sent_ids"], [])
+
     def test_results_only_mode_exits_before_new_picks_and_news(self):
         source = Path("telegram.py").read_text(encoding="utf-8")
         flag = 'RESULTS_ONLY = os.environ.get("PITCHIQ_RESULTS_ONLY") == "1"'
