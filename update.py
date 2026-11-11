@@ -77,7 +77,8 @@ for c in COMPS:
     if sc and c in tables:
         tables[c]["scorers"] = [
             {"name": x["player"]["name"], "team": tname(x["team"]), "g": x.get("goals"),
-             "a": x.get("assists"), "pen": x.get("penalties"), "m": x.get("playedMatches")}
+             "a": x.get("assists"), "pen": x.get("penalties"), "m": x.get("playedMatches"),
+             "gpm": player_goals_per_appearance(x.get("goals"), x.get("playedMatches"))}
             for x in sc.get("scorers", [])]
     time.sleep(7)
 
