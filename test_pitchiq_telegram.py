@@ -87,7 +87,7 @@ class TelegramValidationTests(unittest.TestCase):
 class ResultsOnlyWorkflowTests(unittest.TestCase):
     def test_results_only_mode_exits_before_new_picks_and_news(self):
         source = Path("telegram.py").read_text(encoding="utf-8")
-        flag = 'if os.environ.get("PITCHIQ_RESULTS_ONLY") == "1":'
+        flag = 'RESULTS_ONLY = os.environ.get("PITCHIQ_RESULTS_ONLY") == "1"'
         self.assertIn(flag, source)
         self.assertLess(source.index(flag), source.index('up = [p for p in preds'))
         self.assertIn("no new picks or news posts were requested", source)
