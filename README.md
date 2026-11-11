@@ -82,3 +82,6 @@ The international feed downloads the 2026 FIFA World Cup dataset from OpenFootba
 ### Exact-scoreline diagnostics
 
 The Record tab replays the model's normalised 8×8 Poisson + Dixon–Coles score grid from each completed forecast's saved pre-match expected-goal rates. It reports exact-score negative log likelihood and the most-likely exact-score hit rate. Rates are stored rounded to four decimals, so this is a close retrospective replay rather than a bit-for-bit reconstruction of the original unrounded matrix. Results outside the 0–7 goals-per-team grid and rows without valid saved rates are excluded and counted. Exact-score hit rate is a secondary diagnostic; negative log likelihood is the more informative probability score. Neither metric establishes betting value or future performance.
+
+
+The exact-scoreline Record panel also compares the average probability assigned to each forecast's single most likely score with its observed hit rate, grouped into confidence bands. It reports the combined probability mass of the three most likely scorelines against the observed top-three coverage. These are descriptive calibration checks; sparse bins should not drive model changes.
