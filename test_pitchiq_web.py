@@ -64,3 +64,12 @@ class InputSignalDiagnosticsWebTests(unittest.TestCase):
         self.assertIn("Venue sample (weaker side)", source)
         self.assertIn("Recent form edge", source)
         self.assertIn("s.length>=1&&s.length<=5", source)
+
+
+class CalibrationDisplayTests(unittest.TestCase):
+    def test_record_view_shows_weighted_calibration_error_and_caution(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const ece=n?confBins.reduce", source)
+        self.assertIn("Expected calibration error (lower is better)", source)
+        self.assertIn("Largest populated-band gap", source)
+        self.assertIn("not a reason to recalibrate on their own", source)
