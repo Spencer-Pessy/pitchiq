@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics, binary_market_metrics
+from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison
 
 
 
@@ -27,6 +27,39 @@ class MetricsTests(unittest.TestCase):
         self.assertAlmostEqual(result["home_goals_bias"], -0.1, places=4)
         self.assertAlmostEqual(result["away_goals_bias"], 0.4, places=4)
 
+
+
+    def test_baseline_comparison_uses_prior_results_and_de_vigged_odds(self):
+        rows = [
+            {"utc": "2026-01-01T12:00:00Z", "final": [1, 0],
+             "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1}, "odds": [2.0, 4.0, 5.0]},
+            {"utc": "2026-01-02T12:00:00Z", "final": [0, 1],
+             "p": {"ph": 0.1, "pd": 0.2, "pa": 0.7}, "odds": [5.0, 4.0, 2.0]},
+            {"utc": "2026-01-02T12:00:00Z", "final": [1, 1],
+             "p": {"ph": 0.2, "pd": 0.7, "pa": 0.1}, "odds": [4.0, 2.0, 5.0]},
+            {"utc": "2026-01-03T12:00:00Z", "final": [0, 0],
+             "p": {"ph": 0.2, "pd": 0.6, "pa": 0.2}, "odds": None},
+        ]
+        result = baseline_comparison(rows)
+        self.assertEqual(result["rolling_prior"]["matches"], 4)
+        self.assertEqual(result["model_on_odds_sample"]["matches"], 3)
+        self.assertEqual(result["bookmaker_consensus"]["matches"], 3)
+        self.assertIsNotNone(result["model_minus_bookmaker_brier"])
+        self.assertIsNotNone(result["model_minus_bookmaker_log_loss"])
+        reversed_result = baseline_comparison(list(reversed(rows)))
+        self.assertEqual(result, reversed_result)
+
+    def test_baseline_comparison_ignores_invalid_odds_and_unfinished_matches(self):
+        rows = [
+            {"utc": "2026-01-01T12:00:00Z", "final": [1, 0],
+             "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1}, "odds": [1.0, 4.0, 5.0]},
+            {"utc": "2026-01-02T12:00:00Z", "final": None,
+             "p": {"ph": 0.5, "pd": 0.3, "pa": 0.2}, "odds": [2.0, 3.0, 4.0]},
+        ]
+        result = baseline_comparison(rows)
+        self.assertEqual(result["rolling_prior"]["matches"], 1)
+        self.assertEqual(result["bookmaker_consensus"]["matches"], 0)
+        self.assertEqual(result["model_on_odds_sample"]["matches"], 0)
 
     def test_binary_market_metrics_score_probabilities_and_calibration(self):
         rows = [
