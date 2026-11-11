@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics
+from model_metrics import evaluate, input_diagnostics, binary_market_metrics
 
 
 
@@ -28,6 +28,28 @@ class MetricsTests(unittest.TestCase):
         self.assertAlmostEqual(result["away_goals_bias"], 0.4, places=4)
 
 
+    def test_binary_market_metrics_score_probabilities_and_calibration(self):
+        rows = [
+            {"final": [2, 0], "p": {"o25": 0.8, "bt": 0.2}},
+            {"final": [1, 1], "p": {"o25": 0.2, "bt": 0.8}},
+            {"final": [1, 0], "p": {"o25": 0.5, "bt": 0.5}},
+        ]
+        over = binary_market_metrics(rows, "o25")
+        btts = binary_market_metrics(rows, "bt")
+        self.assertEqual(over["matches"], 3)
+        self.assertAlmostEqual(over["accuracy"], 1 / 3, places=4)
+        self.assertAlmostEqual(over["brier"], 0.31, places=4)
+        self.assertAlmostEqual(over["expected_calibration_error"], 0.3, places=4)
+        self.assertEqual(btts["matches"], 3)
+        self.assertAlmostEqual(btts["accuracy"], 1 / 3, places=4)
+
+    def test_binary_market_metrics_ignores_missing_and_invalid_probabilities(self):
+        result = binary_market_metrics([
+            {"final": [1, 0], "p": {"o25": None}},
+            {"final": [1, 0], "p": {"o25": 1.2}},
+        ], "o25")
+        self.assertEqual(result["matches"], 0)
+        self.assertIsNone(result["brier"])
     def test_input_diagnostics_group_saved_venue_samples(self):
         rows = [
             {"final": [2, 0], "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1, "lh": 1.8, "la": 0.8},
