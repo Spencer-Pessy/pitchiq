@@ -227,6 +227,21 @@ class ModelTests(unittest.TestCase):
         self.assertGreater(result["rla"], 0)
         self.assertAlmostEqual(result["lh"], result["rlh"], places=4)
 
+    def test_elo_ablation_removes_rating_edge(self):
+        full = predict(self.stats)
+        no_elo = predict(self.stats, use_elo=False)
+        self.assertNotEqual(full["lh"], no_elo["lh"])
+        self.assertNotEqual(full["ph"], no_elo["ph"])
+
+    def test_form_ablation_removes_recent_form_edge(self):
+        full = predict(self.stats)
+        no_form = predict(self.stats, use_form=False)
+        self.assertNotEqual(full["lh"], no_form["lh"])
+        self.assertNotEqual(full["ph"], no_form["ph"])
+
+    def test_ablation_switches_do_not_change_default_forecast(self):
+        self.assertEqual(predict(self.stats), predict(self.stats, use_elo=True, use_form=True))
+
     def test_calibration_changes_rates_not_raw_rates(self):
         baseline = predict(self.stats)
         adjusted = predict(self.stats, {"kh": 1.1, "ka": 0.9})
