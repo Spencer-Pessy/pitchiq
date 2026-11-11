@@ -124,8 +124,7 @@ def team_stats(tid, home, prior_for, prior_against):
     gf = (sum(r[1] for r in rows) + K * prior_for) / (n + K)
     ga = (sum(r[2] for r in rows) + K * prior_against) / (n + K)
     form = "".join(r[3] for r in hist[tid][-5:])
-    return {"gf": round(gf, 2), "rla"] = rlh, rla
-    return {k: round(v, 4) for k, v in r.items()}
+    return {"gf": round(gf, 2), "ga": round(ga, 2), "elo": int(elo[tid]), "form": form, "out": 0}
 
 
 now = datetime.now(timezone.utc)
