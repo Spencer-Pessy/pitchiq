@@ -32,13 +32,21 @@ def evaluate(predictions):
                 "home_goals_mae": None, "away_goals_mae": None}
 
     correct = 0
+    confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
     brier = 0.0
     log_loss = 0.0
     home_mae = 0.0
     away_mae = 0.0
     goal_n = 0
     for home, away, p, actual, original in records:
-        correct += p.index(max(p)) == actual
+        hit = p.index(max(p)) == actual
+        correct += hit
+        confidence = max(p)
+        for lo, hi, confidences, outcomes in confidence_groups:
+            if lo <= confidence < hi or (hi > 1 and confidence <= 1):
+                confidences.append(confidence)
+                outcomes.append(float(hit))
+                break
         brier += sum((value - (index == actual)) ** 2 for index, value in enumerate(p))
         log_loss -= math.log(max(p[actual], 1e-15))
         try:
@@ -54,6 +62,12 @@ def evaluate(predictions):
     return {
         "matches": n,
         "accuracy": round(correct / n, 4),
+        "confidence_bins": [
+            {"lower": lo, "upper": hi, "matches": len(confidences),
+             "mean_confidence": round(sum(confidences) / len(confidences), 4),
+             "accuracy": round(sum(outcomes) / len(outcomes), 4)}
+            for lo, hi, confidences, outcomes in confidence_groups if confidences
+        ],
         "brier": round(brier / n, 4),
         "log_loss": round(log_loss / n, 4),
         "goal_samples": goal_n,
