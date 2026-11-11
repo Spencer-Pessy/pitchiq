@@ -148,6 +148,51 @@ def input_diagnostics(predictions):
     }
 
 
+def binary_market_metrics(predictions, key):
+    """Score a saved binary market probability against its completed outcome."""
+    rows = []
+    for item in predictions:
+        final = item.get("final")
+        value = (item.get("p") or {}).get(key)
+        if not isinstance(final, list) or len(final) != 2:
+            continue
+        try:
+            home, away, probability = float(final[0]), float(final[1]), float(value)
+        except (TypeError, ValueError):
+            continue
+        if (not all(math.isfinite(x) for x in (home, away, probability))
+                or min(home, away) < 0 or not 0 <= probability <= 1):
+            continue
+        actual = float(home + away > 2) if key == "o25" else float(home > 0 and away > 0)
+        rows.append((probability, actual))
+
+    count = len(rows)
+    if not count:
+        return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None,
+                "expected_calibration_error": None, "bins": []}
+
+    bins = []
+    for lower in (0.0, 0.2, 0.4, 0.6, 0.8):
+        upper = lower + 0.2
+        subset = [(p, y) for p, y in rows if lower <= p < upper or (upper == 1.0 and p == 1.0)]
+        if not subset:
+            continue
+        mean_probability = sum(p for p, _ in subset) / len(subset)
+        observed_rate = sum(y for _, y in subset) / len(subset)
+        bins.append({"lower": lower, "upper": upper, "matches": len(subset),
+                     "mean_probability": round(mean_probability, 4),
+                     "observed_rate": round(observed_rate, 4)})
+
+    ece = sum(row["matches"] * abs(row["mean_probability"] - row["observed_rate"])
+              for row in bins) / count
+    brier = sum((p - y) ** 2 for p, y in rows) / count
+    loss = sum(-math.log(max(p, 1e-15)) if y else -math.log(max(1 - p, 1e-15))
+               for p, y in rows) / count
+    hits = sum((p >= 0.5) == bool(y) for p, y in rows)
+    return {"matches": count, "accuracy": round(hits / count, 4),
+            "brier": round(brier, 4), "log_loss": round(loss, 4),
+            "expected_calibration_error": round(ece, 4), "bins": bins}
+
 def evaluate(predictions):
     """Calculate outcome accuracy, multiclass Brier/log loss and goal MAE."""
     records = []
@@ -195,7 +240,9 @@ def evaluate(predictions):
                 "chronological_split": [], "confidence_bins": [], "expected_calibration_error": None,
                 "max_calibration_gap": None, "home_goals_mae": None, "away_goals_mae": None,
                 "home_goals_bias": None, "away_goals_bias": None,
-                "input_diagnostics": input_diagnostics(predictions)}
+                "input_diagnostics": input_diagnostics(predictions),
+                "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
+                                   "btts": binary_market_metrics(predictions, "bt")}}
 
     correct = 0
     confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
@@ -253,6 +300,8 @@ def evaluate(predictions):
         "home_goals_bias": round(home_bias / goal_n, 4) if goal_n else None,
         "away_goals_bias": round(away_bias / goal_n, 4) if goal_n else None,
         "input_diagnostics": input_diagnostics(predictions),
+        "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
+                           "btts": binary_market_metrics(predictions, "bt")},
     }
 
 
