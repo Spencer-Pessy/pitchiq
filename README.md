@@ -57,9 +57,9 @@ Third-party API quotas and free-plan limits can change. PitchIQ's scheduled inte
 
 ## Local checks
 
-Python automation scripts use the Python standard library except `telegram.py`, which uses Pillow to create the forecast image. The GitHub Actions Telegram workflow installs Pillow at runtime.
+Python automation scripts use the Python standard library except `telegram.py`, which uses Pillow to create the forecast image. Telegram publication uses side-effect-free validation helpers in `pitchiq_telegram.py` to skip malformed fixture/score records instead of letting one bad ledger row break a scheduled post. The GitHub Actions Telegram workflow installs Pillow at runtime.
 
-- Check Python syntax: `python -m py_compile update.py international.py odds.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py`
+- Check Python syntax: `python -m py_compile update.py international.py odds.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py pitchiq_telegram.py test_pitchiq_telegram.py`
 - Run the website by serving the repository root over HTTP; opening `index.html` directly may prevent JSON fetches from working.
 - The service worker caches the app shell and last successful JSON snapshots for offline viewing; the next connection refreshes them.
 - To test scheduled integrations, use the corresponding GitHub Actions workflow and inspect its logs.
