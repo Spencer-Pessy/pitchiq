@@ -123,3 +123,15 @@ class AblationUncertaintyWebTests(unittest.TestCase):
         self.assertIn("Paired 95% CI", source)
         self.assertIn("brier_delta_ci_95", source)
         self.assertIn("intervals crossing zero do not show a clear direction", source)
+
+
+class ExpectedGoalsCalibrationWebTests(unittest.TestCase):
+    def test_record_view_displays_home_and_away_expected_goals_bands(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Expected-goals calibration", source)
+        self.assertIn('xgCalibration("lh",0)', source)
+        self.assertIn('xgCalibration("la",1)', source)
+        self.assertIn("Mean predicted", source)
+        self.assertIn("Mean actual", source)
+        self.assertIn("monitoring-only", source)
+        self.assertIn("no automatic model correction is applied", source)
