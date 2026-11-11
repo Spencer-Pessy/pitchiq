@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate
+from model_metrics import evaluate, input_diagnostics
 
 
 
@@ -24,6 +24,38 @@ class MetricsTests(unittest.TestCase):
         self.assertAlmostEqual(result["away_goals_mae"], 0.4, places=4)
         self.assertAlmostEqual(result["home_goals_bias"], -0.1, places=4)
         self.assertAlmostEqual(result["away_goals_bias"], 0.4, places=4)
+
+
+    def test_input_diagnostics_group_saved_venue_samples(self):
+        rows = [
+            {"final": [2, 0], "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1, "lh": 1.8, "la": 0.8},
+             "inputs": {"schema": 1, "home": {"venue_matches": 2, "form": "WWD"},
+                        "away": {"venue_matches": 7, "form": "LLD"}}},
+            {"final": [0, 1], "p": {"ph": 0.2, "pd": 0.2, "pa": 0.6, "lh": 1.0, "la": 1.4},
+             "inputs": {"schema": 1, "home": {"venue_matches": 4, "form": "LLL"},
+                        "away": {"venue_matches": 12, "form": "WWW"}}},
+            {"final": [1, 1], "p": {"ph": 0.2, "pd": 0.6, "pa": 0.2, "lh": 1.0, "la": 1.0}},
+        ]
+        result = input_diagnostics(rows)
+        self.assertEqual(result["completed_forecasts"], 3)
+        self.assertEqual(result["snapshot_forecasts"], 2)
+        self.assertEqual(result["missing_or_invalid_snapshots"], 1)
+        home = result["groups"]["home_venue_sample"]
+        self.assertEqual(home[0]["matches"], 1)
+        self.assertEqual(home[1]["matches"], 1)
+        self.assertEqual(home[0]["accuracy"], 1.0)
+        self.assertEqual(result["groups"]["away_venue_sample"][2]["matches"], 1)
+        self.assertEqual(result["groups"]["home_form_points"][3]["matches"], 1)
+
+    def test_input_diagnostics_ignores_malformed_snapshots(self):
+        result = input_diagnostics([
+            {"final": [1, 0], "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
+             "inputs": {"schema": 99, "home": {"venue_matches": 3}}},
+        ])
+        self.assertEqual(result["snapshot_forecasts"], 0)
+        self.assertEqual(result["missing_or_invalid_snapshots"], 1)
+        self.assertTrue(all(row["matches"] == 0
+                            for row in result["groups"]["home_venue_sample"]))
 
     def test_chronological_split_uses_earlier_and_later_forecasts(self):
         rows = [
