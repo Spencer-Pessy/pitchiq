@@ -22,10 +22,8 @@ now = datetime.now(timezone.utc)
 items = []
 for d in (now, now + timedelta(days=1)):
     data = get("/injuries?date=" + d.strftime("%Y-%m-%d"))
-    if not data:
-        continue
-    if data.get("errors"):
-        print("API says:", data["errors"])
+    if not isinstance(data, dict) or not isinstance(data.get("response"), list) or data.get("errors"):
+        raise SystemExit(f"Aborting injury update for {d:%Y-%m-%d}: source request failed; previous injuries.json will be kept.")
     for x in data.get("response", []):
         items.append({
             "team": x["team"]["name"], "player": x["player"]["name"],
