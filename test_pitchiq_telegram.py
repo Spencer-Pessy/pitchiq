@@ -62,6 +62,8 @@ class TelegramValidationTests(unittest.TestCase):
         self.assertEqual(results[0]["p"]["ph"], 0.6)
         self.assertEqual(results[0]["final"], [1, 0])
         self.assertEqual(state["pending"], [])
+        self.assertEqual(len(state["results"]), 1)
+        self.assertTrue(state["results"][0]["correct"])
 
     def test_unfinished_or_unpublished_matches_are_not_reported(self):
         snap = snapshot_published_pick({"id": "m1", "h": "A", "a": "B", "comp": "L",
@@ -77,6 +79,7 @@ class TelegramValidationTests(unittest.TestCase):
         state = clean_pick_state({"pending": [snap, snap, None], "sent_ids": [7, True, "7", "x"]})
         self.assertEqual(len(state["pending"]), 1)
         self.assertEqual(state["sent_ids"], ["7", "x"])
+        self.assertEqual(state["results"], [])
 
 
 if __name__ == "__main__":
