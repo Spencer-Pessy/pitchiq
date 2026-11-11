@@ -29,7 +29,15 @@ def fetch_fixtures(start_date, end_date):
               response.headers.get("x-ratelimit-requests-remaining", "unknown"))
         data = json.load(response)
 
-    if not isinstance(data, dict) or not isinstance(data.get("response"), list) or data.get("errors"):
+    if not isinstance(data, dict):
+        print("API-Football returned a non-object response:", type(data).__name__)
+        raise SystemExit("International fixture source returned an invalid response; last good file preserved.")
+    response = data.get("response")
+    errors = data.get("errors")
+    if not isinstance(response, list) or errors:
+        print("API-Football response keys:", sorted(data.keys()))
+        print("API-Football errors:", json.dumps(errors, ensure_ascii=False)[:1200])
+        print("API-Football response type:", type(response).__name__)
         raise SystemExit("International fixture source returned an invalid response; last good file preserved.")
     paging = data.get("paging") or {}
     if int(paging.get("total", 1) or 1) > 1:
