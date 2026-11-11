@@ -111,6 +111,9 @@ function record(){
  }).sort((x,y)=>y.t-x.t);
  const n=rows.length,f=(a,c)=>c?Math.round(a/c*100)+'%':'–',nm=['home win','draw','away win'];
  const mae=gn?(hm/gn).toFixed(2)+' / '+(am/gn).toFixed(2):'–';
+ const byComp=new Map();
+ rows.forEach(r=>{const k=r.p.comp||'Other';if(!byComp.has(k))byComp.set(k,[]);byComp.get(k).push(r)});
+ const compRows=[...byComp].map(([name,items])=>{let correct=0,brier=0,loss=0;items.forEach(r=>{if(r.ok)correct++;const hg=Number(r.p.final[0]),ag=Number(r.p.final[1]),actual=hg>ag?0:hg==ag?1:2;brier+=r.v.reduce((sum,v,i)=>sum+Math.pow(v-(i==actual?1:0),2),0);loss-=Math.log(Math.max(r.v[actual],1e-15))});return{name,n:items.length,accuracy:correct/items.length,brier:brier/items.length,loss:loss/items.length}}).sort((a,b)=>b.n-a.n);
  $('#app').innerHTML=head()+tabsHtml()+(n?`<h2>Model performance</h2><div class="big">
  <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span></div>
  <div><b>${(br/n).toFixed(3)}</b><span>Brier score · lower is better</span></div>
@@ -122,6 +125,7 @@ function record(){
  <div class="stat"><span>Over/under 2.5 goals</span><b>${f(oh,o)} (${oh}/${o})</b></div>
  <div class="stat"><span>Both teams to score</span><b>${f(bh,b)} (${bh}/${b})</b></div>
  </div>
+ <div class="panel"><h2>Competition breakdown</h2><div style="overflow-x:auto"><table class="lt"><tr><th>Competition</th><th>Matches</th><th>1X2</th><th>Brier</th><th>Log loss</th></tr>${compRows.map(x=>`<tr><td>${x.name}</td><td>${x.n}</td><td>${f(x.accuracy,x.n)}</td><td>${x.brier.toFixed(3)}</td><td>${x.loss.toFixed(3)}</td></tr>`).join('')}</table></div><p class="note">Small samples can swing sharply; compare competitions only when they have enough completed forecasts.</p></div>
  <p class="note">Based on ${n} completed, valid pre-match forecasts. Brier score measures probability error (0 is perfect; about 0.667 is the uniform 1X2 reference). Log loss penalises confident wrong forecasts. Expected-goals MAE is the average absolute difference between predicted and actual goals, shown home / away. Lower is better for all three error measures. Results are historical and do not guarantee future performance. Predictions are saved before kickoff and are not overwritten. ${open} forecasts are still waiting for results.</p>
  <div class="day">Recent results</div>${rows.slice(0,25).map(r=>`<div class="card"><div class="comp">${r.p.comp} · ${r.t.toLocaleDateString([],{day:'numeric',month:'short'})}</div><div class="row"><span class="tm">${r.p.h}</span><span class="ko">${r.p.final[0]} – ${r.p.final[1]}</span><span class="tm r">${r.p.a}</span></div><span class="pill" style="color:var(${r.ok?'--ok':'--no'})">${r.ok?'✓':'✗'} Predicted ${nm[r.pick]} (${Math.round(r.v[r.pick]*100)}%)</span></div>`).join('')}`
  :`<div class="panel"><h2>Record starts today</h2><p class="note" style="margin:0">Predictions are saved before kickoff and scored after full time. ${open} are saved and waiting for their matches. Come back after they finish to see the first results.</p></div>`);
