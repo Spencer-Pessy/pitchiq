@@ -59,7 +59,7 @@ class MetricsTests(unittest.TestCase):
         result = input_diagnostics(rows)
         self.assertEqual(result["snapshot_forecasts"], 1)
         self.assertEqual(result["groups"]["home_form_points"][0]["matches"], 0)
-        self.assertEqual(result["groups"]["away_form_points"][2]["matches"], 1)
+        self.assertEqual(result["groups"]["away_form_points"][1]["matches"], 1)
 
     def test_input_diagnostics_ignores_malformed_snapshots(self):
         result = input_diagnostics([
