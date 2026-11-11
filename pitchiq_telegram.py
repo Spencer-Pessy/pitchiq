@@ -45,3 +45,11 @@ def valid_final(value):
     if not isinstance(value, (list, tuple)) or len(value) != 2:
         return False
     return all(isinstance(x, int) and not isinstance(x, bool) and x >= 0 for x in value)
+
+
+def clean_seen_urls(value, limit=200):
+    """Return a bounded list of non-empty URL strings from persisted history."""
+    if not isinstance(value, list):
+        return []
+    return [item.strip() for item in value
+            if isinstance(item, str) and item.strip()][-limit:]
