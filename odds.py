@@ -25,13 +25,19 @@ def avg(l):
     return round(sum(l) / len(l), 2)
 
 
-active = {s["key"] for s in (get("/sports") or []) if s.get("active")}
+sports = get("/sports")
+if not isinstance(sports, list):
+    raise SystemExit("Aborting odds update: sports endpoint failed; previous odds.json will be kept.")
+active = {s["key"] for s in sports if s.get("active")}
 events = []
 for sk in WANT:
     if sk not in active:
         print("skipping", sk)
         continue
-    for ev in get(f"/sports/{sk}/odds", regions="eu", markets="h2h", oddsFormat="decimal") or []:
+    data = get(f"/sports/{sk}/odds", regions="eu", markets="h2h", oddsFormat="decimal")
+    if not isinstance(data, list):
+        raise SystemExit(f"Aborting odds update: {sk} odds request failed; previous odds.json will be kept.")
+    for ev in data:
         prices = {}
         for b in ev.get("bookmakers", []):
             for mk in b.get("markets", []):
