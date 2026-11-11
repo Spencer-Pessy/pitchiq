@@ -224,7 +224,7 @@ class ForwardEvaluationLedgerTests(unittest.TestCase):
         self.assertEqual(ledger["123"]["final"], [2, 1])
         self.assertEqual(calls, ["predict", "snapshot"])
 
-    def test_ignores_started_fixtures_and_keeps_existing_scores(self):
+    def test_ignores_started_fixtures(self):
         from datetime import datetime, timezone
         now = datetime(2026, 11, 11, 12, tzinfo=timezone.utc)
         fixture = {
@@ -234,6 +234,20 @@ class ForwardEvaluationLedgerTests(unittest.TestCase):
         }
         ledger = record_forward_evaluations({}, [fixture], {}, now, lambda _: {}, lambda _: {})
         self.assertEqual(ledger, {})
+
+
+    def test_existing_final_score_is_immutable(self):
+        from datetime import datetime, timezone
+        now = datetime(2026, 11, 11, 12, tzinfo=timezone.utc)
+        existing = {
+            "123": {
+                "id": 123, "final": [1, 0],
+                "p": {"ph": 0.5, "pd": 0.25, "pa": 0.25},
+            }
+        }
+        ledger = record_forward_evaluations(
+            existing, [], {123: [2, 2]}, now, lambda _: {}, lambda _: {})
+        self.assertEqual(ledger["123"]["final"], [1, 0])
 
 
 if __name__ == "__main__":
