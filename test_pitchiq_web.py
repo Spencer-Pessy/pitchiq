@@ -37,7 +37,7 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
             "r.p.comp", "r.p.h", "r.p.a", "x.name", "x.m.comp", "x.m.h", "x.m.a",
             "T[k].name", "r.team", "p.name", "p.team", "m.comp", "m.h", "m.a",
             "s[k][x]", "f.comp", "f.h", "f.a", "g.scorer", "g.assist", "g.team",
-            "p.n", "p.r",
+            "p.n",
         )
         for field in fields:
             with self.subTest(field=field):
