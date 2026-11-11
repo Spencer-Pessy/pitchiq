@@ -3,7 +3,7 @@ import math
 import unittest
 
 from pitchiq_model import ppg, pois, predict, tau
-from model_metrics import evaluate, input_diagnostics, input_diagnostics
+from model_metrics import evaluate, input_diagnostics
 
 
 
@@ -45,7 +45,7 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(home[1]["matches"], 1)
         self.assertEqual(home[0]["accuracy"], 1.0)
         self.assertEqual(result["groups"]["away_venue_sample"][2]["matches"], 1)
-        self.assertEqual(result["groups"]["home_form_points"][3]["matches"], 1)
+        self.assertEqual(result["groups"]["home_form_points"][0]["matches"], 1)
 
     def test_input_diagnostics_ignores_malformed_snapshots(self):
         result = input_diagnostics([
