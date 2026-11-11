@@ -168,7 +168,7 @@ class MetricsTests(unittest.TestCase):
              "inputs": {"schema": 1, "home": {"venue_matches": 2, "form": "WWD"},
                         "away": {"venue_matches": 7, "form": "LLD"}}},
             {"final": [0, 1], "p": {"ph": 0.2, "pd": 0.2, "pa": 0.6, "lh": 1.0, "la": 1.4},
-             "inputs": {"schema": 1, "home": {"venue_matches": 4, "form": "LLL"},
+             "inputs": {"schema": 2, "home": {"venue_matches": 4, "form": "LLL"},
                         "away": {"venue_matches": 12, "form": "WWW"}}},
             {"final": [1, 1], "p": {"ph": 0.2, "pd": 0.6, "pa": 0.2, "lh": 1.0, "la": 1.0}},
         ]
