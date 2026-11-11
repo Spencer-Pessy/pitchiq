@@ -27,78 +27,6 @@ def call(method, data, ctype):
         return json.load(r)
 
 
-def news_post():
-    """No matches today: post a few football headlines (title + link only, from BBC Sport)."""
-    FEEDS = [("news", "https://feeds.bbci.co.uk/sport/football/rss.xml", 3),
-             ("gossip", "https://feeds.bbci.co.uk/sport/football/gossip/rss.xml", 2)]
-    SKIP = re.compile(r"\b(dies|died|death|dead|funeral|tragedy|arrest\w*|charged|court|trial|police|abuse|assault|bet|betting|gambling|odds)\b", re.I)
-    try:
-        with open("daily/news_seen.json") as f:
-            seen = clean_seen_urls(json.load(f))
-    except Exception:
-        seen = []
-    picked = {"news": [], "gossip": []}
-    for kind, url, n in FEEDS:
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "PitchIQ/1.0 (+https://spencer-pessy.github.io/pitchiq/)"})
-            with urllib.request.urlopen(req, timeout=30) as r:
-                root = ET.fromstring(r.read())
-        except Exception as e:
-            print("feed failed:", url, e)
-            continue
-        for it in root.iter("item"):
-            title = (it.findtext("title") or "").strip()
-            link = (it.findtext("link") or "").split("?")[0].strip()
-            try:
-                pub = parsedate_to_datetime(it.findtext("pubDate"))
-                if pub.tzinfo is None:
-                    pub = pub.replace(tzinfo=timezone.utc)
-            except Exception:
-                continue
-            if not title or not link or link in seen or SKIP.search(title):
-                continue
-            if now - pub > timedelta(hours=36):
-                continue
-            if any(link == x[1] for v in picked.values() for x in v):
-                continue
-            picked[kind].append((title, link))
-            if len(picked[kind]) >= n:
-                break
-    total = len(picked["news"]) + len(picked["gossip"])
-    if total < 2:
-        print("No matches and not enough fresh headlines; nothing sent.")
-        return
-    lines = ["📰 Football news - " + now.strftime("%a %d %b"), "Headlines from BBC Sport. Tap to read.", ""]
-    for t, l in picked["news"]:
-        lines += ["• " + t, "  " + l, ""]
-    if picked["gossip"]:
-        lines += ["🔁 Transfer talk (reports, not confirmed):", ""]
-        for t, l in picked["gossip"]:
-            lines += ["• " + t, "  " + l, ""]
-    lines += ["PitchIQ forecasts return on match days: " + SITE,
-              "Headlines are reported by BBC Sport; PitchIQ doesn't verify them."]
-    msg = "\n".join(lines)
-    print(msg)
-    if not (TOKEN and CHAT):
-        print("\n(Dry run: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set, nothing sent.)")
-        return
-    try:
-        response = call("sendMessage", json.dumps({"chat_id": CHAT, "text": msg, "disable_web_page_preview": True}).encode(), "application/json")
-        print("Telegram news post:", response.get("ok"))
-        if not response.get("ok"):
-            print("Telegram did not confirm news delivery; URLs remain eligible for a later retry.")
-            return
-    except Exception as e:
-        print("Telegram news post failed; URLs remain eligible for a later retry:", e)
-        return
-    for v in picked.values():
-        seen += [l for _, l in v]
-    os.makedirs("daily", exist_ok=True)
-    with open("daily/news_seen.json", "w") as f:
-        json.dump(clean_seen_urls(seen), f)
-
-
-
 def load_pick_state():
     try:
         with open("daily/published_picks.json", encoding="utf-8") as f:
@@ -150,10 +78,9 @@ if RESULTS_ONLY:
 up = [p for p in preds if valid_forecast(p) and not p.get("final")
       and now < when(p) < lim]
 if not up:
-    print("No matches in the next 36 hours; posting news instead.")
+    print("No eligible matches in the next 36 hours; no Telegram post will be sent.")
     save_pick_state(pick_state)
-    news_post()
-    raise SystemExit
+    raise SystemExit(0)
 
 rows = []
 for p in up:
@@ -164,10 +91,9 @@ for p in up:
     pick = ["Home win: " + p["h"], "Draw", "Away win: " + p["a"]][i]
     rows.append((v[i], p, pick))
 if not rows:
-    print("No new eligible picks remain after duplicate filtering.")
+    print("No new eligible picks remain after duplicate filtering; no Telegram post will be sent.")
     save_pick_state(pick_state)
-    news_post()
-    raise SystemExit
+    raise SystemExit(0)
 
 rows.sort(key=lambda r: -r[0])
 top = rows[:3]
