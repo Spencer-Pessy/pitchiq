@@ -28,11 +28,17 @@ def get(path):
 matches = []
 for i, c in enumerate(COMPS):
     d = get(f"/competitions/{c}/matches")
-    if d:
-        for m in d.get("matches", []):
-            m["_c"] = c
-            m["_cn"] = d["competition"]["name"]
-            matches.append(m)
+    # Never publish a partial/empty fixture feed when an API request failed.
+    # A genuine empty list is valid; None means the request did not succeed.
+    if d is None:
+        raise SystemExit(
+            f"Aborting update: fixture request failed for {c}. "
+            "The previous data.json will be kept."
+        )
+    for m in d.get("matches", []):
+        m["_c"] = c
+        m["_cn"] = d["competition"]["name"]
+        matches.append(m)
     if i < len(COMPS) - 1:
         time.sleep(7)  # free plan allows 10 calls per minute
 
@@ -294,8 +300,11 @@ except Exception:
 
 for x in out:
     start = datetime.fromisoformat(x["utc"].replace("Z", "+00:00"))
-    if x["status"] in ("SCHEDULED", "TIMED") and start > now:
-        preds[str(x["id"])] = {
+    key = str(x["id"])
+    if x["status"] in ("SCHEDULED", "TIMED") and start > now and key not in preds:
+        # Freeze the first pre-kickoff forecast. Later refreshes must not rewrite
+        # the probability snapshot or its timestamp in the public results ledger.
+        preds[key] = {
             "id": x["id"], "comp": x["comp"], "code": x["code"], "utc": x["utc"],
             "h": x["h"], "a": x["a"], "p": predict(x["s"]), "odds": x.get("odds"),
             "final": None, "made": now.isoformat(),
