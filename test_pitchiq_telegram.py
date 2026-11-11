@@ -92,6 +92,8 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertLess(source.index(flag), source.index('up = [p for p in preds'))
         self.assertIn("no new picks or news posts were requested", source)
         self.assertIn("resolve_published_picks(pick_state, preds)", source)
+        self.assertIn("if completed_picks and RESULTS_ONLY:", source)
+        self.assertIn("Results are sent only by the dedicated results workflow", source)
 
     def test_hourly_results_workflow_does_not_install_pillow_or_call_odds(self):
         workflow = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
