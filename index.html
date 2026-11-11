@@ -69,7 +69,7 @@ h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:1
 const $=s=>document.querySelector(s);
 // Escape all external feed text before inserting it into HTML templates.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let D=null,P={},tab='up',comp='all',sel=null;
+let D=null,P={},I={fixtures:[]},tab='up',comp='all',sel=null;
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
 const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
@@ -138,11 +138,11 @@ function record(){
 function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000),h=D.data_health,stale=Number.isFinite(mins)&&mins>90;
  const health=h?`<p class="note" style="margin:6px 0 12px">Feed coverage: ${Number(h.fixture_competitions)||0} competitions · ${Number(h.fixture_total)||0} fixtures · international ${Number(h.international_fixture_total)||0} · standings ${Number(h.standings_competitions)||0}/${Number(h.fixture_competitions)||0}${Number(h.standings_failures)>0?` · ${Number(h.standings_failures)||0} standings feed(s) unavailable`:``}</p>`:'';
  return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">${stale?'Data may be stale · ':''}Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`+health}
-function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
+function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
- document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{sel=D.matches.find(x=>x.id==b.dataset.id);sel.odds=sel.odds||null;detail()});}
+ document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{const source=tab=='intl'?(I.fixtures||[]):D.matches;sel=source.find(x=>String(x.id)==b.dataset.id);if(!sel)return;sel.odds=sel.odds||null;detail()});}
 let pk='conf';
 function picks(){
  const lim=Date.now()+36*3600e3;
@@ -163,6 +163,17 @@ function tables(){
  const t=T[comp];
  $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${esc(T[k].name)}</option>`).join('')}</select>
  <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>${t.scorers&&t.scorers.length?`<h2>Top scorers</h2><div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Player</th><th>Team</th><th>G</th><th>A</th><th>Apps</th><th>G/App</th></tr>${t.scorers.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td><b>${p.g??'–'}</b></td><td>${p.a??'–'}</td><td>${p.m??'–'}</td><td>${p.gpm!=null?Number(p.gpm).toFixed(2):(Number(p.m)>0&&p.g!=null?(Number(p.g)/Number(p.m)).toFixed(2):'–')}</td></tr>`).join('')}</table></div>`:''}`;
+ bind();
+}
+function international(){
+ const fixtures=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a);
+ const age=I.updated?Math.max(0,Math.round((Date.now()-new Date(I.updated))/36e5)):null;
+ const label=f=>({NS:'UPCOMING',TBD:'TIME TO BE CONFIRMED',1H:'LIVE',HT:'HALF TIME',2H:'LIVE',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED'}[f.status]||f.status||'SCHEDULED');
+ const cards=fixtures.map(f=>{
+  const score=Array.isArray(f.score)?esc(f.score[0])+' – '+esc(f.score[1]):tm(f);
+  return '<button class="card" data-id="'+esc(f.id)+'"><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><span class="pill">'+esc(label(f))+'</span></button>';
+ }).join('');
+ $('#app').innerHTML=head()+tabsHtml()+'<p class="note">National-team fixtures · API-Football · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. Fixtures only for now; no model forecasts without reliable international form data.</p>'+(cards||'<p class="note">No national-team fixtures in the current date window. The feed refreshes every six hours.</p>');
  bind();
 }
 function list(){
@@ -189,6 +200,12 @@ function list(){
 const fld=[['gf','Goals scored / game'],['ga','Goals conceded / game'],['elo','Rating (Elo)'],['form','Last 5 (W D L)'],['out','Key players out']];
 function detail(){
  const f=sel,s=f.s;
+ if(!s){
+  const status=({NS:'Scheduled',TBD:'Time to be confirmed',1H:'Live',HT:'Half time',2H:'Live',ET:'Extra time',P:'Penalties',FT:'Full time',AET:'After extra time',PEN:'Penalties',PST:'Postponed',CANC:'Cancelled',SUSP:'Suspended'}[f.status]||f.status||'Scheduled');
+  $('#app').innerHTML='<button class="back" id="bk">← International</button><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><h2>'+esc(f.h)+' vs '+esc(f.a)+'</h2><div class="panel"><h2>'+esc(status)+'</h2><p class="note">Kick-off: '+new Date(f.utc).toLocaleString()+'</p>'+(f.score?'<p><b>Score: '+esc(f.score[0])+' – '+esc(f.score[1])+'</b></p>':'')+(f.venue?'<p class="note">Venue: '+esc(f.venue)+'</p>':'')+'</div><p class="note">This fixture is listed from API-Football. PitchIQ does not provide a model forecast for it yet; national-team performance history is not sufficiently integrated.</p>';
+  $('#bk').onclick=()=>{sel=null;tab='intl';list()};
+  return;
+ }
  const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
  $('#app').innerHTML=`<button class="back" id="bk">← Matches</button>
  <div class="comp">${esc(f.comp)} · ${dy(f)} ${tm(f)}</div><h2>${esc(f.h)} vs ${esc(f.a)}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
@@ -274,7 +291,7 @@ function addFooter(){if(!FEEDBACK_URL||$('#fb'))return;$('#app').insertAdjacentH
  list=function(){_l();addFooter()};
  detail=function(){
   _d();
-  const f=sel,s=f.s;let sv={};
+  const f=sel,s=f.s;if(!s)return;let sv={};
   try{sv=JSON.parse(localStorage.getItem('piq:'+f.id)||'{}')}catch(e){}
   if(sv.out){['h','a'].forEach((k,i)=>{s[k].out=sv.out[i]||0;const el=document.querySelector('[data-k="'+k+'.out"]');if(el)el.value=s[k].out})}
   $('#res').insertAdjacentHTML('beforebegin','<div class="panel"><h2>Your notes</h2><textarea id="nt" rows="3" placeholder="Lineup news, your read on the match… saved on this phone only" style="width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px"></textarea></div>');
@@ -352,7 +369,7 @@ async function shareRecord(){
  }
  detail=function(){
   _d();
-  const f=sel;
+  const f=sel;if(!f.s)return;
   if((f.status=='TIMED'||f.status=='SCHEDULED')&&new Date(f.utc)>Date.now()){
    const anchor=$('#shr')||$('#bk');
    anchor.insertAdjacentHTML('afterend',' <button class="back" id="rm" style="border-color:var(--home)">⏰ Remind me</button>');
@@ -364,7 +381,7 @@ async function shareRecord(){
   if(!had&&$('#fb')&&TELEGRAM_URL)$('#fb').insertAdjacentHTML('beforeend',' &nbsp;·&nbsp; <a href="'+TELEGRAM_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Telegram alerts</a>');
  };
 })();
- Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,p])=>{D=d;P=p;list()}).catch(()=>{
+ Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('international.json?'+Date.now()).then(r=>r.ok?r.json():{fixtures:[]}).catch(()=>({fixtures:[]}))]).then(([d,p,i])=>{D=d;P=p;I=i||{fixtures:[]};list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
  async function shareImg(){
@@ -407,7 +424,7 @@ function showAbout(){
  <div class="panel"><h2>What it can’t see</h2><p class="note" style="margin:0">Lineups, tactics, weather and motivation. Reported injuries are shown for information, but they don’t change the forecast unless you set “Key players out” yourself.</p></div>
  <div class="panel"><h2>The record</h2><p class="note" style="margin:0">Every prediction is saved before kickoff and scored after full time. The Record tab shows hits and misses, and Model health shows where the model is off. Nothing is edited afterwards.</p></div>
  <div class="panel"><h2>Odds and “edge”</h2><p class="note" style="margin:0">Odds are averages from bookmakers, shown only for comparison. “Edge” means the gap between the model and the market. It is not a promise of profit, and when they differ a lot the market is usually better informed. PitchIQ is not betting advice. 18+ only. If gambling is a problem for you, please seek support in your country.</p></div>
- <div class="panel"><h2>Data and privacy</h2><p class="note" style="margin:0">Match data comes from football-data.org, odds from The Odds API and injuries from API-Football. Scores can be delayed. There are no accounts. Your notes and favourite teams stay on your phone.${GOATCOUNTER?' The site uses an anonymous, cookie-free visit counter.':''}</p></div>`;
+ <div class="panel"><h2>Data and privacy</h2><p class="note" style="margin:0">Match data comes from football-data.org, international national-team fixtures from API-Football, odds from The Odds API and injuries from API-Football. International fixtures are listed without model forecasts until reliable national-team history is available. Scores can be delayed. There are no accounts. Your notes and favourite teams stay on your phone.${GOATCOUNTER?' The site uses an anonymous, cookie-free visit counter.':''}</p></div>`;
  $('#ab').onclick=()=>list();
 }
 function addFooter(){
@@ -432,7 +449,7 @@ function addFooter(){
  };
  detail=function(){
   _d();
-  const f=sel;
+  const f=sel;if(!f.s)return;
   $('#bk').insertAdjacentHTML('afterend',' <button class="back" id="shr" style="border-color:var(--home)">Share image</button>');
   $('#shr').onclick=shareImg;
   if(f.inj){
