@@ -267,6 +267,7 @@ evaluation_completed = sum(isinstance(row.get("final"), list) for row in evaluat
 print("forward evaluation forecasts:", len(evaluation_rows), "completed:", evaluation_completed)
 
 # Publish controlled ablation scores from the separate forward-only ledger.
+# Scoreline baseline diagnostics use the immutable public pre-kickoff ledger.
 with open("data.json", "w") as f:
     json.dump({
         "updated": now.isoformat(), "odds_updated": odds_data["updated"],
