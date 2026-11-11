@@ -5,6 +5,7 @@ from pitchiq_data import (
     average_bucket,
     goal_average_keys,
     build_feed_health,
+    player_goals_per_appearance,
 )
 
 
@@ -32,6 +33,13 @@ class CompetitionDataTests(unittest.TestCase):
 
     def test_small_club_competition_keeps_existing_fallback(self):
         self.assertEqual(average_bucket("PL", {"PL": 12, "ALL": 100}), "ALL")
+
+    def test_player_scoring_rate_is_calculated_safely(self):
+        self.assertEqual(player_goals_per_appearance(9, 10), 0.9)
+        self.assertEqual(player_goals_per_appearance(1, 3), 0.333)
+        self.assertIsNone(player_goals_per_appearance(4, 0))
+        self.assertIsNone(player_goals_per_appearance(None, 10))
+        self.assertIsNone(player_goals_per_appearance(-1, 5))
 
     def test_feed_health_reports_competition_coverage(self):
         health = build_feed_health(
