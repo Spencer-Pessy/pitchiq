@@ -11,6 +11,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 ## Current features
 
 - Fixtures, scores, standings and scorers from football-data.org, including free-tier FIFA World Cup and UEFA European Championship tournament coverage (where fixtures are available).
+- A separate API-Football national-team fixtures feed covering international friendlies, qualifiers and tournaments where available. These fixtures are listed without model forecasts until a reliable national-team history dataset is integrated.
 - Competition top-scorer comparison with goals, assists, appearances and goals per appearance (not goals per 90; minutes played are not supplied by this source).
 - Home/draw/away, over 2.5 goals and both-teams-to-score probabilities.
 - Likeliest scorelines and expected goals.
@@ -25,7 +26,8 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 1. `update.py` retrieves competition fixtures/results and standings, calculates team statistics and forecasts, and updates `data.json` and `predictions.json`.
 2. `odds.py` refreshes the optional odds snapshot in `odds.json`.
 3. `injuries.py` refreshes reported absences in `injuries.json`.
-4. `telegram.py` posts the top three upcoming forecasts or a small set of linked football headlines to the configured Telegram destination.
+4. `international.py` refreshes a separate national-team fixture snapshot from API-Football; it filters out club fixtures and preserves the last good file if the source fails.
+5. `telegram.py` posts the top three upcoming forecasts or a small set of linked football headlines to the configured Telegram destination.
 5. `index.html` reads the published JSON files and renders the website.
 
 The prediction ledger is intended to preserve the first forecast recorded before kickoff. Completed results are added after matches finish. Do not manually edit historical prediction probabilities or final scores.
@@ -39,6 +41,7 @@ The workflows in `.github/workflows/` can be run on their schedules or manually 
 - **Update data** — every 30 minutes.
 - **Update odds** — twice daily.
 - **Update injuries** — twice daily.
+- **Update international fixtures** — every six hours (four API requests per day).
 - **Telegram picks** — daily.
 
 The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
@@ -72,3 +75,8 @@ There are no user accounts. Match notes and manual absence adjustments are store
 ### Feed-health diagnostics
 
 The published `data_health` object reports fixture counts by competition, total and international fixture counts, available standings competitions, and the names/count of standings feeds that failed. A failed or malformed fixture response aborts the update so the last good `data.json` is preserved; standings failures are recorded explicitly because tables are optional to fixture forecasts. The website surfaces unavailable standings feeds instead of presenting coverage as complete.
+
+
+### International fixtures and free API quota
+
+The international feed uses the existing `API_FOOTBALL_KEY` secret and the API-Football fixtures endpoint. Its scheduled workflow makes up to four fixture requests per day. The API-Football free plan currently advertises 100 requests per day; the existing injury refresh also uses this API, so monitor the remaining-request header and dashboard quota. The feed is separate from the club prediction model: national-team fixtures are shown as fixtures only until historical international form can be built and validated. No API key is exposed in the website.
