@@ -193,6 +193,94 @@ def binary_market_metrics(predictions, key):
             "brier": round(brier, 4), "log_loss": round(loss, 4),
             "expected_calibration_error": round(ece, 4), "bins": bins}
 
+
+def _probability_scores(rows):
+    """Summarize (probabilities, actual outcome) rows on a common sample."""
+    count = len(rows)
+    if not count:
+        return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None}
+    hits = brier = loss = 0.0
+    for probabilities, actual in rows:
+        hits += probabilities.index(max(probabilities)) == actual
+        brier += sum((value - (index == actual)) ** 2
+                     for index, value in enumerate(probabilities))
+        loss -= math.log(max(probabilities[actual], 1e-15))
+    return {"matches": count, "accuracy": round(hits / count, 4),
+            "brier": round(brier / count, 4), "log_loss": round(loss / count, 4)}
+
+
+def baseline_comparison(predictions):
+    """Compare forecasts with a no-look-ahead rolling prior and de-vigged odds."""
+    records = []
+    for item in predictions:
+        final = item.get("final")
+        probs = item.get("p") or {}
+        if not isinstance(final, list) or len(final) != 2:
+            continue
+        try:
+            home, away = float(final[0]), float(final[1])
+            model = [float(probs[key]) for key in ("ph", "pd", "pa")]
+        except (KeyError, TypeError, ValueError):
+            continue
+        if (not all(math.isfinite(x) for x in [home, away] + model)
+                or min(home, away) < 0 or any(x < 0 or x > 1 for x in model)
+                or abs(sum(model) - 1.0) > 0.02):
+            continue
+        actual = 0 if home > away else 1 if home == away else 2
+        date = str(item.get("utc") or item.get("made") or "")
+        market = None
+        odds = item.get("odds")
+        if isinstance(odds, list) and len(odds) == 3:
+            try:
+                prices = [float(value) for value in odds]
+                if all(math.isfinite(value) and value > 1.0 for value in prices):
+                    implied = [1.0 / value for value in prices]
+                    total = sum(implied)
+                    if total > 0:
+                        market = [value / total for value in implied]
+            except (TypeError, ValueError):
+                pass
+        records.append({"date": date, "actual": actual, "model": model, "market": market})
+
+    records.sort(key=lambda row: row["date"])
+    counts = [1, 1, 1]
+    prior_rows, model_market_rows, market_rows = [], [], []
+    index = 0
+    while index < len(records):
+        # Matches sharing a kickoff timestamp all receive the same prior;
+        # none can learn from another result at that same kickoff.
+        end = index + 1
+        while end < len(records) and records[end]["date"] == records[index]["date"]:
+            end += 1
+        total = sum(counts)
+        prior = [value / total for value in counts]
+        for row in records[index:end]:
+            prior_rows.append((prior, row["actual"]))
+            if row["market"] is not None:
+                model_market_rows.append((row["model"], row["actual"]))
+                market_rows.append((row["market"], row["actual"]))
+        for row in records[index:end]:
+            counts[row["actual"]] += 1
+        index = end
+
+    prior_scores = _probability_scores(prior_rows)
+    market_scores = _probability_scores(market_rows)
+    model_market_scores = _probability_scores(model_market_rows)
+    return {
+        "rolling_prior": prior_scores,
+        "model_on_odds_sample": model_market_scores,
+        "bookmaker_consensus": market_scores,
+        "model_minus_bookmaker_brier": (
+            round(model_market_scores["brier"] - market_scores["brier"], 4)
+            if model_market_scores["brier"] is not None and market_scores["brier"] is not None else None
+        ),
+        "model_minus_bookmaker_log_loss": (
+            round(model_market_scores["log_loss"] - market_scores["log_loss"], 4)
+            if model_market_scores["log_loss"] is not None and market_scores["log_loss"] is not None else None
+        ),
+    }
+
+
 def evaluate(predictions):
     """Calculate outcome accuracy, multiclass Brier/log loss and goal MAE."""
     records = []
@@ -242,7 +330,8 @@ def evaluate(predictions):
                 "home_goals_bias": None, "away_goals_bias": None,
                 "input_diagnostics": input_diagnostics(predictions),
                 "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
-                                   "btts": binary_market_metrics(predictions, "bt")}}
+                                   "btts": binary_market_metrics(predictions, "bt")},
+                "baseline_comparison": baseline_comparison(predictions)}
 
     correct = 0
     confidence_groups = [(lo, lo + 0.1, [], []) for lo in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)]
@@ -302,6 +391,7 @@ def evaluate(predictions):
         "input_diagnostics": input_diagnostics(predictions),
         "binary_markets": {"o25": binary_market_metrics(predictions, "o25"),
                            "btts": binary_market_metrics(predictions, "bt")},
+        "baseline_comparison": baseline_comparison(predictions),
     }
 
 
