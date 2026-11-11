@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Validate Python syntax
-        run: python -m py_compile update.py odds.py injuries.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py
+        run: python -m py_compile update.py international.py odds.py injuries.py telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py
       - name: Run offline model tests
         run: python -m unittest -v test_pitchiq_model test_pitchiq_data
       - run: python update.py
