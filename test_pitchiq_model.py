@@ -51,6 +51,28 @@ class MetricsTests(unittest.TestCase):
         reversed_result = baseline_comparison(list(reversed(rows)))
         self.assertEqual(result, reversed_result)
 
+    def test_competition_rolling_prior_is_smoothed_and_leakage_safe(self):
+        rows = [
+            {"utc": "2026-01-01T12:00:00Z", "code": "PL", "final": [1, 0],
+             "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1}},
+            {"utc": "2026-01-02T12:00:00Z", "code": "PL", "final": [0, 1],
+             "p": {"ph": 0.1, "pd": 0.2, "pa": 0.7}},
+            {"utc": "2026-01-02T12:00:00Z", "code": "SA", "final": [1, 1],
+             "p": {"ph": 0.2, "pd": 0.7, "pa": 0.1}},
+            {"utc": "2026-01-03T12:00:00Z", "code": "PL", "final": [1, 0],
+             "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1}},
+        ]
+        result = baseline_comparison(rows)
+        self.assertEqual(result["competition_rolling_prior"]["matches"], 4)
+        self.assertEqual(
+            result["competition_rolling_prior"],
+            baseline_comparison(list(reversed(rows)))["competition_rolling_prior"],
+        )
+        self.assertNotEqual(
+            result["competition_rolling_prior"]["brier"],
+            result["rolling_prior"]["brier"],
+        )
+
     def test_baseline_comparison_ignores_invalid_odds_and_unfinished_matches(self):
         rows = [
             {"utc": "2026-01-01T12:00:00Z", "final": [1, 0],
