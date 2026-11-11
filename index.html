@@ -114,7 +114,7 @@ function record(){
  const byComp=new Map();
  rows.forEach(r=>{const k=r.p.comp||'Other';if(!byComp.has(k))byComp.set(k,[]);byComp.get(k).push(r)});
  const compRows=[...byComp].map(([name,items])=>{let correct=0,brier=0,loss=0;items.forEach(r=>{if(r.ok)correct++;const hg=Number(r.p.final[0]),ag=Number(r.p.final[1]),actual=hg>ag?0:hg==ag?1:2;brier+=r.v.reduce((sum,v,i)=>sum+Math.pow(v-(i==actual?1:0),2),0);loss-=Math.log(Math.max(r.v[actual],1e-15))});return{name,n:items.length,accuracy:correct/items.length,brier:brier/items.length,loss:loss/items.length}}).sort((a,b)=>b.n-a.n);
- const confBins=[.3,.4,.5,.6,.7,.8,.9].map(lo=>{const bin=rows.filter(r=>Math.max(...r.v)>=lo&&Math.max(...r.v)<lo+.1);return{lo,n:bin.length,confidence:bin.length?bin.reduce((z,r)=>z+Math.max(...r.v),0)/bin.length:0,accuracy:bin.length?bin.filter(r=>r.ok).length/bin.length:0}}).filter(x=>x.n);
+ const confBins=[.3,.4,.5,.6,.7,.8,.9].map((lo,i)=>{const bin=rows.filter(r=>Math.max(...r.v)>=lo&&(i===6?Math.max(...r.v)<=1:Math.max(...r.v)<lo+.1));return{lo,n:bin.length,confidence:bin.length?bin.reduce((z,r)=>z+Math.max(...r.v),0)/bin.length:0,accuracy:bin.length?bin.filter(r=>r.ok).length/bin.length:0}}).filter(x=>x.n);
  $('#app').innerHTML=head()+tabsHtml()+(n?`<h2>Model performance</h2><div class="big">
  <div><b>${f(hit,n)}</b><span>1X2 accuracy · ${hit} of ${n}</span></div>
  <div><b>${(br/n).toFixed(3)}</b><span>Brier score · lower is better</span></div>
@@ -133,9 +133,9 @@ function record(){
  :`<div class="panel"><h2>Record starts today</h2><p class="note" style="margin:0">Predictions are saved before kickoff and scored after full time. ${open} are saved and waiting for their matches. Come back after they finish to see the first results.</p></div>`);
  bind();
 }
-function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000),h=D.data_health;
+function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000),h=D.data_health,stale=Number.isFinite(mins)&&mins>90;
  const health=h?`<p class="note" style="margin:6px 0 12px">Feed coverage: ${h.fixture_competitions||0} competitions · ${h.fixture_total||0} fixtures · standings ${h.standings_competitions||0}/${h.fixture_competitions||0}${h.standings_failures?` · ${h.standings_failures} standings feed(s) unavailable`:``}</p>`:'';
- return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`+health}
+ return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">${stale?'Data may be stale · ':''}Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`+health}
 function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
