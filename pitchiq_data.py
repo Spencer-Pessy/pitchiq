@@ -166,3 +166,39 @@ def record_forward_evaluations(existing, fixtures, finished_scores, now, predict
         if score is not None:
             item["final"] = list(score)
     return ledger
+
+
+def backfill_market_odds(predictions, odds_events, snapshot_updated, now, same_team, max_time_difference_hours=6):
+    """Attach the first available pre-kickoff market snapshot without rewriting forecasts."""
+    attached = 0
+    try:
+        snapshot_time = datetime.fromisoformat(str(snapshot_updated).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return attached
+    for item in predictions.values():
+        if item.get("odds") is not None:
+            continue
+        kickoff_text = item.get("utc")
+        if not kickoff_text:
+            continue
+        try:
+            kickoff = datetime.fromisoformat(kickoff_text.replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            continue
+        if kickoff <= now or snapshot_time >= kickoff:
+            continue
+        for event in odds_events:
+            try:
+                event_time = datetime.fromisoformat(event["commence"].replace("Z", "+00:00"))
+                prices = [float(value) for value in event["odds"]]
+                if (abs((event_time - kickoff).total_seconds()) > max_time_difference_hours * 3600
+                        or not all(value > 1.0 and value < 1000 for value in prices)):
+                    continue
+            except (KeyError, TypeError, ValueError):
+                continue
+            if same_team(event.get("home"), item.get("h")) and same_team(event.get("away"), item.get("a")):
+                item["odds"] = prices
+                item["odds_updated"] = snapshot_time.isoformat()
+                attached += 1
+                break
+    return attached
