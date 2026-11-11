@@ -66,7 +66,7 @@ Python automation scripts use the Python standard library except `telegram.py`, 
 
 ## Privacy and limitations
 
-There are no user accounts. Match notes and manual absence adjustments are stored in the visitor's browser. External data may be delayed or incomplete; reported absences do not automatically alter model probabilities. Odds and injury coverage depend on the relevant provider's availability and quota.
+There are no user accounts. Match notes and manual absence adjustments are stored in the visitor's browser. External data may be delayed or incomplete; reported absences do not automatically alter model probabilities. Odds coverage depends on the relevant provider's availability and quota; automated injury reports are disabled.
 
 
 ### Feed-health diagnostics
