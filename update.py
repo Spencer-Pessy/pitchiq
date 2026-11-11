@@ -2,7 +2,7 @@ import difflib, json, math, os, re, time, unicodedata, urllib.request, urllib.er
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -258,6 +258,7 @@ for x in out:
         preds[key] = {
             "id": x["id"], "comp": x["comp"], "code": x["code"], "utc": x["utc"],
             "h": x["h"], "a": x["a"], "p": predict(x["s"]), "odds": x.get("odds"),
+            "inputs": forecast_input_snapshot(x["s"]),
             "final": None, "made": now.isoformat(),
         }
 
