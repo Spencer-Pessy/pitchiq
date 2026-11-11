@@ -1,6 +1,8 @@
 import json, os, urllib.request, urllib.error, urllib.parse
 from datetime import datetime, timezone
 
+from pitchiq_odds import active_sport_keys, market_events
+
 KEY = os.environ["ODDS_API_KEY"]
 BASE = "https://api.the-odds-api.com/v4"
 WANT = ["soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
@@ -21,34 +23,24 @@ def get(path, **q):
     return None
 
 
-def avg(l):
-    return round(sum(l) / len(l), 2)
-
-
 sports = get("/sports")
-if not isinstance(sports, list):
-    raise SystemExit("Aborting odds update: sports endpoint failed; previous odds.json will be kept.")
-active = {s["key"] for s in sports if s.get("active")}
+try:
+    active = active_sport_keys(sports)
+except ValueError as error:
+    raise SystemExit(f"Aborting odds update: invalid sports response ({error}); previous odds.json will be kept.")
+
 events = []
 for sk in WANT:
     if sk not in active:
         print("skipping", sk)
         continue
     data = get(f"/sports/{sk}/odds", regions="eu", markets="h2h", oddsFormat="decimal")
-    if not isinstance(data, list):
-        raise SystemExit(f"Aborting odds update: {sk} odds request failed; previous odds.json will be kept.")
-    for ev in data:
-        prices = {}
-        for b in ev.get("bookmakers", []):
-            for mk in b.get("markets", []):
-                if mk["key"] == "h2h":
-                    for o in mk["outcomes"]:
-                        prices.setdefault(o["name"], []).append(o["price"])
-        h, a, d = prices.get(ev["home_team"]), prices.get(ev["away_team"]), prices.get("Draw")
-        if h and a and d:
-            events.append({"home": ev["home_team"], "away": ev["away_team"],
-                           "commence": ev["commence_time"], "odds": [avg(h), avg(d), avg(a)]})
+    try:
+        events.extend(market_events(data))
+    except ValueError as error:
+        raise SystemExit(f"Aborting odds update: invalid {sk} odds response ({error}); previous odds.json will be kept.")
 
-with open("odds.json", "w") as f:
-    json.dump({"updated": datetime.now(timezone.utc).isoformat(), "events": events}, f, ensure_ascii=False)
+snapshot = {"updated": datetime.now(timezone.utc).isoformat(), "events": events}
+with open("odds.json", "w", encoding="utf-8") as f:
+    json.dump(snapshot, f, ensure_ascii=False)
 print("events with odds:", len(events))
