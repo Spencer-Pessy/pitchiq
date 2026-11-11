@@ -1,7 +1,7 @@
 import json, os, urllib.request, urllib.error, urllib.parse
 from datetime import datetime, timezone
 
-from pitchiq_odds import active_sport_keys, market_events
+from pitchiq_odds import active_sport_keys, market_events, require_nonempty_snapshot
 
 KEY = os.environ["ODDS_API_KEY"]
 BASE = "https://api.the-odds-api.com/v4"
