@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -224,6 +224,13 @@ try:
         preds = json.load(f)
 except Exception:
     preds = {}
+
+# Attach the first available market snapshot to older upcoming forecasts.
+# This never changes their saved probabilities, inputs, or original forecast time.
+odds_backfilled = backfill_market_odds(
+    preds, odds_data.get("events", []), odds_data.get("updated"), now, same
+)
+print("existing forecasts with first odds snapshot:", odds_backfilled)
 
 for x in out:
     start = datetime.fromisoformat(x["utc"].replace("Z", "+00:00"))
