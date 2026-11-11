@@ -2,6 +2,7 @@ import glob, json, os, re, urllib.request, urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
+from pitchiq_telegram import parse_kickoff, valid_forecast, valid_final
 from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -9,14 +10,15 @@ CHAT = os.environ.get("TELEGRAM_CHAT_ID")
 SITE = "https://spencer-pessy.github.io/pitchiq/?ref=telegram"
 
 with open("predictions.json") as f:
-    preds = list(json.load(f).values())
+    raw_preds = json.load(f)
+preds = list(raw_preds.values()) if isinstance(raw_preds, dict) else []
 
 now = datetime.now(timezone.utc)
 lim = now + timedelta(hours=36)
 
 
 def when(p):
-    return datetime.fromisoformat(p["utc"].replace("Z", "+00:00"))
+    return parse_kickoff(p.get("utc"))
 
 
 def call(method, data, ctype):
@@ -92,7 +94,8 @@ def news_post():
         json.dump(seen[-200:], f)
 
 
-up = [p for p in preds if not p.get("final") and now < when(p) < lim]
+up = [p for p in preds if valid_forecast(p) and not p.get("final")
+      and now < when(p) < lim]
 if not up:
     print("No matches in the next 36 hours; posting news instead.")
     news_post()
@@ -113,7 +116,7 @@ for k, (c, p, pick) in enumerate(top, 1):
     lines += [f"{k}. {p['h']} vs {p['a']}",
               f"   {p['comp']} · {when(p).strftime('%H:%M')}",
               f"   Model: {pick} {round(c * 100)}%", ""]
-done = [p for p in preds if p.get("final")]
+done = [p for p in preds if valid_forecast(p) and valid_final(p.get("final"))]
 if done:
     hit = 0
     for p in done:
