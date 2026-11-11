@@ -2,7 +2,7 @@ import glob, json, os, re, urllib.request, urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
-from pitchiq_telegram import parse_kickoff, valid_forecast, valid_final
+from pitchiq_telegram import parse_kickoff, valid_forecast, valid_final, clean_seen_urls
 from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -34,7 +34,7 @@ def news_post():
     SKIP = re.compile(r"\b(dies|died|death|dead|funeral|tragedy|arrest\w*|charged|court|trial|police|abuse|assault|bet|betting|gambling|odds)\b", re.I)
     try:
         with open("daily/news_seen.json") as f:
-            seen = json.load(f)
+            seen = clean_seen_urls(json.load(f))
     except Exception:
         seen = []
     picked = {"news": [], "gossip": []}
@@ -91,7 +91,7 @@ def news_post():
         seen += [l for _, l in v]
     os.makedirs("daily", exist_ok=True)
     with open("daily/news_seen.json", "w") as f:
-        json.dump(seen[-200:], f)
+        json.dump(clean_seen_urls(seen), f)
 
 
 up = [p for p in preds if valid_forecast(p) and not p.get("final")
