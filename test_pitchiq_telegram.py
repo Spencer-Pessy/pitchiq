@@ -123,5 +123,6 @@ class TelegramDeliverySafetyTests(unittest.TestCase):
         self.assertIn("URLs remain eligible for a later retry", news)
         self.assertLess(news.index("if not response.get(\"ok\"):"),
                         news.index("seen += [l for _, l in v]"))
-\nif __name__ == "__main__":
+
+if __name__ == "__main__":
     unittest.main()
