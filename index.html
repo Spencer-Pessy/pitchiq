@@ -67,6 +67,8 @@ h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:1
 <main id="app"><p class="note">Loading matches…</p></main>
 <script>
 const $=s=>document.querySelector(s);
+// Escape all external feed text before inserting it into HTML templates.
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let D=null,P={},I={items:[]},tab='up',comp='all',sel=null;
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
@@ -129,12 +131,12 @@ function record(){
  <div class="panel"><h2>Competition breakdown</h2><div style="overflow-x:auto"><table class="lt"><tr><th>Competition</th><th>Matches</th><th>1X2</th><th>Brier</th><th>Log loss</th></tr>${compRows.map(x=>`<tr><td>${x.name}</td><td>${x.n}</td><td>${f(x.accuracy,x.n)}</td><td>${x.brier.toFixed(3)}</td><td>${x.loss.toFixed(3)}</td></tr>`).join('')}</table></div><p class="note">Small samples can swing sharply; compare competitions only when they have enough completed forecasts.</p></div>
  <div class="panel"><h2>Confidence calibration</h2><p class="note">When the model gives its most likely outcome a higher probability, does it happen that often? Compare average confidence with actual accuracy.</p><div style="overflow-x:auto"><table class="lt"><tr><th>Confidence band</th><th>Matches</th><th>Avg. confidence</th><th>Actual accuracy</th></tr>${confBins.map(x=>`<tr><td>${Math.round(x.lo*100)}–${Math.round((x.lo+.1)*100)}%</td><td>${x.n}</td><td>${f(x.confidence,x.n)}</td><td>${f(x.accuracy,x.n)}</td></tr>`).join('')}</table></div><p class="note">Fewer than 10 matches in a band is a very small sample. A well-calibrated model should have similar average confidence and actual accuracy over many forecasts.</p></div>
  <p class="note">Based on ${n} completed, valid pre-match forecasts. Brier score measures probability error (0 is perfect; about 0.667 is the uniform 1X2 reference). Log loss penalises confident wrong forecasts. Expected-goals MAE is the average absolute difference between predicted and actual goals, shown home / away. Lower is better for all three error measures. Results are historical and do not guarantee future performance. Predictions are saved before kickoff and are not overwritten. ${open} forecasts are still waiting for results.</p>
- <div class="day">Recent results</div>${rows.slice(0,25).map(r=>`<div class="card"><div class="comp">${r.p.comp} · ${r.t.toLocaleDateString([],{day:'numeric',month:'short'})}</div><div class="row"><span class="tm">${r.p.h}</span><span class="ko">${r.p.final[0]} – ${r.p.final[1]}</span><span class="tm r">${r.p.a}</span></div><span class="pill" style="color:var(${r.ok?'--ok':'--no'})">${r.ok?'✓':'✗'} Predicted ${nm[r.pick]} (${Math.round(r.v[r.pick]*100)}%)</span></div>`).join('')}`
+ <div class="day">Recent results</div>${rows.slice(0,25).map(r=>`<div class="card"><div class="comp">${esc(r.p.comp)} · ${r.t.toLocaleDateString([],{day:'numeric',month:'short'})}</div><div class="row"><span class="tm">${esc(r.p.h)}</span><span class="ko">${r.p.final[0]} – ${r.p.final[1]}</span><span class="tm r">${esc(r.p.a)}</span></div><span class="pill" style="color:var(${r.ok?'--ok':'--no'})">${r.ok?'✓':'✗'} Predicted ${nm[r.pick]} (${Math.round(r.v[r.pick]*100)}%)</span></div>`).join('')}`
  :`<div class="panel"><h2>Record starts today</h2><p class="note" style="margin:0">Predictions are saved before kickoff and scored after full time. ${open} are saved and waiting for their matches. Come back after they finish to see the first results.</p></div>`);
  bind();
 }
 function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000),h=D.data_health,stale=Number.isFinite(mins)&&mins>90;
- const health=h?`<p class="note" style="margin:6px 0 12px">Feed coverage: ${h.fixture_competitions||0} competitions · ${h.fixture_total||0} fixtures · international ${h.international_fixture_total||0} · standings ${h.standings_competitions||0}/${h.fixture_competitions||0}${h.standings_failures?` · ${h.standings_failures} standings feed(s) unavailable`:``}</p>`:'';
+ const health=h?`<p class="note" style="margin:6px 0 12px">Feed coverage: ${Number(h.fixture_competitions)||0} competitions · ${Number(h.fixture_total)||0} fixtures · international ${Number(h.international_fixture_total)||0} · standings ${Number(h.standings_competitions)||0}/${h.fixture_competitions||0}${Number(h.standings_failures)>0?` · ${h.standings_failures} standings feed(s) unavailable`:``}</p>`:'';
  return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">${stale?'Data may be stale · ':''}Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`+health}
 function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
@@ -144,14 +146,14 @@ function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
 let pk='conf';
 function picks(){
  const lim=Date.now()+36*3600e3;
- const nm=m=>['Home win: '+m.h,'Draw','Away win: '+m.a];
+ const nm=m=>['Home win: '+esc(m.h),'Draw','Away win: '+esc(m.a)];
  const ms=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{
   const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));let g=null,gi=-1;
   if(m.odds&&m.odds.every(x=>x>1)){const inv=m.odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*m.odds[k]-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
   return{m,r,i,c:v[i],g,gi}}).sort((a,b)=>pk=='gap'?((b.g?b.g.e:-9)-(a.g?a.g.e:-9)):b.c-a.c);
  const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null;
  $('#app').innerHTML=head()+tabsHtml()+`<div class="tabs"><button data-p="conf" aria-pressed="${pk=='conf'}">Most confident</button><button data-p="gap" aria-pressed="${pk=='gap'}">Biggest gap vs market</button></div>
- <p class="note">Matches in the next 36 hours. ${oh===null?'Odds aren’t loaded yet.':'Odds updated '+oh+' h ago, averaged across bookmakers.'} If the model and the market disagree a lot, trust the market more. Sure doesn’t mean certain.</p>`+(ms.map((x,k)=>`<button class="card" data-id="${x.m.id}"><div class="pk"><span class="rk">${k+1}</span><div><div class="comp">${x.m.comp} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${x.m.h} vs ${x.m.a}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span>${x.g?`<div class="note" style="margin-top:4px">Best value: <b class="${x.g.e>=.05?'ok':'no'}">${nm(x.m)[x.gi]} (${x.g.e>0?'+':''}${(x.g.e*100).toFixed(1)}%)</b> · market ${Math.round(x.g.mk*100)}%</div>`:''}</div></div></button>`).join('')||'<p class="note">No matches in the next 36 hours.</p>');
+ <p class="note">Matches in the next 36 hours. ${oh===null?'Odds aren’t loaded yet.':'Odds updated '+oh+' h ago, averaged across bookmakers.'} If the model and the market disagree a lot, trust the market more. Sure doesn’t mean certain.</p>`+(ms.map((x,k)=>`<button class="card" data-id="${x.m.id}"><div class="pk"><span class="rk">${k+1}</span><div><div class="comp">${esc(x.m.comp)} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${esc(x.m.h)} vs ${esc(x.m.a)}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span>${x.g?`<div class="note" style="margin-top:4px">Best value: <b class="${x.g.e>=.05?'ok':'no'}">${nm(x.m)[x.gi]} (${x.g.e>0?'+':''}${(x.g.e*100).toFixed(1)}%)</b> · market ${Math.round(x.g.mk*100)}%</div>`:''}</div></div></button>`).join('')||'<p class="note">No matches in the next 36 hours.</p>');
  bind();
 }
 function tables(){
@@ -159,8 +161,8 @@ function tables(){
  if(!ks.length){$('#app').innerHTML=head()+tabsHtml()+'<p class="note">No tables yet. They appear after the next data update.</p>';return bind()}
  if(!T[comp])comp=ks[0];
  const t=T[comp];
- $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${T[k].name}</option>`).join('')}</select>
- <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${r.team}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>${t.scorers&&t.scorers.length?`<h2>Top scorers</h2><div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Player</th><th>Team</th><th>G</th><th>A</th><th>Apps</th><th>G/App</th></tr>${t.scorers.map((p,i)=>`<tr><td>${i+1}</td><td>${p.name}</td><td>${p.team}</td><td><b>${p.g??'–'}</b></td><td>${p.a??'–'}</td><td>${p.m??'–'}</td><td>${p.gpm!=null?Number(p.gpm).toFixed(2):(Number(p.m)>0&&p.g!=null?(Number(p.g)/Number(p.m)).toFixed(2):'–')}</td></tr>`).join('')}</table></div>`:''}`;
+ $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${esc(T[k].name)}</option>`).join('')}</select>
+ <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>${t.scorers&&t.scorers.length?`<h2>Top scorers</h2><div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Player</th><th>Team</th><th>G</th><th>A</th><th>Apps</th><th>G/App</th></tr>${t.scorers.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td><b>${p.g??'–'}</b></td><td>${p.a??'–'}</td><td>${p.m??'–'}</td><td>${p.gpm!=null?Number(p.gpm).toFixed(2):(Number(p.m)>0&&p.g!=null?(Number(p.g)/Number(p.m)).toFixed(2):'–')}</td></tr>`).join('')}</table></div>`:''}`;
  bind();
 }
 function list(){
@@ -175,8 +177,8 @@ function list(){
   const d=dy(m);if(d!=last){html+=`<div class="day">${d}</div>`;last=d}
   const r=model(m.s);
   const mid=m.score?`${m.score[0]} – ${m.score[1]}`:tm(m);
-  html+=`<button class="card" data-id="${m.id}"><div class="comp">${m.comp}${live(m)?' · <b style="color:var(--live)">LIVE</b>':''}</div>
-  <div class="row"><span class="tm">${m.h}</span><span class="ko">${mid}</span><span class="tm r">${m.a}</span></div>
+  html+=`<button class="card" data-id="${m.id}"><div class="comp">${esc(m.comp)}${live(m)?' · <b style="color:var(--live)">LIVE</b>':''}</div>
+  <div class="row"><span class="tm">${esc(m.h)}</span><span class="ko">${mid}</span><span class="tm r">${esc(m.a)}</span></div>
   <div class="mini"><i style="width:${r.ph*100}%;background:var(--home)"></i><i style="width:${r.pd*100}%;background:var(--draw)"></i><i style="width:${r.pa*100}%;background:var(--away)"></i></div>
   <span class="pill">${Math.round(r.ph*100)} / ${Math.round(r.pd*100)} / ${Math.round(r.pa*100)}</span></button>`;
  }
@@ -187,12 +189,12 @@ function list(){
 const fld=[['gf','Goals scored / game'],['ga','Goals conceded / game'],['elo','Rating (Elo)'],['form','Last 5 (W D L)'],['out','Key players out']];
 function detail(){
  const f=sel,s=f.s;
- const col=(k,n,c)=>`<div style="--c:${c}"><h3>${n}</h3>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${s[k][x]}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
+ const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3>${fld.map(([x,l])=>`<label>${l}</label><input data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
  const absences=(I.items||[]).filter(x=>[f.h,f.a].some(team=>(x.team||'').toLowerCase()==team.toLowerCase()));
- const absencePanel=absences.length?`<div class="panel"><h2>Reported absences</h2><p class="note">API-Football reports; coverage may be incomplete. These reports do not automatically change the forecast.</p>${absences.map(x=>`<div class="gl"><span><b>${x.player}</b> · ${x.team}</span><span>${x.reason||'Reason not supplied'}</span></div>`).join('')}</div>`:'';
+ const absencePanel=absences.length?`<div class="panel"><h2>Reported absences</h2><p class="note">API-Football reports; coverage may be incomplete. These reports do not automatically change the forecast.</p>${absences.map(x=>`<div class="gl"><span><b>${esc(x.player)}</b> · ${esc(x.team)}</span><span>${esc(x.reason||'Reason not supplied')}</span></div>`).join('')}</div>`:'';
  $('#app').innerHTML=`<button class="back" id="bk">← Matches</button>
- <div class="comp">${f.comp} · ${dy(f)} ${tm(f)}</div><h2>${f.h} vs ${f.a}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
- ${f.goals&&f.goals.length?`<div class="panel"><h2>Goals</h2>${f.goals.map(g=>`<div class="gl"><span>⚽ ${g.min?g.min+(g.extra?'+'+g.extra:'')+"′ ":''}${g.scorer||'Goal'}</span><span>${g.assist?'Assist: '+g.assist+' · ':''}${g.team}</span></div>`).join('')}</div>`:''}
+ <div class="comp">${esc(f.comp)} · ${dy(f)} ${tm(f)}</div><h2>${esc(f.h)} vs ${esc(f.a)}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
+ ${f.goals&&f.goals.length?`<div class="panel"><h2>Goals</h2>${f.goals.map(g=>`<div class="gl"><span>⚽ ${g.min?g.min+(g.extra?'+'+g.extra:'')+"′ ":''}${esc(g.scorer||'Goal')}</span><span>${g.assist?'Assist: '+esc(g.assist)+' · ':''}${esc(g.team)}</span></div>`).join('')}</div>`:''}
  ${absencePanel}<div id="res"></div>
  <div class="panel"><p class="note" style="margin-top:0">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust anything you know better, such as injuries.</p>
  <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
@@ -209,13 +211,13 @@ function res(){
  const f=sel,s=f.s,r=model(s);let v='';
  if(f.odds&&f.odds.every(x=>x>1)){
   const inv=f.odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],mp=[r.ph,r.pd,r.pa],nm=[f.h,'Draw',f.a];
-  v=`<div class="panel"><h2>Value check</h2><table><tr><th>Pick</th><th>Model</th><th>Market</th><th>Edge</th></tr>${f.odds.map((x,i)=>{const e=mp[i]*x-1;return`<tr><td>${nm[i]}</td><td>${pct(mp[i])}</td><td>${pct(inv[i]/sum)}</td><td class="${e>=.05?'ok':'no'}">${(e*100).toFixed(1)}%</td></tr>`}).join('')}</table>
+  v=`<div class="panel"><h2>Value check</h2><table><tr><th>Pick</th><th>Model</th><th>Market</th><th>Edge</th></tr>${f.odds.map((x,i)=>{const e=mp[i]*x-1;return`<tr><td>${esc(nm[i])}</td><td>${pct(mp[i])}</td><td>${pct(inv[i]/sum)}</td><td class="${e>=.05?'ok':'no'}">${(e*100).toFixed(1)}%</td></tr>`}).join('')}</table>
   <p class="note">If the model and the market differ a lot, trust the market more. It knows lineups and news this model doesn’t.</p></div>`;
  }
  const st=(k,x)=>`<div class="stat"><span>${k}</span><b>${x}</b></div>`;
  $('#res').innerHTML=`<div class="panel"><h2>Forecast</h2>
  <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
- <div class="legend"><span>${f.h}</span><span>Draw</span><span>${f.a}</span></div>
+ <div class="legend"><span>${esc(f.h)}</span><span>Draw</span><span>${esc(f.a)}</span></div>
  <div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
  <h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${f.h} ${x[0]}–${x[1]} ${f.a} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
  <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
@@ -436,7 +438,7 @@ function addFooter(){
   $('#bk').insertAdjacentHTML('afterend',' <button class="back" id="shr" style="border-color:var(--home)">Share image</button>');
   $('#shr').onclick=shareImg;
   if(f.inj){
-   const html='<div class="panel"><h2>Reported absences</h2><div class="cols">'+[['h',f.h,'var(--home)'],['a',f.a,'var(--away)']].map(([k,n,c])=>'<div style="--c:'+c+'"><h3>'+n+'</h3>'+(f.inj[k].length?f.inj[k].map(p=>'<div class="gl"><span>'+p.n+'</span><span>'+(p.r||'')+'</span></div>').join(''):'<p class="note">None listed</p>')+'</div>').join('')+'</div><p class="note">From API-Football. Not every name is a first-team player, so set “Key players out” below yourself.</p></div>';
+   const html='<div class="panel"><h2>Reported absences</h2><div class="cols">'+[['h',f.h,'var(--home)'],['a',f.a,'var(--away)']].map(([k,n,c])=>'<div style="--c:'+c+'"><h3>'+esc(n)+'</h3>'+(f.inj[k].length?f.inj[k].map(p=>'<div class="gl"><span>'+esc(p.n)+'</span><span>'+esc(p.r||'')+'</span></div>').join(''):'<p class="note">None listed</p>')+'</div>').join('')+'</div><p class="note">From API-Football. Not every name is a first-team player, so set “Key players out” below yourself.</p></div>';
    const nt=$('#nt');(nt?nt.parentNode:$('#res')).insertAdjacentHTML('beforebegin',html);
   }
   const row=document.createElement('div');row.style.cssText='margin-bottom:10px';
