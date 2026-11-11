@@ -1,3 +1,4 @@
+from pathlib import Path
 """Tests for Telegram input validation."""
 import unittest
 from pitchiq_telegram import (parse_kickoff, valid_probabilities, valid_forecast, valid_final, clean_seen_urls,
@@ -81,6 +82,25 @@ class TelegramValidationTests(unittest.TestCase):
         self.assertEqual(state["sent_ids"], ["7", "x"])
         self.assertEqual(state["results"], [])
 
+
+
+class ResultsOnlyWorkflowTests(unittest.TestCase):
+    def test_results_only_mode_exits_before_new_picks_and_news(self):
+        source = Path("telegram.py").read_text(encoding="utf-8")
+        flag = 'if os.environ.get("PITCHIQ_RESULTS_ONLY") == "1":'
+        self.assertIn(flag, source)
+        self.assertLess(source.index(flag), source.index('up = [p for p in preds'))
+        self.assertIn("no new picks or news posts were requested", source)
+        self.assertIn("resolve_published_picks(pick_state, preds)", source)
+
+    def test_hourly_results_workflow_does_not_install_pillow_or_call_odds(self):
+        workflow = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
+        self.assertIn("cron: '0 * * * *'", workflow)
+        self.assertIn('PITCHIQ_RESULTS_ONLY: "1"', workflow)
+        self.assertIn("python telegram.py", workflow)
+        self.assertNotIn("pip install", workflow)
+        self.assertNotIn("odds.py", workflow)
+        self.assertIn("group: pitchiq-publish", workflow)
 
 if __name__ == "__main__":
     unittest.main()
