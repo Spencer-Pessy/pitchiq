@@ -110,3 +110,9 @@ class BaselineComparisonWebTests(unittest.TestCase):
         self.assertIn("PitchIQ minus bookmaker · Brier", source)
         self.assertIn("Bookmaker comparison by competition", source)
         self.assertIn("small samples (especially below 20)", source)
+
+class AccuracyConfidenceIntervalWebTests(unittest.TestCase):
+    def test_record_view_shows_wilson_interval_for_accuracy(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const wilson=(successes,total)=>", source)
+        self.assertIn("95% Wilson interval:", source)
