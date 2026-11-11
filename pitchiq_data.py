@@ -24,7 +24,9 @@ def build_feed_health(fixture_counts, standings_codes, published_match_count, st
     """Summarize source coverage without exposing credentials or raw responses."""
     fixture_counts = dict(sorted(fixture_counts.items()))
     standings_codes = sorted(set(standings_codes))
-    standings_failed = sorted(set(standings_failed))
+    # World Cup and EURO are tournament feeds, not domestic league tables.
+    # Their lack of a TOTAL standings table is expected, not a source failure.
+    standings_failed = sorted(set(standings_failed) - INTERNATIONAL_COMPETITIONS)
     return {
         "fixture_competitions": len(fixture_counts),
         "fixture_counts": fixture_counts,
