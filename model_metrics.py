@@ -192,7 +192,8 @@ def evaluate(predictions):
             })
     if not n:
         return {"matches": 0, "accuracy": None, "brier": None, "log_loss": None,
-                "chronological_split": [], "home_goals_mae": None, "away_goals_mae": None,
+                "chronological_split": [], "confidence_bins": [], "expected_calibration_error": None,
+                "max_calibration_gap": None, "home_goals_mae": None, "away_goals_mae": None,
                 "home_goals_bias": None, "away_goals_bias": None,
                 "input_diagnostics": input_diagnostics(predictions)}
 
@@ -229,16 +230,21 @@ def evaluate(predictions):
         except (KeyError, TypeError, ValueError):
             pass
 
+    populated_bins = [
+        {"lower": lo, "upper": hi, "matches": len(confidences),
+         "mean_confidence": round(sum(confidences) / len(confidences), 4),
+         "accuracy": round(sum(outcomes) / len(outcomes), 4)}
+        for lo, hi, confidences, outcomes in confidence_groups if confidences
+    ]
+    calibration_gaps = [abs(row["mean_confidence"] - row["accuracy"]) for row in populated_bins]
+    calibration_error = sum(row["matches"] * gap for row, gap in zip(populated_bins, calibration_gaps)) / n
     return {
         "matches": n,
         "accuracy": round(correct / n, 4),
         "chronological_split": chronological,
-        "confidence_bins": [
-            {"lower": lo, "upper": hi, "matches": len(confidences),
-             "mean_confidence": round(sum(confidences) / len(confidences), 4),
-             "accuracy": round(sum(outcomes) / len(outcomes), 4)}
-            for lo, hi, confidences, outcomes in confidence_groups if confidences
-        ],
+        "confidence_bins": populated_bins,
+        "expected_calibration_error": round(calibration_error, 4),
+        "max_calibration_gap": round(max(calibration_gaps), 4) if calibration_gaps else None,
         "brier": round(brier / n, 4),
         "log_loss": round(log_loss / n, 4),
         "goal_samples": goal_n,
