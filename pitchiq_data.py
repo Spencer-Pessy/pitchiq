@@ -43,6 +43,25 @@ def build_feed_health(fixture_counts, standings_codes, published_match_count, st
     }
 
 
+def team_venue_stats(history, home, prior_for, prior_against, elo, shrink=6, form_limit=5):
+    """Build venue-shrunk scoring inputs and disclose their supporting samples."""
+    rows = [row for row in history if row[0] == home]
+    count = len(rows)
+    gf = (sum(row[1] for row in rows) + shrink * prior_for) / (count + shrink)
+    ga = (sum(row[2] for row in rows) + shrink * prior_against) / (count + shrink)
+    recent = history[-form_limit:] if form_limit else []
+    return {
+        "gf": round(gf, 2),
+        "ga": round(ga, 2),
+        "elo": int(elo),
+        "form": "".join(row[3] for row in recent),
+        "out": 0,
+        "venue_matches": count,
+        "form_matches": len(recent),
+        "form_scope": "all_venues",
+    }
+
+
 def player_goals_per_appearance(goals, appearances):
     """Return goals per appearance, or None when source data is incomplete."""
     try:
