@@ -41,7 +41,7 @@ The forecasting calculations live in `pitchiq_model.py`, separate from API and f
 The enabled workflows in `.github/workflows/` run on their schedules or, where enabled, can be run manually with **Actions → select workflow → Run workflow**:
 
 - **Update data** — every 30 minutes.
-- **Update odds** — enabled once daily at 07:23 UTC on the free tier only. If `ODDS_API_KEY` is missing, the workflow logs a warning and skips requests; it does not upgrade or incur paid charges. Daily picks run later at 07:43 UTC.
+- **Update odds** — enabled once daily at 07:23 UTC on the free tier only. The workflow requires both `ODDS_API_KEY` and the repository variable `ODDS_FREE_TIER_CONFIRMED=true`; until the owner confirms the key is on the free tier, it logs a warning and skips every request. It never upgrades a plan. Daily picks run later at 07:43 UTC.
 - **Update international fixtures** — daily; public no-key scoreboard requests plus the OpenFootball CC0 archive. ESPN's scoreboard is unofficial and may change without notice.
 - **Update national-team historical ratings** — weekly; refreshes a CC0 men's international results snapshot and rebuilds a separate chronological Elo research artifact. No paid API or prediction publication.
 - **Telegram picks** — daily.
