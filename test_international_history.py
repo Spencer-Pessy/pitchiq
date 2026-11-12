@@ -76,6 +76,22 @@ class InternationalHistoryTests(unittest.TestCase):
             self.assertGreaterEqual(result[section]["accuracy"], 0)
             self.assertLessEqual(result[section]["accuracy"], 1)
 
+    def test_current_elo_does_not_leak_same_day_results_between_fixtures(self):
+        same_day = [
+            {
+                "date": "2024-01-01", "home": "Kenya", "away": "Uganda",
+                "home_score": 1, "away_score": 0, "tournament": "Friendly", "neutral": False,
+            },
+            {
+                "date": "2024-01-01", "home": "Kenya", "away": "Tanzania",
+                "home_score": 1, "away_score": 0, "tournament": "Friendly", "neutral": False,
+            },
+        ]
+        expected_home = 1 / (1 + 10 ** (-65 / 400))
+        expected_rating = round(1500 + 2 * 20 * 0.75 * (1 - expected_home), 2)
+        ratings = {row["team"]: row["elo"] for row in build_ratings(same_day)}
+        self.assertEqual(ratings["Kenya"], expected_rating)
+
     def test_tournament_weights_are_conservative_and_ordered(self):
         self.assertLess(tournament_weight("Friendly"), tournament_weight("FIFA World Cup qualification"))
         self.assertLess(tournament_weight("FIFA World Cup qualification"), tournament_weight("FIFA World Cup"))
