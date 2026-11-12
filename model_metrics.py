@@ -693,14 +693,17 @@ def evaluate(predictions):
         if abs(sum(p) - 1.0) > 0.02:
             continue
         actual = 0 if home_goals > away_goals else 1 if home_goals == away_goals else 2
-        records.append((home_goals, away_goals, p, actual, probs, str(item.get('utc') or item.get('made') or '')))
+        records.append((home_goals, away_goals, p, actual, probs, _forecast_datetime(item)))
 
 
     n = len(records)
     chronological = []
-    ordered = sorted(records, key=lambda row: row[5])
-    if n >= 2:
-        midpoint = n // 2
+    # Keep full-sample metrics independent of timestamp quality, but only
+    # use valid timezone-aware dates for the chronological diagnostic.
+    dated_records = [row for row in records if row[5] is not None]
+    ordered = sorted(dated_records, key=lambda row: row[5])
+    if len(ordered) >= 2:
+        midpoint = len(ordered) // 2
         for label, subset in (("earlier", ordered[:midpoint]), ("later", ordered[midpoint:])):
             count = len(subset)
             hits = sum(row[2].index(max(row[2])) == row[3] for row in subset)
