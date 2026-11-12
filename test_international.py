@@ -83,6 +83,36 @@ class InternationalFeedTests(unittest.TestCase):
         self.assertEqual(row["utc"], "2026-11-14T16:00:00+00:00")
         self.assertEqual(row["source"], "ESPN public scoreboard (unofficial)")
 
+    def test_openfootball_rejects_invalid_full_time_score_values(self):
+        payload = {
+            "name": "World Cup 2026",
+            "matches": [
+                {"date": "2026-06-11", "time": "13:00 UTC-6",
+                 "team1": "A", "team2": "B", "score": {"ft": [-1, 2]}},
+                {"date": "2026-06-12", "time": "13:00 UTC-6",
+                 "team1": "C", "team2": "D", "score": {"ft": [True, 1]}},
+                {"date": "2026-06-13", "time": "13:00 UTC-6",
+                 "team1": "E", "team2": "F", "score": {"ft": ["2", 1]}},
+            ],
+        }
+        rows = normalize_matches(payload)
+        self.assertEqual([row["status"] for row in rows], ["NS", "NS", "NS"])
+        self.assertTrue(all(row["score"] is None for row in rows))
+
+    def test_espn_rejects_negative_scores(self):
+        event = {
+            "id": "negative-score",
+            "date": "2026-11-14T16:00:00Z",
+            "status": {"type": {"state": "post", "name": "STATUS_FINAL", "description": "Final"}},
+            "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"name": "Japan"}, "score": "-1"},
+                {"homeAway": "away", "team": {"name": "Brazil"}, "score": "1"},
+            ]}],
+        }
+        row = normalize_espn_event(event, "fifa.friendly", "International Friendlies")
+        self.assertEqual(row["status"], "FT")
+        self.assertIsNone(row["score"])
+
     def test_normalizes_espn_final_score_and_status(self):
         event = {
             "id": "987",
