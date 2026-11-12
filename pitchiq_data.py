@@ -1,6 +1,7 @@
 """Competition-aware data grouping helpers for PitchIQ."""
 
 from datetime import datetime
+import math
 
 INTERNATIONAL_COMPETITIONS = frozenset({"WC", "EC"})
 
@@ -135,6 +136,49 @@ def forecast_input_snapshot(stats, calibration=None):
             "ka": (calibration or {}).get("ka", 1.0),
         },
     }
+
+
+
+def goal_rate_calibration(predictions, minimum_results=10, prior_strength=120,
+                          lower=0.85, upper=1.15):
+    """Estimate bounded goal-rate calibration from valid settled forecasts only."""
+    rows = []
+    for item in predictions if isinstance(predictions, (list, tuple)) else []:
+        if not isinstance(item, dict):
+            continue
+        final = item.get("final")
+        forecast = item.get("p")
+        if not isinstance(final, (list, tuple)) or len(final) != 2 or not isinstance(forecast, dict):
+            continue
+        try:
+            actual_home, actual_away = (float(value) for value in final)
+            predicted_home = float(forecast.get("rlh", forecast.get("lh")))
+            predicted_away = float(forecast.get("rla", forecast.get("la")))
+        except (TypeError, ValueError):
+            continue
+        values = (actual_home, actual_away, predicted_home, predicted_away)
+        if (not all(math.isfinite(value) for value in values)
+                or actual_home < 0 or actual_away < 0
+                or not actual_home.is_integer() or not actual_away.is_integer()
+                or predicted_home <= 0 or predicted_away <= 0):
+            continue
+        rows.append(values)
+
+    calibration = {"kh": 1.0, "ka": 1.0}
+    count = len(rows)
+    if count < minimum_results:
+        return calibration, count
+
+    weight = count / (count + prior_strength)
+    mean_home_rate = sum(row[2] for row in rows) / count
+    mean_away_rate = sum(row[3] for row in rows) / count
+    mean_home_goals = sum(row[0] for row in rows) / count
+    mean_away_goals = sum(row[1] for row in rows) / count
+    calibration["kh"] = round(min(upper, max(lower,
+        1 + (mean_home_goals / mean_home_rate - 1) * weight)), 4)
+    calibration["ka"] = round(min(upper, max(lower,
+        1 + (mean_away_goals / mean_away_rate - 1) * weight)), 4)
+    return calibration, count
 
 
 def record_forward_evaluations(existing, fixtures, finished_scores, now, predict_fn, snapshot_fn):
