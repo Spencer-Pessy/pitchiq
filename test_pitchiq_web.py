@@ -66,6 +66,16 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
 
 
 
+class NestedFixtureSearchTests(unittest.TestCase):
+    def test_team_search_filters_nested_fixture_grid_cards_and_day_headings(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("document.querySelectorAll('button.card[data-id]').forEach(card=>", source)
+        self.assertIn("document.querySelectorAll('.day').forEach(day=>", source)
+        self.assertIn("let sibling=day.nextElementSibling,any=false", source)
+        self.assertIn("sibling.matches('button.card[data-id]')", source)
+        self.assertNotIn("[...$('#app').children].forEach(el=>", source)
+
+
 class PublishedResultsPresentationTests(unittest.TestCase):
     def test_results_view_has_published_pick_summary_and_empty_state(self):
         source = Path("index.html").read_text(encoding="utf-8")
