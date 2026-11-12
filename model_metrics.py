@@ -313,19 +313,25 @@ def ablation_comparison(predictions):
             forecasts = {}
             for name, switches in variants.items():
                 forecast = model_predict(stats, calibration, **switches)
-                probabilities = [forecast[key] for key in ("ph", "pd", "pa")]
-                if all(math.isfinite(value) for value in probabilities):
-                    forecasts[name] = probabilities
-                    scored[name].append((probabilities, actual))
-            if "full_model" in forecasts:
-                target = [1 if index == actual else 0 for index in range(3)]
-                full_brier = sum((value - target[index]) ** 2
-                                 for index, value in enumerate(forecasts["full_model"]))
-                for name in paired_deltas:
-                    if name in forecasts:
-                        variant_brier = sum((value - target[index]) ** 2
-                                            for index, value in enumerate(forecasts[name]))
-                        paired_deltas[name].append(variant_brier - full_brier)
+                probabilities = [float(forecast[key]) for key in ("ph", "pd", "pa")]
+                if (not all(math.isfinite(value) and 0 <= value <= 1
+                            for value in probabilities)
+                        or abs(sum(probabilities) - 1.0) > 0.02):
+                    forecasts = {}
+                    break
+                forecasts[name] = probabilities
+            # Keep every ablation variant on one identical complete sample.
+            if len(forecasts) != len(variants):
+                continue
+            for name, probabilities in forecasts.items():
+                scored[name].append((probabilities, actual))
+            target = [1 if index == actual else 0 for index in range(3)]
+            full_brier = sum((value - target[index]) ** 2
+                             for index, value in enumerate(forecasts["full_model"]))
+            for name in paired_deltas:
+                variant_brier = sum((value - target[index]) ** 2
+                                    for index, value in enumerate(forecasts[name]))
+                paired_deltas[name].append(variant_brier - full_brier)
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
 
