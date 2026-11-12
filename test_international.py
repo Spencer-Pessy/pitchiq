@@ -27,6 +27,12 @@ class InternationalFeedTests(unittest.TestCase):
         self.assertEqual(parse_kickoff("2026-06-11", "13:00 UTC-6"), "2026-06-11T19:00:00+00:00")
         self.assertEqual(parse_kickoff("2026-06-11", "20:00 UTC+3"), "2026-06-11T17:00:00+00:00")
 
+    def test_invalid_calendar_dates_and_out_of_range_utc_offsets_are_rejected(self):
+        self.assertIsNone(parse_kickoff("2026-02-30", "13:00 UTC"))
+        self.assertIsNone(parse_kickoff("not-a-date", "13:00 UTC"))
+        self.assertIsNone(parse_kickoff("2026-06-11", "13:00 UTC+14:30"))
+        self.assertIsNone(parse_kickoff("2026-06-11", "13:00 UTC-15"))
+
     def test_invalid_or_missing_kickoff_is_rejected(self):
         self.assertIsNone(parse_kickoff("2026-06-11", "TBD"))
         self.assertIsNone(parse_kickoff("2026-06-11", "25:70 UTC+2"))
