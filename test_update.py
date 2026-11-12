@@ -84,7 +84,8 @@ class UpdateRequestPacingTests(unittest.TestCase):
         odds_workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "7,37 * * * *"', update_workflow)
         self.assertIn('cron: "23 7 * * *"', odds_workflow)
-        self.assertIn("if: ${{ false }}", odds_workflow)
+        self.assertNotIn("if: ${{ false }}", odds_workflow)
+        self.assertIn("ODDS_API_KEY is not configured; no odds request was made.", odds_workflow)
 
 
 if __name__ == "__main__":
