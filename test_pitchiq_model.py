@@ -1,6 +1,7 @@
 """Offline unit tests for the PitchIQ probability model."""
 import math
 import unittest
+from unittest.mock import patch
 
 from pitchiq_model import ppg, pois, predict, tau
 from model_metrics import evaluate, input_diagnostics, binary_market_metrics, baseline_comparison, outcome_class_metrics, ablation_comparison, wilson_interval, paired_bootstrap_interval, expected_goals_calibration, scoreline_baseline_comparison
@@ -63,6 +64,32 @@ class MetricsTests(unittest.TestCase):
         self.assertIsNone(result["variants"]["without_elo"]["brier_delta_ci_95"])
         self.assertTrue(all(value["matches"] == 1 for value in result["variants"].values()))
         self.assertEqual(result["variants"]["full_model"]["accuracy"], 1.0)
+
+    def test_ablation_drops_match_from_every_variant_if_one_variant_is_invalid(self):
+        stats = {
+            "h": {"gf": 1.7, "ga": 0.9, "elo": 1620, "form": "WWDLW"},
+            "a": {"gf": 1.2, "ga": 1.4, "elo": 1510, "form": "LDWDL"},
+            "lh": 1.5, "la": 1.2,
+        }
+        calibration = {"kh": 1.05, "ka": 0.97}
+        valid = predict(stats, calibration)
+
+        def controlled_predict(_stats, _calibration, use_elo=True, use_form=True):
+            if not use_elo:
+                return {"ph": 2.0, "pd": 0.0, "pa": 0.0}
+            return valid
+
+        row = {
+            "final": [2, 0],
+            "inputs": {"schema": 2, "home": stats["h"], "away": stats["a"],
+                       "league_home": stats["lh"], "league_away": stats["la"],
+                       "calibration": calibration},
+            "p": valid,
+        }
+        with patch("model_metrics.model_predict", side_effect=controlled_predict):
+            result = ablation_comparison([row])
+        self.assertEqual(result["matches"], 0)
+        self.assertTrue(all(value["matches"] == 0 for value in result["variants"].values()))
 
     def test_ablation_comparison_is_empty_without_schema_two_snapshots(self):
         result = ablation_comparison([
