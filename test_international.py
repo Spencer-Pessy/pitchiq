@@ -1,5 +1,9 @@
 import unittest
-from international import normalize_matches, parse_kickoff
+from datetime import datetime, timezone
+from unittest.mock import patch
+from international import (
+    deduplicate, normalize_espn_event, normalize_matches, parse_kickoff,
+)
 
 
 class InternationalFeedTests(unittest.TestCase):
@@ -31,9 +35,58 @@ class InternationalFeedTests(unittest.TestCase):
         self.assertEqual(rows[0]["utc"], "2026-06-11T19:00:00+00:00")
         self.assertEqual(rows[1]["status"], "NS")
         self.assertIsNone(rows[1]["score"])
-        self.assertEqual(rows[0]["source"] if "source" in rows[0] else "ok", "ok")
+        self.assertEqual(rows[0]["source"], "OpenFootball worldcup.json (CC0)")
 
-    def test_rejects_malformed_or_empty_source(self):
+    def test_normalizes_espn_upcoming_event(self):
+        event = {
+            "id": "12345",
+            "date": "2026-11-14T16:00:00Z",
+            "status": {"type": {"state": "pre", "name": "STATUS_SCHEDULED"}},
+            "competitions": [{
+                "competitors": [
+                    {"homeAway": "home", "team": {"displayName": "Japan"}, "score": ""},
+                    {"homeAway": "away", "team": {"displayName": "Brazil"}, "score": ""},
+                ],
+                "venue": {"fullName": "National Stadium"},
+            }],
+            "leagues": [{"name": "International Friendly"}],
+        }
+        row = normalize_espn_event(event, "fifa.friendly", "International Friendlies")
+        self.assertEqual(row["id"], "espn-fifa.friendly-12345")
+        self.assertEqual(row["h"], "Japan")
+        self.assertEqual(row["a"], "Brazil")
+        self.assertEqual(row["status"], "NS")
+        self.assertIsNone(row["score"])
+        self.assertEqual(row["utc"], "2026-11-14T16:00:00+00:00")
+        self.assertEqual(row["source"], "ESPN public scoreboard (unofficial)")
+
+    def test_normalizes_espn_final_score_and_status(self):
+        event = {
+            "id": "987",
+            "date": "2026-11-14T16:00:00Z",
+            "status": {"type": {"state": "post", "name": "STATUS_FINAL", "description": "Final"}},
+            "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"name": "Japan"}, "score": "2"},
+                {"homeAway": "away", "team": {"name": "Brazil"}, "score": "1"},
+            ]}],
+        }
+        row = normalize_espn_event(event, "fifa.friendly", "International Friendlies")
+        self.assertEqual(row["status"], "FT")
+        self.assertEqual(row["score"], [2, 1])
+
+    def test_rejects_malformed_espn_event(self):
+        self.assertIsNone(normalize_espn_event({}, "fifa.friendly", "Friendlies"))
+        self.assertIsNone(normalize_espn_event({
+            "id": "1", "date": "2026-11-14T16:00:00Z",
+            "competitions": [{"competitors": []}],
+        }, "fifa.friendly", "Friendlies"))
+
+    def test_deduplicates_identical_fixture_rows(self):
+        row = {"utc": "2026-11-14T16:00:00+00:00", "h": "Japan", "a": "Brazil", "id": "a"}
+        duplicate = dict(row, id="b")
+        self.assertEqual([x["id"] for x in deduplicate([row, duplicate])], ["a"])
+
+    def test_rejects_malformed_or_empty_openfootball_source(self):
         with self.assertRaises(ValueError):
             normalize_matches({"matches": []})
         with self.assertRaises(ValueError):
