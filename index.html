@@ -366,13 +366,14 @@ function record(){
  :`<div class="panel"><h2>Record starts today</h2><p class="note" style="margin:0">Predictions are saved before kickoff and scored after full time. ${open} are saved and waiting for their matches. Come back after they finish to see the first results.</p></div>`);
  bind();
 }
-function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000),h=D.data_health,stale=Number.isFinite(mins)&&mins>90;
+function head(){const updatedAt=Date.parse(D.updated||''),ageMs=Date.now()-updatedAt,mins=Number.isFinite(updatedAt)&&ageMs>=0?Math.floor(ageMs/60000):null,h=D.data_health,stale=mins===null||ageMs>90*60000;
+ const freshness=mins===null?'Freshness unavailable':'Updated '+(mins<60?mins+' min':Math.floor(mins/60)+' h')+' ago';
  const standings=tab==='intl'?'':(' · standings '+(Number(h?.standings_competitions)||0)+'/'+(Number(h?.fixture_competitions)||0)+(Number(h?.standings_failures)>0?' · '+(Number(h.standings_failures)||0)+' standings feed(s) unavailable':''));
  const health=h?('<p class="note" style="margin:6px 0 12px">Feed coverage: '+(Number(h.fixture_competitions)||0)+' competitions · '+(Number(h.fixture_total)||0)+' fixtures · World Cup/EURO archive '+(Number(h.international_fixture_total)||0)+standings+'</p>'):'';
- return '<header><h1>Pitch<span>IQ</span></h1><span class="tag">'+(stale?'Data may be stale · ':'')+'Updated '+(mins<60?mins+' min':Math.round(mins/60)+' h')+' ago<br>Scores may be delayed</span></header>'+health}
+ return '<header><h1>Pitch<span>IQ</span></h1><span class="tag">'+(stale?'Data may be stale · ':'')+freshness+'<br>Scores may be delayed</span></header>'+health}
 function overviewHtml(){
  const now=Date.now(),future=D.matches.filter(m=>m.status!=='FINISHED'&&new Date(m.utc)>now),liveCount=future.filter(live).length,upcoming=future.length-liveCount,competitions=new Set(future.map(m=>m.code)).size;
- const refreshed=D.updated?new Date(D.updated).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'not available';
+ const refreshedAt=Date.parse(D.updated||''),refreshed=Number.isFinite(refreshedAt)&&refreshedAt<=Date.now()?new Date(refreshedAt).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'freshness unavailable';
  return `<section class="hero" aria-label="PitchIQ overview"><div class="hero-kicker">FREE FOOTBALL INTELLIGENCE</div><h2>Read the game. Understand the numbers.</h2><p class="hero-copy">Independent match forecasts, probability breakdowns and transparent results tracking — built for football fans, not hype.</p><div class="hero-stats"><div><b>${upcoming}</b><span>Upcoming fixtures</span></div><div><b>${liveCount}</b><span>Live matches</span></div><div><b>${competitions}</b><span>Competitions covered</span></div></div><div class="hero-foot"><span>Data refreshed ${esc(refreshed)}</span><span>Model estimates · Not guarantees</span></div></section>`;
 }
 function tabsHtml(){const items=[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International'],['news','News']].filter(([k])=>tab!=='intl'||k!=='tab');return `<div class="tabs">${items.map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
