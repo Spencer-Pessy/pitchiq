@@ -170,7 +170,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 const $=s=>document.querySelector(s);
 // Escape all external feed text before inserting it into HTML templates.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let D=null,P={},I={fixtures:[]},Q={results:[]},tab='up',comp='all',sel=null,playerSort='goals';
+let D=null,P={},I={fixtures:[]},Q={results:[]},tab='up',comp='all',sel=null,playerSort='goals',intlGender='all',intlCompetition='all',intlQuery='';
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
 const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
@@ -366,6 +366,9 @@ function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
  const ps=$('#ps');if(ps)ps.onchange=e=>{playerSort=e.target.value;list()};
+ const ig=$('#intlGender');if(ig)ig.onchange=e=>{intlGender=e.target.value;list()};
+ const ic=$('#intlCompetition');if(ic)ic.onchange=e=>{intlCompetition=e.target.value;list()};
+ const iq=$('#intlSearch');if(iq)iq.oninput=e=>{intlQuery=e.target.value;list()};
  document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{const source=tab=='intl'?(I.fixtures||[]):D.matches;sel=source.find(x=>String(x.id)==b.dataset.id);if(!sel)return;sel.odds=sel.odds||null;detail()});}
 let pk='conf';
 function picks(){
@@ -398,7 +401,17 @@ function tables(){
 function international(){
  const liveStatuses=new Set(['1H','HT','2H','ET','P','LIVE']);
  const finalStatuses=new Set(['FT','AET','PEN']);
- const valid=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a);
+ const allFixtures=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a);
+ const competitions=[...new Set(allFixtures.map(f=>String(f.comp||'Unknown competition')))].sort((a,b)=>a.localeCompare(b));
+ if(intlCompetition!=='all'&&!competitions.includes(intlCompetition))intlCompetition='all';
+ const query=intlQuery.trim().toLocaleLowerCase();
+ const valid=allFixtures.filter(f=>{
+  const gender=f.gender==='women'?'women':f.gender==='men'?'men':'other';
+  const searchable=[f.h,f.a,f.comp,f.country,f.venue].filter(Boolean).join(' ').toLocaleLowerCase();
+  return (intlGender==='all'||gender===intlGender)
+   &&(intlCompetition==='all'||String(f.comp||'Unknown competition')===intlCompetition)
+   &&(!query||searchable.includes(query));
+ });
  const now=Date.now();
  const live=valid.filter(f=>liveStatuses.has(f.status));
  const upcoming=valid.filter(f=>!liveStatuses.has(f.status)&&!finalStatuses.has(f.status)&&!['PST','CANC','SUSP','ABD'].includes(f.status)&&new Date(f.utc).getTime()>now);
@@ -419,7 +432,8 @@ function international(){
  const liveSorted=[...live].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
  const completedSorted=[...completed].sort((a,b)=>new Date(b.utc)-new Date(a.utc));
  const otherSorted=[...other].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
- $('#app').innerHTML=head()+tabsHtml()+'<p class="note">International fixtures · '+esc(I.source||'Public fixture sources')+' · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. '+esc(I.scope||'Coverage may vary by competition and source.')+'. Kickoff times use your device local time. No model forecasts are shown until reliable national-team form data is integrated.</p>'+
+ const filterHtml='<section class="panel intl-filters" aria-label="Filter international fixtures"><div class="hero-kicker">FIND INTERNATIONAL MATCHES</div><label for="intlGender">Team category</label><select id="intlGender"><option value="all" '+(intlGender==='all'?'selected':'')+'>All teams</option><option value="men" '+(intlGender==='men'?'selected':'')+'>Men</option><option value="women" '+(intlGender==='women'?'selected':'')+'>Women</option><option value="other" '+(intlGender==='other'?'selected':'')+'>Unlabelled</option></select><label for="intlCompetition">Competition</label><select id="intlCompetition"><option value="all">All competitions</option>'+competitions.map(c=>'<option value="'+esc(c)+'" '+(intlCompetition===c?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select><label for="intlSearch">Search teams, competition or country</label><input id="intlSearch" type="search" value="'+esc(intlQuery)+'" placeholder="e.g. Kenya, World Cup, UEFA" autocomplete="off"><p class="note" style="margin:8px 0 0">Showing '+valid.length+' of '+allFixtures.length+' fixtures in this snapshot.</p></section>';
+ $('#app').innerHTML=head()+tabsHtml()+filterHtml+'<p class="note">International fixtures · '+esc(I.source||'Public fixture sources')+' · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. '+esc(I.scope||'Coverage may vary by competition and source.')+'. Kickoff times use your device local time. No model forecasts are shown until reliable national-team form data is integrated.</p>'+
  section('Live now',liveSorted,'No live international matches in this snapshot.')+
  section('Upcoming fixtures',upcomingSorted,'No upcoming international fixtures are listed in the current snapshot.')+
  section('Completed results',completedSorted.slice(0,12),'No completed international results are available.')+
