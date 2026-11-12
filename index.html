@@ -410,7 +410,8 @@ function international(){
   const score=Array.isArray(f.score)?esc(f.score[0])+' – '+esc(f.score[1]):tm(f);
   const date=new Date(f.utc);
   const kickoff=Number.isNaN(date.getTime())?'Kickoff TBC':date.toLocaleString([],{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-  const meta=[f.comp,f.country,kickoff].filter(Boolean).map(esc).join(' · ');
+  const gender=f.gender==='women'?'Women':f.gender==='men'?'Men':'';
+   const meta=[gender,f.comp,f.country,kickoff].filter(Boolean).map(esc).join(' · ');
   return '<button class="card" data-id="'+esc(f.id)+'"><div class="comp">'+meta+'</div><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><span class="pill">'+esc(label(f))+'</span></button>';
  };
  const section=(title,items,empty)=>'<h2 class="day">'+title+' · '+items.length+'</h2>'+(items.length?items.map(card).join(''):'<p class="note">'+empty+'</p>');
