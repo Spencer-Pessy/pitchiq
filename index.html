@@ -407,14 +407,17 @@ function international(){
  const label=f=>{const value=({NS:'UPCOMING',TBD:'TIME TO BE CONFIRMED','1H':'LIVE',HT:'HALF TIME','2H':'LIVE',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED'}[f.status]||f.status||'SCHEDULED');return value==='UPCOMING'&&new Date(f.utc).getTime()<=now?'STATUS UNCONFIRMED':value};
  const card=f=>{
   const score=Array.isArray(f.score)?esc(f.score[0])+' – '+esc(f.score[1]):tm(f);
-  return '<button class="card" data-id="'+esc(f.id)+'"><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><span class="pill">'+esc(label(f))+'</span></button>';
+  const date=new Date(f.utc);
+  const kickoff=Number.isNaN(date.getTime())?'Kickoff TBC':date.toLocaleString([],{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const meta=[f.comp,f.country,kickoff].filter(Boolean).map(esc).join(' · ');
+  return '<button class="card" data-id="'+esc(f.id)+'"><div class="comp">'+meta+'</div><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><span class="pill">'+esc(label(f))+'</span></button>';
  };
  const section=(title,items,empty)=>'<h2 class="day">'+title+' · '+items.length+'</h2>'+(items.length?items.map(card).join(''):'<p class="note">'+empty+'</p>');
  const upcomingSorted=[...upcoming].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
  const liveSorted=[...live].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
  const completedSorted=[...completed].sort((a,b)=>new Date(b.utc)-new Date(a.utc));
  const otherSorted=[...other].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
- $('#app').innerHTML=head()+tabsHtml()+'<p class="note">International fixtures · '+esc(I.source||'Public fixture sources')+' · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. '+esc(I.scope||'Coverage may vary by competition and source.')+'. No model forecasts are shown until reliable national-team form data is integrated.</p>'+
+ $('#app').innerHTML=head()+tabsHtml()+'<p class="note">International fixtures · '+esc(I.source||'Public fixture sources')+' · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. '+esc(I.scope||'Coverage may vary by competition and source.')+'. Kickoff times use your device local time. No model forecasts are shown until reliable national-team form data is integrated.</p>'+
  section('Live now',liveSorted,'No live international matches in this snapshot.')+
  section('Upcoming fixtures',upcomingSorted,'No upcoming international fixtures are listed in the current snapshot.')+
  section('Completed results',completedSorted.slice(0,12),'No completed international results are available.')+
