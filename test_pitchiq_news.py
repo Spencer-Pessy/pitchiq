@@ -63,6 +63,13 @@ class PitchIQNewsValidationTests(unittest.TestCase):
         self.assertIn("A short summary", message)
         self.assertIn("https://www.bbc.co.uk/sport/football/articles/a", message)
 
+    def test_enabled_publisher_fails_loudly_when_credentials_are_missing(self):
+        from pitchiq_news import main
+        with patch.dict(os.environ, {"PITCHIQ_NEWS_ENABLED": "true"}, clear=True), \
+             patch("pitchiq_news.fetch_feed", side_effect=AssertionError("feed must not be fetched")):
+            with self.assertRaisesRegex(RuntimeError, "credentials are missing"):
+                main()
+
     def test_disabled_publisher_exits_before_network_or_telegram(self):
         from pitchiq_news import main
         with patch.dict(os.environ, {"PITCHIQ_NEWS_ENABLED": "false"}, clear=True), \
