@@ -1,16 +1,30 @@
-"""Refresh national-team World Cup fixtures from OpenFootball's CC0 dataset.
+"""Refresh national-team fixtures from OpenFootball and ESPN's public scoreboard.
 
-No API key or paid service is required. The source is community-maintained and
-currently covers World Cup tournament fixtures/results, not all friendlies or
-qualifiers. The main football-data.org feed separately covers WC and EURO.
+OpenFootball supplies a CC0 World Cup archive. ESPN's unauthenticated site
+scoreboard is an additional broad fixture source for friendlies and selected
+confederation competitions. ESPN's endpoint is unofficial/undocumented, so
+failures are isolated per competition and the last published snapshot is kept
+if every ESPN request fails.
 """
 import json
 import re
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone, timedelta
 
 SOURCE = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
 SOURCE_LABEL = "OpenFootball worldcup.json (CC0)"
+ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
+ESPN_LEAGUES = (
+    ("fifa.friendly", "International Friendlies"),
+    ("fifa.friendly.w", "Women's International Friendlies"),
+    ("uefa.nations", "UEFA Nations League"),
+    ("caf.nations_qual", "Africa Cup of Nations Qualification"),
+    ("concacaf.nations", "CONCACAF Nations League"),
+    ("fifa.worldq", "FIFA World Cup Qualifying"),
+    ("afc.asian.cup", "AFC Asian Cup"),
+)
 
 
 def parse_kickoff(day, time_text):
@@ -58,10 +72,110 @@ def normalize_matches(payload):
             "a": away,
             "score": score,
             "venue": match.get("ground") or "",
+            "source": SOURCE_LABEL,
         })
     if not output:
         raise ValueError("OpenFootball dataset contained no valid fixtures")
     return sorted(output, key=lambda item: item["utc"])
+
+
+def normalize_espn_event(event, league_slug, league_label):
+    """Convert one ESPN site scoreboard event into PitchIQ's fixture schema."""
+    if not isinstance(event, dict) or not event.get("id") or not event.get("date"):
+        return None
+    competitions = event.get("competitions") or []
+    if not competitions or not isinstance(competitions[0], dict):
+        return None
+    competitors = competitions[0].get("competitors") or []
+    home = next((x for x in competitors if x.get("homeAway") == "home"), None)
+    away = next((x for x in competitors if x.get("homeAway") == "away"), None)
+    if not home or not away:
+        return None
+    home_name = (home.get("team") or {}).get("displayName") or (home.get("team") or {}).get("name")
+    away_name = (away.get("team") or {}).get("displayName") or (away.get("team") or {}).get("name")
+    if not home_name or not away_name:
+        return None
+    try:
+        kickoff = datetime.fromisoformat(str(event["date"]).replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
+    except (TypeError, ValueError):
+        return None
+
+    status_type = (event.get("status") or {}).get("type") or {}
+    state = status_type.get("state")
+    detail = " ".join(str(status_type.get(k) or "") for k in ("name", "description", "detail", "shortDetail")).lower()
+    if state == "post":
+        status = "PEN" if "penalt" in detail else "AET" if "extra time" in detail else "FT"
+    elif state == "in":
+        status = "HT" if "half" in detail and "time" in detail else "ET" if "extra time" in detail else "2H"
+    else:
+        status = "NS"
+
+    def score_value(team):
+        raw = team.get("score")
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
+
+    home_score, away_score = score_value(home), score_value(away)
+    score = [home_score, away_score] if state == "post" and home_score is not None and away_score is not None else None
+    league_name = ((event.get("leagues") or [{}])[0]).get("name") or league_label
+    venue = (competitions[0].get("venue") or {}).get("fullName") or ""
+    return {
+        "id": f"espn-{league_slug}-{event['id']}",
+        "comp": league_name,
+        "country": "International",
+        "utc": kickoff,
+        "status": status,
+        "h": home_name,
+        "a": away_name,
+        "score": score,
+        "venue": venue,
+        "source": "ESPN public scoreboard (unofficial)",
+    }
+
+
+def fetch_espn_fixtures(now=None, opener=urllib.request.urlopen):
+    """Fetch a rolling international fixture window; tolerate individual league failures."""
+    now = now or datetime.now(timezone.utc)
+    date_from = (now.date() - timedelta(days=3)).strftime("%Y%m%d")
+    date_to = (now.date() + timedelta(days=30)).strftime("%Y%m%d")
+    fixtures, successful = [], []
+    for index, (slug, label) in enumerate(ESPN_LEAGUES):
+        url = f"{ESPN_BASE}/{slug}/scoreboard?dates={date_from}-{date_to}"
+        request = urllib.request.Request(url, headers={"User-Agent": "PitchIQ/1.0"})
+        try:
+            with opener(request, timeout=25) as response:
+                if response.status != 200:
+                    continue
+                payload = json.load(response)
+            if not isinstance(payload, dict) or not isinstance(payload.get("events"), list):
+                continue
+            successful.append(slug)
+            for event in payload["events"]:
+                row = normalize_espn_event(event, slug, label)
+                if row:
+                    fixtures.append(row)
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as error:
+            print(f"ESPN {slug} unavailable: {error}")
+        if index < len(ESPN_LEAGUES) - 1:
+            time.sleep(1.0)
+
+    if not successful:
+        raise RuntimeError("All ESPN international scoreboard requests failed; preserving last good snapshot")
+    return deduplicate(fixtures), successful
+
+
+def deduplicate(fixtures):
+    """Prefer the first source row for identical kickoff/team pairs."""
+    seen, output = set(), []
+    for item in sorted(fixtures, key=lambda row: row["utc"]):
+        key = (item["utc"], item["h"].casefold(), item["a"].casefold())
+        if key in seen:
+            continue
+        seen.add(key)
+        output.append(item)
+    return output
 
 
 def fetch_dataset():
@@ -74,17 +188,27 @@ def fetch_dataset():
 
 
 def main():
-    fixtures = normalize_matches(fetch_dataset())
+    world_cup = normalize_matches(fetch_dataset())
+    espn, successful_leagues = fetch_espn_fixtures()
+    fixtures = deduplicate(world_cup + espn)
     snapshot = {
         "updated": datetime.now(timezone.utc).isoformat(),
-        "source": SOURCE_LABEL,
+        "source": "OpenFootball CC0 archive + ESPN public scoreboard",
         "source_url": SOURCE,
-        "scope": "2026 FIFA World Cup tournament only; not a full international calendar",
+        "scope": "World Cup archive plus rolling international friendlies and selected confederation competitions; ESPN coverage is unofficial and may be incomplete",
+        "sources": {
+            "openfootball_world_cup": len(world_cup),
+            "espn_fixtures": len(espn),
+            "espn_leagues_checked": list(ESPN_LEAGUES[i][0] for i in range(len(ESPN_LEAGUES))),
+            "espn_leagues_successful": successful_leagues,
+        },
         "fixtures": fixtures,
     }
     with open("international.json", "w", encoding="utf-8") as output:
         json.dump(snapshot, output, ensure_ascii=False)
-    print("OpenFootball World Cup fixtures stored:", len(fixtures))
+    print("International fixtures stored:", len(fixtures))
+    print("ESPN leagues responding:", ", ".join(successful_leagues))
+    print("ESPN fixtures stored:", len(espn))
 
 
 if __name__ == "__main__":
