@@ -98,5 +98,11 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertIn("ODDS_API_KEY is not configured; no odds request was made.", odds_workflow)
 
 
+    def test_model_and_evaluation_changes_trigger_data_refresh(self):
+        workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
+        for path in ("pitchiq_model.py", "model_metrics.py"):
+            self.assertIn(f"      - {path}", workflow)
+
+
 if __name__ == "__main__":
     unittest.main()
