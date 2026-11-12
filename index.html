@@ -741,7 +741,7 @@ function addFooter(){
    cf.insertAdjacentHTML('beforebegin','<input id="q" type="search" placeholder="Search a team…" style="margin-bottom:10px">');
    cf.insertAdjacentHTML('afterend','<button class="back" id="fv" aria-pressed="'+onlyFav+'">'+(onlyFav?'★ My teams only: on':'☆ My teams only')+'</button>');
    const q=$('#q');q.value=qs;
-   const apply=()=>{const nz=s=>(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();const v=nz(qs).trim();document.querySelectorAll('button.card[data-id]').forEach(card=>{card.style.display=!v||nz(card.innerText).includes(v)?'':'none'});document.querySelectorAll('.day').forEach(day=>{let sibling=day.nextElementSibling,any=false;while(sibling&&!sibling.classList.contains('day')){if(sibling.matches('button.card[data-id]')&&sibling.style.display!=='none')any=true;sibling=sibling.nextElementSibling}day.style.display=(any||!v)?'':'none'})};
+   const apply=()=>{const nz=s=>(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();const v=nz(qs).trim();document.querySelectorAll('button.card[data-id], .results-card').forEach(card=>{card.style.display=!v||nz(card.innerText).includes(v)?'':'none'});document.querySelectorAll('.day').forEach(day=>{let sibling=day.nextElementSibling,any=false;while(sibling&&!sibling.classList.contains('day')){if(sibling.matches('button.card[data-id]')&&sibling.style.display!=='none')any=true;sibling=sibling.nextElementSibling}day.style.display=(any||!v)?'':'none'})};
    q.addEventListener('input',()=>{qs=q.value;apply()});apply();
    $('#fv').onclick=()=>{onlyFav=!onlyFav;list()};
   }
