@@ -35,8 +35,13 @@ self.addEventListener('fetch', event => {
           if (response.ok) {
             const cache = await caches.open(CACHE);
             await cache.put(key, response.clone());
+            return response;
           }
-          return response;
+          // A server error or missing file should not discard a usable offline
+          // snapshot. The page reads the snapshot's own updated timestamp and
+          // labels old data as stale instead of presenting it as current.
+          const cached = await caches.match(key);
+          return cached || response;
         })
         .catch(async () => {
           const cached = await caches.match(key);
