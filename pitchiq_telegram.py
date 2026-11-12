@@ -72,6 +72,11 @@ def snapshot_published_pick(record):
     }
 
 
+def valid_pick_index(value):
+    """Accept only integer outcome indexes; bool is not a valid pick index."""
+    return isinstance(value, int) and not isinstance(value, bool) and value in (0, 1, 2)
+
+
 def clean_pick_state(value):
     """Validate the small persistent ledger of published picks."""
     if not isinstance(value, dict):
@@ -87,7 +92,7 @@ def clean_pick_state(value):
             snap = snapshot_published_pick(item)
             final = item.get("final")
             if (snap is None or snap["id"] in result_ids or not valid_final(final)
-                    or item.get("pick_index") not in (0, 1, 2)):
+                    or not valid_pick_index(item.get("pick_index"))):
                 continue
             actual = 0 if final[0] > final[1] else 1 if final[0] == final[1] else 2
             snap["pick_index"] = item["pick_index"]
@@ -105,7 +110,7 @@ def clean_pick_state(value):
             if snap is None or snap["id"] in seen or snap["id"] in result_ids:
                 continue
             # Preserve the original stored pick, never recompute it from a new forecast.
-            if item.get("pick_index") not in (0, 1, 2):
+            if not valid_pick_index(item.get("pick_index")):
                 continue
             snap["pick_index"] = item["pick_index"]
             pending.append(snap)
