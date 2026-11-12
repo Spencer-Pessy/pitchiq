@@ -226,6 +226,32 @@ class FailedLeagueRetentionTests(unittest.TestCase):
         self.assertNotIn("espn-fifa.friendly-old", ids)
         self.assertNotIn("espn-uefa.nations-expired", ids)
 
+    def test_partial_daily_failure_preserves_only_the_failed_date(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        previous = [
+            {"id": "espn-fifa.friendly-old-13", "utc": "2026-11-13T18:00:00+00:00",
+             "h": "Kenya", "a": "Uganda", "gender": "men"},
+            {"id": "espn-fifa.friendly-old-12", "utc": "2026-11-12T18:00:00+00:00",
+             "h": "Ghana", "a": "Nigeria", "gender": "men"},
+        ]
+        result = merge_failed_league_fixtures(
+            [], [("fifa.friendly", "20261112")], previous, now=now
+        )
+        ids = {item["id"] for item in result}
+        self.assertIn("espn-fifa.friendly-old-13", ids)
+        self.assertNotIn("espn-fifa.friendly-old-12", ids)
+
+    def test_successful_empty_date_is_not_resurrected_from_old_snapshot(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        previous = [{
+            "id": "espn-fifa.friendly-old-12", "utc": "2026-11-12T18:00:00+00:00",
+            "h": "A", "a": "B", "gender": "men",
+        }]
+        result = merge_failed_league_fixtures(
+            [], [("fifa.friendly", "20261112")], previous, now=now
+        )
+        self.assertEqual(result, [])
+
     def test_successful_empty_league_is_not_resurrected_from_old_snapshot(self):
         now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
         previous = [{
