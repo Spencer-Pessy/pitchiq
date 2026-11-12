@@ -355,6 +355,12 @@ class InternationalFixtureFilterTests(unittest.TestCase):
         self.assertIn("const start=e.target.selectionStart,end=e.target.selectionEnd", source)
         self.assertIn("next.focus();next.setSelectionRange(start,end)", source)
 
+    def test_international_feed_warns_when_snapshot_is_older_than_36_hours(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const stale=age!==null&&age>36", source)
+        self.assertIn("International feed may be stale", source)
+        self.assertIn("last successful snapshot is '+age+' hours old", source)
+
     def test_international_tab_still_omits_league_table(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("if(tab=='intl')return international()", source)
