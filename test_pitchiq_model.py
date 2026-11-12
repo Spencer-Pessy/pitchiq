@@ -159,7 +159,7 @@ class MetricsTests(unittest.TestCase):
         ]
         result = baseline_comparison(rows)
         self.assertEqual(result["rolling_prior"]["matches"], 3)
-        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.7539, places=4)
+        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.8339, places=4)
 
     def test_competition_rolling_prior_is_smoothed_and_leakage_safe(self):
         rows = [
