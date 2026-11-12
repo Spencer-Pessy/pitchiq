@@ -360,7 +360,7 @@ function overviewHtml(){
  const refreshed=D.updated?new Date(D.updated).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'not available';
  return `<section class="hero" aria-label="PitchIQ overview"><div class="hero-kicker">FREE FOOTBALL INTELLIGENCE</div><h2>Read the game. Understand the numbers.</h2><p class="hero-copy">Independent match forecasts, probability breakdowns and transparent results tracking — built for football fans, not hype.</p><div class="hero-stats"><div><b>${upcoming}</b><span>Upcoming fixtures</span></div><div><b>${liveCount}</b><span>Live matches</span></div><div><b>${competitions}</b><span>Competitions covered</span></div></div><div class="hero-foot"><span>Data refreshed ${esc(refreshed)}</span><span>Model estimates · Not guarantees</span></div></section>`;
 }
-function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
+function tabsHtml(){const items=[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International']].filter(([k])=>tab!=='intl'||k!=='tab');return `<div class="tabs">${items.map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
