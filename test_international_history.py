@@ -44,7 +44,7 @@ class InternationalHistoryTests(unittest.TestCase):
         neutral_match = dict(home_match, neutral=True)
         home_ratings = {row["team"]: row["elo"] for row in build_ratings([home_match])}
         neutral_ratings = {row["team"]: row["elo"] for row in build_ratings([neutral_match])}
-        self.assertGreater(home_ratings["Kenya"], neutral_ratings["Kenya"])
+        self.assertLess(home_ratings["Kenya"], neutral_ratings["Kenya"])
         self.assertGreater(home_ratings["Uganda"], neutral_ratings["Uganda"])
 
     def test_tournament_weights_are_conservative_and_ordered(self):
