@@ -4,6 +4,7 @@ from unittest.mock import patch
 from international import (
     deduplicate, fetch_espn_fixtures, normalize_espn_event, normalize_matches, parse_kickoff, ESPN_LEAGUES,
     merge_failed_league_fixtures,
+    summarize_espn_coverage,
 )
 
 
@@ -223,6 +224,25 @@ class InternationalFeedTests(unittest.TestCase):
             normalize_matches({"matches": []})
         with self.assertRaises(ValueError):
             normalize_matches({"response": []})
+
+
+class ESPNRequestCoverageTests(unittest.TestCase):
+    def test_reports_daily_request_success_separately_from_league_coverage(self):
+        successful = [
+            ("fifa.friendly", "20261112"),
+            ("fifa.friendly", "20261113"),
+            ("uefa.nations", "20261112"),
+        ]
+        result = summarize_espn_coverage(successful, 98)
+        self.assertEqual(result["requests_checked"], 98)
+        self.assertEqual(result["requests_successful"], 3)
+        self.assertEqual(result["leagues_checked"], len(ESPN_LEAGUES))
+        self.assertEqual(result["leagues_successful"], ["fifa.friendly", "uefa.nations"])
+
+    def test_empty_successful_request_set_reports_zero_not_false_success(self):
+        result = summarize_espn_coverage([], 98)
+        self.assertEqual(result["requests_successful"], 0)
+        self.assertEqual(result["leagues_successful"], [])
 
 
 class FailedLeagueRetentionTests(unittest.TestCase):
