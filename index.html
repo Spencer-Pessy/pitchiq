@@ -375,7 +375,11 @@ function overviewHtml(){
  const refreshed=D.updated?new Date(D.updated).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'not available';
  return `<section class="hero" aria-label="PitchIQ overview"><div class="hero-kicker">FREE FOOTBALL INTELLIGENCE</div><h2>Read the game. Understand the numbers.</h2><p class="hero-copy">Independent match forecasts, probability breakdowns and transparent results tracking — built for football fans, not hype.</p><div class="hero-stats"><div><b>${upcoming}</b><span>Upcoming fixtures</span></div><div><b>${liveCount}</b><span>Live matches</span></div><div><b>${competitions}</b><span>Competitions covered</span></div></div><div class="hero-foot"><span>Data refreshed ${esc(refreshed)}</span><span>Model estimates · Not guarantees</span></div></section>`;
 }
-function tabsHtml(){const items=[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International']].filter(([k])=>tab!=='intl'||k!=='tab');return `<div class="tabs">${items.map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
+function tabsHtml(){const items=[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International'],['news','News']].filter(([k])=>tab!=='intl'||k!=='tab');return `<div class="tabs">${items.map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
+function news(){
+ $('#app').innerHTML=head()+tabsHtml()+`<section class="hero" aria-label="PitchIQ football news"><div class="hero-kicker">PITCH IQ NEWSROOM</div><h2>Football stories, with sources attached.</h2><p class="hero-copy">Follow our dedicated Telegram news channel for sourced football headlines and direct links to the original publishers. We keep news separate from model forecasts.</p><div class="hero-foot"><span>Current automated source: BBC Sport football RSS</span><span>Up to 3 recent headlines · every 4 hours</span></div></section><section class="panel"><div class="hero-kicker">LATEST NEWS CHANNEL</div><h2>@pitchiq_picks</h2><p class="note">Open the channel to read the latest published headlines, check their source links and join the discussion. Headlines link back to BBC Sport; PitchIQ does not reproduce full articles.</p><p><a href="https://t.me/pitchiq_picks" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:9px;background:linear-gradient(135deg,#e10600,#9e0500);color:#fff;text-decoration:none;font-weight:700">Open PitchIQ News on Telegram ↗</a></p></section><section class="panel"><div class="hero-kicker">HOW TO READ OUR POSTS</div><h3>News is not a prediction</h3><p class="note">A reported headline is not a PitchIQ forecast. Any transfer speculation must be clearly identified as unconfirmed and linked to its reporting source. Our automated digest currently publishes BBC Sport football feed items only; it does not manufacture transfer rumours.</p></section><section class="panel"><div class="hero-kicker">MATCH-DAY FORECASTS</div><h3>Keep forecasts in their own feed</h3><p class="note">Our separate bot publishes model estimates for selected fixtures on match days. These are analysis, not betting tips or guarantees.</p><p><a href="https://t.me/PitchIQPicks_bot" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:9px;background:#171717;border:1px solid #444;color:var(--ink);text-decoration:none;font-weight:700">Open PitchIQ Picks bot ↗</a></p></section>`;
+ bind();
+}
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
@@ -483,6 +487,7 @@ function publishedResultsHtml(){
 }
 
 function list(){
+ if(tab=='news')return news();
  if(tab=='intl')return international();
  if(tab=='rec')return record();
  if(tab=='pick')return picks();
