@@ -89,6 +89,45 @@ h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:1
  table{min-width:360px}
 }
 @media(prefers-reduced-motion:reduce){#splash{display:none!important}*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* PITCH IQ visual refresh — clear first-screen hierarchy and responsive fixture layout */
+:root{--bg:#080808;--panel:#141414;--ink:#f7f7f7;--mute:#a7a7a7;--line:#303030;--home:#e10600;--away:#e6e6e6;--draw:#555;--ok:#45d483;--no:#ff7777;--live:#ff5151}
+body{background:radial-gradient(ellipse at 50% -12%,#3b0808 0,transparent 42%),#080808;letter-spacing:.01em}
+main{max-width:1120px;padding:22px 24px 76px}
+header{align-items:center;padding:12px 0 18px;margin:0 0 18px;border-bottom:1px solid #ffffff20}
+h1{font-size:39px;letter-spacing:-1.5px}
+h1::before{width:46px;height:46px;vertical-align:-11px;margin-right:12px}
+.tag{font-size:12px;line-height:1.6;max-width:190px}
+.hero{position:relative;overflow:hidden;border:1px solid #6e2020;border-radius:20px;padding:clamp(22px,4vw,38px);margin:0 0 22px;background:linear-gradient(112deg,#330707 0%,#190707 45%,#121212 100%);box-shadow:0 18px 48px #0009}
+.hero:after{content:"PI";position:absolute;right:4%;top:50%;transform:translateY(-52%);font:900 clamp(100px,22vw,230px)/.8 Impact,Arial,sans-serif;color:#ffffff08;pointer-events:none}
+.hero-kicker{font-size:11px;letter-spacing:2.4px;color:#ff8585}
+.hero h2{font-size:clamp(29px,4vw,43px);line-height:1.03;max-width:620px;letter-spacing:-.8px;margin:12px 0}
+.hero-copy{font-size:15px;line-height:1.65;max-width:600px;color:#dedede}
+.hero-stats{position:relative;z-index:1;max-width:680px;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:20px}
+.hero-stats div{background:#08080870;border:1px solid #ffffff20;border-radius:12px;padding:13px 15px}
+.hero-stats b{font-size:31px;color:#fff}
+.hero-stats span{font-size:12px;color:#c5c5c5}
+.hero-foot{position:relative;z-index:1;font-size:12px;color:#c0b0b0}
+.tabs{position:sticky;top:0;z-index:20;padding:10px 0;margin:0 0 16px;background:#080808ed;backdrop-filter:blur(14px);border-bottom:1px solid #ffffff18;gap:8px}
+.tabs button{min-width:94px;padding:10px 16px;border-radius:9px;font-size:13px;font-weight:700;background:#171717;border-color:#353535;transition:background .18s,border-color .18s,transform .18s}
+.tabs button[aria-pressed="true"]{background:linear-gradient(135deg,#e10600,#9e0500);border-color:#ff4b43;box-shadow:0 5px 18px #e1060033}
+select{max-width:360px;margin:0 0 16px;padding:11px 13px;border-radius:10px;background:#151515;border-color:#393939}
+.day{grid-column:1/-1;margin:18px 0 0;padding:0 0 8px;border-bottom:1px solid #383838;font-weight:800;letter-spacing:1.1px;color:#d0d0d0}
+.fixture-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{position:relative;min-width:0;border:1px solid #303030;border-left:3px solid var(--home);border-radius:14px;padding:16px 17px;margin:0;background:linear-gradient(145deg,#191919,#101010);box-shadow:0 8px 22px #0005;transition:transform .18s,border-color .18s,background .18s}
+.card:hover{transform:translateY(-2px);border-color:#6b2929;background:linear-gradient(145deg,#211515,#121212)}
+.comp{font-size:11px;letter-spacing:1px;font-weight:700}
+.row{gap:12px;margin:12px 0 8px}
+.tm{font-size:clamp(17px,2vw,22px);line-height:1.15;overflow-wrap:anywhere}
+.ko{min-width:66px;padding:6px 8px;border:1px solid #3b3b3b;border-radius:8px;background:#080808;font-size:13px}
+.mini{height:7px;border-radius:10px;background:#333;margin-top:12px}
+.pill{margin-top:9px;padding:4px 10px;border-color:#454545;background:#ffffff08;font-weight:700;font-size:11px;letter-spacing:.25px}
+.panel{border-radius:14px;border-color:#303030;background:linear-gradient(145deg,#171717,#101010);padding:18px}
+.back{border-radius:9px;background:#151515;padding:9px 14px}
+.big div{border-radius:12px;background:#151515}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #ff7777;outline-offset:3px}
+@media(max-width:700px){main{padding:12px 13px 68px}header{padding:8px 0 14px}h1{font-size:31px}h1::before{width:36px;height:36px;vertical-align:-9px}.tag{font-size:10px}.hero{border-radius:15px;padding:20px 17px;margin-bottom:16px}.hero h2{font-size:29px}.hero-copy{font-size:13px}.hero-stats{gap:6px}.hero-stats div{padding:10px 8px}.hero-stats b{font-size:24px}.hero-stats span{font-size:10px}.hero-foot{font-size:10px}.tabs{margin-left:-13px;margin-right:-13px;padding:9px 13px}.tabs button{min-width:82px;padding:9px 12px}.fixture-grid{grid-template-columns:1fr;gap:9px}.day{margin-top:13px}.card{padding:14px}.tm{font-size:18px}.panel{padding:14px}}
+@media(prefers-reduced-motion:reduce){.card,.tabs button{transition:none}}
 </style>
 </head>
 <body>
@@ -362,6 +401,7 @@ function list(){
  if(tab!='up')ms.reverse();
  const codes=[...new Map(D.matches.map(m=>[m.code,m.comp]))];
  let html=tab=='done'?publishedResultsHtml():'',last='';
+ if(tab=='up')html+='<div class="fixture-grid">';
  for(const m of ms){
   const d=dy(m);if(d!=last){html+=`<div class="day">${d}</div>`;last=d}
   const r=model(m.s);
@@ -371,7 +411,8 @@ function list(){
   <div class="mini"><i style="width:${r.ph*100}%;background:var(--home)"></i><i style="width:${r.pd*100}%;background:var(--draw)"></i><i style="width:${r.pa*100}%;background:var(--away)"></i></div>
   <span class="pill">${Math.round(r.ph*100)} / ${Math.round(r.pd*100)} / ${Math.round(r.pa*100)}</span></button>`;
  }
- $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${esc(n)}</option>`).join('')}</select>
+ if(tab=='up')html+='</div>';
+ $('#app').innerHTML=head()+tabsHtml()+(tab=='up'?overviewHtml():'')+`<select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${esc(n)}</option>`).join('')}</select>
  ${html||(tab=='up'?'<div class="panel"><h3>No upcoming fixtures in the next 30 days</h3><p class="note">The main match feed refreshed '+(D.updated?new Date(D.updated).toLocaleString():'recently')+'. No eligible fixtures were found inside this 30-day window. International national-team fixtures are listed separately under International.</p><p class="note">The match feed checks for new fixtures every 30 minutes.</p></div>':'<p class="note">No recently completed results in the current 48-hour window.</p>')}`;
  bind();
 }
