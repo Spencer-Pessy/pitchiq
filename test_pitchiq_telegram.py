@@ -272,3 +272,26 @@ class CurrentFixtureEligibilityTests(unittest.TestCase):
         late = dict(self.pick, utc=(self.limit + timedelta(minutes=1)).isoformat())
         self.assertFalse(eligible_forecast(late, {"fixture-1": "SCHEDULED"}, self.now, self.limit))
 
+class CurrentFixtureSnapshotFreshnessTests(unittest.TestCase):
+    def test_statuses_are_used_only_from_recent_valid_snapshot(self):
+        from datetime import datetime, timezone, timedelta
+        from pitchiq_telegram import current_fixture_statuses
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        data = {"updated": (now - timedelta(minutes=30)).isoformat(),
+                "matches": [{"id": 1, "status": "SCHEDULED"},
+                            {"id": 2, "status": "CANCELLED"}]}
+        self.assertEqual(current_fixture_statuses(data, now),
+                         {"1": "SCHEDULED", "2": "CANCELLED"})
+
+    def test_stale_future_dated_or_malformed_snapshots_fail_closed(self):
+        from datetime import datetime, timezone, timedelta
+        from pitchiq_telegram import current_fixture_statuses
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        stale = {"updated": (now - timedelta(hours=4)).isoformat(),
+                 "matches": [{"id": 1, "status": "SCHEDULED"}]}
+        future = {"updated": (now + timedelta(minutes=5)).isoformat(),
+                  "matches": [{"id": 1, "status": "SCHEDULED"}]}
+        for data in (stale, future, {"matches": []}, None, {"updated": now.isoformat(), "matches": None}):
+            with self.subTest(data=data):
+                self.assertEqual(current_fixture_statuses(data, now), {})
+
