@@ -539,3 +539,19 @@ class OddsDisplayDisclosureTests(unittest.TestCase):
         self.assertIn("This is a stored pre-match comparison, not live odds.", source)
         self.assertIn("No verified bookmaker snapshot is available for this fixture.", source)
 
+class OddsFreshnessSafetyTests(unittest.TestCase):
+    def test_market_snapshot_freshness_rejects_missing_invalid_future_and_old_times(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("function marketSnapshotFresh(value)", source)
+        self.assertIn("age>=0&&age<=36*3600e3", source)
+        self.assertIn("automatic value comparisons are paused", source)
+
+    def test_saved_odds_are_not_used_for_value_comparisons_after_expiry(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("oddsUsable=!!(f.odds_manual||marketSnapshotFresh(oddsAt))", source)
+        self.assertIn("if(oddsUsable&&odds&&odds.every(x=>x>1))", source)
+
+    def test_share_images_and_top_three_ignore_stale_market_prices(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("if(oddsFresh&&m.odds&&m.odds.every(o=>o>1))", source)
+        self.assertIn("f.odds_manual||marketSnapshotFresh(f.odds_updated||D.odds_updated)", source)
