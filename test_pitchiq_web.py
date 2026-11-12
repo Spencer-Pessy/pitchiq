@@ -290,3 +290,11 @@ class ScorelineBaselineComparisonWebTests(unittest.TestCase):
         self.assertIn("delta_ci_95", source)
         self.assertIn("Negative NLL difference favours Dixon–Coles", source)
         self.assertIn("D?.scoreline_baseline", source)
+
+
+class ForwardResearchPendingStateTests(unittest.TestCase):
+    def test_record_view_explains_when_forward_research_has_no_scored_sample(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("No completed research sample has been scored yet.", source)
+        self.assertIn("These forward-only forecasts are waiting for full-time results", source)
+        self.assertIn("Research scores update as saved forecasts reach full time.", source)
