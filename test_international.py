@@ -2,11 +2,14 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
 from international import (
-    deduplicate, normalize_espn_event, normalize_matches, parse_kickoff,
+    deduplicate, normalize_espn_event, normalize_matches, parse_kickoff, ESPN_LEAGUES,
 )
 
 
 class InternationalFeedTests(unittest.TestCase):
+    def test_concacaf_nations_league_uses_valid_espn_slug(self):
+        self.assertIn(("concacaf.nations.league", "CONCACAF Nations League"), ESPN_LEAGUES)
+
     def test_timezone_is_converted_to_utc(self):
         self.assertEqual(parse_kickoff("2026-06-11", "13:00 UTC-6"), "2026-06-11T19:00:00+00:00")
         self.assertEqual(parse_kickoff("2026-06-11", "20:00 UTC+3"), "2026-06-11T17:00:00+00:00")
