@@ -295,3 +295,34 @@ class CurrentFixtureSnapshotFreshnessTests(unittest.TestCase):
             with self.subTest(data=data):
                 self.assertEqual(current_fixture_statuses(data, now), {})
 
+
+
+class TelegramPhotoFallbackSafetyTests(unittest.TestCase):
+    def test_fallback_is_allowed_only_for_definite_rejections_or_local_file_failure(self):
+        from urllib.error import HTTPError, URLError
+        from pitchiq_telegram import photo_error_allows_text_fallback
+
+        self.assertTrue(photo_error_allows_text_fallback(
+            HTTPError("https://api.telegram.org/sendPhoto", 400, "Bad Request", {}, None)
+        ))
+        self.assertTrue(photo_error_allows_text_fallback(
+            HTTPError("https://api.telegram.org/sendPhoto", 429, "Too Many Requests", {}, None)
+        ))
+        self.assertTrue(photo_error_allows_text_fallback(FileNotFoundError("top3.png")))
+
+        self.assertFalse(photo_error_allows_text_fallback(
+            HTTPError("https://api.telegram.org/sendPhoto", 408, "Request Timeout", {}, None)
+        ))
+        self.assertFalse(photo_error_allows_text_fallback(
+            HTTPError("https://api.telegram.org/sendPhoto", 500, "Server Error", {}, None)
+        ))
+        self.assertFalse(photo_error_allows_text_fallback(URLError("connection reset")))
+        self.assertFalse(photo_error_allows_text_fallback(TimeoutError("read timed out")))
+
+    def test_ambiguous_photo_failure_never_enters_text_fallback(self):
+        source = Path("telegram.py").read_text(encoding="utf-8")
+        marker = 'except Exception as e:\n    if not photo_error_allows_text_fallback(e):'
+        self.assertIn(marker, source)
+        block = source[source.index(marker):source.index('if not delivered:', source.index(marker))]
+        self.assertIn("raise SystemExit(1)", block)
+        self.assertIn("skipping text fallback to avoid a duplicate Telegram post", block)
