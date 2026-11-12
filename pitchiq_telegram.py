@@ -153,6 +153,19 @@ def resolve_published_picks(state, predictions):
 def pick_label(snapshot):
     return ("Home win: " + snapshot["h"], "Draw", "Away win: " + snapshot["a"])[snapshot["pick_index"]]
 
+
+def photo_error_allows_text_fallback(error):
+    """Allow fallback only when Telegram definitively rejected the photo request.
+
+    Network failures and server errors have ambiguous delivery outcomes: Telegram
+    may have accepted the photo even if the client never received confirmation.
+    Sending a text fallback in that case could create a duplicate public post.
+    """
+    from urllib.error import HTTPError
+    if isinstance(error, FileNotFoundError):
+        return True
+    return isinstance(error, HTTPError) and 400 <= error.code < 500 and error.code != 408
+
 def eligible_forecast(record, current_statuses, now, limit):
     """Allow a Telegram pick only when the latest fixture feed confirms it is scheduled."""
     if not valid_forecast(record) or record.get("final") is not None:
