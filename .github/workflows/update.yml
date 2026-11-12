@@ -5,6 +5,8 @@ on:
     paths:
       - update.py
       - pitchiq_data.py
+      - test_update.py
+      - test_pitchiq_telegram.py
       - .github/workflows/update.yml
   schedule:
     - cron: "*/30 * * * *"
