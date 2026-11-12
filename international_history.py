@@ -8,6 +8,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import urllib.request
 from collections import defaultdict
 from datetime import date, datetime, timezone
@@ -166,15 +167,13 @@ def backtest_elo(matches):
     outcome_counts = [0, 0, 0]
     for match in ordered[:split]:
         expected = _elo_expected_score(training_ratings, match)
-        outcome = _elo_update(training_ratings, match, expected)
-        outcome_counts[outcome] += 1
-        adjusted_gap = abs(training_ratings[match["home"]] - training_ratings[match["away"]])
-        # The draw-rate bins are keyed by venue and the pre-match rating gap.
         venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
         pre_match_gap = abs(
-            (training_ratings[match["home"]] - (K_FACTOR * 0.0)) -
-            (training_ratings[match["away"]] + (K_FACTOR * 0.0)) + venue_bonus
+            training_ratings[match["home"]] + venue_bonus - training_ratings[match["away"]]
         )
+        outcome = _elo_update(training_ratings, match, expected)
+        outcome_counts[outcome] += 1
+        # Draw-rate bins are keyed by venue and the pre-match rating gap.
         key = ("neutral" if match["neutral"] else "home") + ":" + _elo_gap_bucket(pre_match_gap)
         draw_counts[key][0] += 1
         if outcome == 1:
