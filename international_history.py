@@ -226,6 +226,7 @@ def backtest_elo(matches):
     ratings = defaultdict(lambda: INITIAL_RATING)
     model_brier = model_log_loss = model_correct = 0.0
     baseline_brier = baseline_log_loss = baseline_correct = 0.0
+    scored_holdout = []
     for day_matches in grouped_by_date(ordered):
         prepared = []
         for match in day_matches:
@@ -252,10 +253,67 @@ def backtest_elo(matches):
                 baseline_log_loss -= math.log(max(1e-15, baseline[outcome]))
                 model_correct += int(max(range(3), key=lambda i: probabilities[i]) == outcome)
                 baseline_correct += int(max(range(3), key=lambda i: baseline[i]) == outcome)
+                scored_holdout.append((match, probabilities, baseline, outcome))
             prepared.append((match, expected))
         # Same-date results are applied together, after all same-date probabilities are scored.
         for match, expected in prepared:
             _elo_update(ratings, match, expected)
+
+    def summarize_scored(rows):
+        count = len(rows)
+        if not count:
+            return {"matches": 0}
+        model_brier_sum = baseline_brier_sum = 0.0
+        model_log_loss_sum = baseline_log_loss_sum = 0.0
+        model_correct_count = baseline_correct_count = 0
+        for match, probabilities, baseline_probabilities, outcome in rows:
+            for index in range(3):
+                target = 1.0 if index == outcome else 0.0
+                model_brier_sum += (probabilities[index] - target) ** 2
+                baseline_brier_sum += (baseline_probabilities[index] - target) ** 2
+            model_log_loss_sum -= math.log(max(1e-15, probabilities[outcome]))
+            baseline_log_loss_sum -= math.log(max(1e-15, baseline_probabilities[outcome]))
+            model_correct_count += int(max(range(3), key=lambda i: probabilities[i]) == outcome)
+            baseline_correct_count += int(max(range(3), key=lambda i: baseline_probabilities[i]) == outcome)
+        return {
+            "matches": count,
+            "model": {
+                "accuracy": round(model_correct_count / count, 5),
+                "multiclass_brier": round(model_brier_sum / count, 5),
+                "log_loss": round(model_log_loss_sum / count, 5),
+            },
+            "training_frequency_baseline": {
+                "accuracy": round(baseline_correct_count / count, 5),
+                "multiclass_brier": round(baseline_brier_sum / count, 5),
+                "log_loss": round(baseline_log_loss_sum / count, 5),
+            },
+        }
+
+    era_groups = defaultdict(list)
+    competition_groups = defaultdict(list)
+    major_terms = ("world cup", "european championship", "uefa euro", "copa america",
+                   "african cup of nations", "asian cup", "gold cup", "nations league",
+                   "confederation cup")
+    for row in scored_holdout:
+        year = int(row[0]["date"][:4])
+        era = "before_2010" if year < 2010 else "2010s" if year < 2020 else "2020s"
+        tournament = row[0]["tournament"].casefold()
+        if "friendly" in tournament:
+            competition_type = "friendlies"
+        elif "qualification" in tournament or "qualifying" in tournament:
+            competition_type = "qualifiers"
+        elif any(term in tournament for term in major_terms):
+            competition_type = "major_tournaments"
+        else:
+            competition_type = "other"
+        era_groups[era].append(row)
+        competition_groups[competition_type].append(row)
+    holdout_slices = {
+        "era": {key: summarize_scored(rows) for key, rows in sorted(era_groups.items())},
+        "competition_type": {
+            key: summarize_scored(rows) for key, rows in sorted(competition_groups.items())
+        },
+    }
 
     n = len(testing)
     return {
@@ -274,6 +332,7 @@ def backtest_elo(matches):
             "multiclass_brier": round(baseline_brier / n, 5),
             "log_loss": round(baseline_log_loss / n, 5),
         },
+        "holdout_slices": holdout_slices,
         "draw_calibration_bins": {
             key: {"training_matches": count, "draws": draws}
             for key, (count, draws) in sorted(draw_counts.items())
