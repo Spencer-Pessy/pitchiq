@@ -19,6 +19,13 @@ ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
 ESPN_LEAGUES = (
     ("fifa.friendly", "International Friendlies"),
     ("fifa.friendly.w", "Women's International Friendlies"),
+    ("fifa.wwc", "FIFA Women's World Cup"),
+    ("fifa.wworldq.uefa", "FIFA Women's World Cup Qualifying - UEFA"),
+    ("uefa.w.nations", "UEFA Women's Nations League"),
+    ("uefa.weuro", "UEFA Women's European Championship"),
+    ("fifa.shebelieves", "SheBelieves Cup"),
+    ("concacaf.w.gold", "CONCACAF W Gold Cup"),
+    ("conmebol.america.femenina", "Copa America Femenina"),
     ("uefa.nations", "UEFA Nations League"),
     ("caf.nations_qual", "Africa Cup of Nations Qualification"),
     ("concacaf.nations.league", "CONCACAF Nations League"),
