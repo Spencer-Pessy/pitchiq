@@ -71,14 +71,21 @@ class CompetitionDataTests(unittest.TestCase):
         self.assertEqual(INTERNATIONAL_COMPETITIONS, frozenset({"WC", "EC"}))
 
     def test_international_results_get_separate_and_shared_buckets(self):
-        self.assertEqual(goal_average_keys("WC"), ("WC", "INTL", "ALL"))
-        self.assertEqual(goal_average_keys("EC"), ("EC", "INTL", "ALL"))
+        self.assertEqual(goal_average_keys("WC"), ("WC", "INTL"))
+        self.assertEqual(goal_average_keys("EC"), ("EC", "INTL"))
+
+    def test_club_and_international_fallback_pools_are_disjoint(self):
+        club_keys = goal_average_keys("PL")
+        international_keys = goal_average_keys("WC")
+        self.assertNotIn("INTL", club_keys)
+        self.assertNotIn("CLUB", international_keys)
+        self.assertNotIn("ALL", club_keys + international_keys)
 
     def test_club_results_never_enter_international_bucket(self):
-        self.assertEqual(goal_average_keys("PL"), ("PL", "ALL"))
+        self.assertEqual(goal_average_keys("PL"), ("PL", "CLUB"))
 
     def test_small_international_sample_uses_international_prior(self):
-        counts = {"WC": 8, "EC": 6, "INTL": 14, "ALL": 120}
+        counts = {"WC": 8, "EC": 6, "INTL": 14, "CLUB": 120}
         self.assertEqual(average_bucket("WC", counts), "INTL")
         self.assertEqual(average_bucket("EC", counts), "INTL")
 
@@ -86,10 +93,10 @@ class CompetitionDataTests(unittest.TestCase):
         self.assertEqual(average_bucket("WC", {"WC": 24, "INTL": 40}), "WC")
 
     def test_champions_league_keeps_existing_combined_prior_rule(self):
-        self.assertEqual(average_bucket("CL", {"CL": 40, "ALL": 200}), "ALL")
+        self.assertEqual(average_bucket("CL", {"CL": 40, "CLUB": 200}), "CLUB")
 
     def test_small_club_competition_keeps_existing_fallback(self):
-        self.assertEqual(average_bucket("PL", {"PL": 12, "ALL": 100}), "ALL")
+        self.assertEqual(average_bucket("PL", {"PL": 12, "CLUB": 100}), "CLUB")
 
     def test_international_fixture_detection_uses_team_metadata(self):
         from pitchiq_data import is_international_fixture
