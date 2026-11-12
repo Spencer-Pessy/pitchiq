@@ -396,7 +396,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
     for team in rated_teams:
         team.update(classify_team(team["team"], team_registry))
     return {
-        "version": 6,
+        "version": 7,
         "updated": fetched_at or datetime.now(timezone.utc).isoformat(),
         "data_through": data_through,
         "freshness_days": (today - latest).days,
