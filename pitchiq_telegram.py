@@ -1,5 +1,5 @@
 """Validation helpers for Telegram publishing; no I/O or side effects."""
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def parse_kickoff(value):
@@ -171,4 +171,27 @@ def eligible_forecast(record, current_statuses, now, limit):
         return now < kickoff < limit
     except TypeError:
         return False
+
+def current_fixture_statuses(data, now, max_age_hours=3):
+    """Return fixture statuses only from a recent, timezone-aware data snapshot."""
+    if not isinstance(data, dict):
+        return {}
+    updated = parse_kickoff(data.get("updated"))
+    if updated is None:
+        return {}
+    try:
+        age = now - updated
+    except TypeError:
+        return {}
+    if age.total_seconds() < 0 or age > timedelta(hours=max_age_hours):
+        return {}
+    matches = data.get("matches")
+    if not isinstance(matches, list):
+        return {}
+    return {
+        str(match["id"]): match.get("status")
+        for match in matches
+        if isinstance(match, dict) and match.get("id") is not None
+        and isinstance(match.get("status"), str)
+    }
 
