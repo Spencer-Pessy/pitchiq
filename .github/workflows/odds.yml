@@ -23,9 +23,13 @@ jobs:
         id: credentials
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          ODDS_FREE_TIER_CONFIRMED: ${{ vars.ODDS_FREE_TIER_CONFIRMED }}
         run: |
           set -euo pipefail
-          if [ -z "${ODDS_API_KEY:-}" ]; then
+          if [ "${ODDS_FREE_TIER_CONFIRMED:-}" != "true" ]; then
+            echo "::warning::Free-tier use has not been confirmed; no odds request was made."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "${ODDS_API_KEY:-}" ]; then
             echo "::warning::ODDS_API_KEY is not configured; no odds request was made."
             echo "available=false" >> "$GITHUB_OUTPUT"
           else
