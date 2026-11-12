@@ -77,20 +77,27 @@ def parse_results(csv_text, today=None):
 
     rows, seen = [], set()
     invalid = 0
+    registry_data = load_team_registry()
     for raw in reader:
         try:
             match_date = date.fromisoformat((raw.get("date") or "").strip())
-            home = (raw.get("home_team") or "").strip()
-            away = (raw.get("away_team") or "").strip()
+            home_source = (raw.get("home_team") or "").strip()
+            away_source = (raw.get("away_team") or "").strip()
             home_score = int(raw.get("home_score"))
             away_score = int(raw.get("away_score"))
             neutral_text = (raw.get("neutral") or "").strip().upper()
             if neutral_text not in ("TRUE", "FALSE"):
                 raise ValueError("invalid neutral flag")
-            if not home or not away or home.casefold() == away.casefold():
+            if not home_source or not away_source:
                 raise ValueError("invalid team names")
             if home_score < 0 or away_score < 0 or match_date > today:
                 raise ValueError("invalid score or future match date")
+            home_identity = classify_team(home_source, registry_data)
+            away_identity = classify_team(away_source, registry_data)
+            home = home_identity["canonical_team"] or home_source
+            away = away_identity["canonical_team"] or away_source
+            if home.casefold() == away.casefold():
+                raise ValueError("teams resolve to the same identity")
             tournament = (raw.get("tournament") or "Unknown").strip() or "Unknown"
             key = (match_date.isoformat(), home.casefold(), away.casefold(), tournament.casefold())
             if key in seen:
@@ -100,6 +107,8 @@ def parse_results(csv_text, today=None):
                 "date": match_date.isoformat(),
                 "home": home,
                 "away": away,
+                "home_source": home_source,
+                "away_source": away_source,
                 "home_score": home_score,
                 "away_score": away_score,
                 "tournament": tournament,
@@ -396,7 +405,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
     for team in rated_teams:
         team.update(classify_team(team["team"], team_registry))
     return {
-        "version": 7,
+        "version": 8,
         "updated": fetched_at or datetime.now(timezone.utc).isoformat(),
         "data_through": data_through,
         "freshness_days": (today - latest).days,
@@ -423,8 +432,19 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
             "source_url": registry["source_url"],
             "source_checked": registry["source_checked"],
             "member_associations": len(registry["fifa_member_associations"]),
-            "fifa_member_association_source_labels": sum(team["association_status"] == "fifa_member_association" for team in rated_teams),
+            "fifa_member_association_source_labels": len({
+                label
+                for match in matches
+                for label in (match.get("home_source", match["home"]), match.get("away_source", match["away"]))
+                if classify_team(label, team_registry)["association_status"] == "fifa_member_association"
+            }),
             "fifa_member_associations_represented": len({team["canonical_team"] for team in rated_teams if team["association_status"] == "fifa_member_association"}),
+            "source_aliases_applied": len({
+                label
+                for match in matches
+                for label in (match.get("home_source", match["home"]), match.get("away_source", match["away"]))
+                if label.casefold() in aliases
+            }),
             "non_fifa_or_unverified_teams": sum(team["association_status"] == "non_fifa_or_unverified" for team in rated_teams),
             "note": registry["source_note"],
             "forecast_policy": registry["forecast_policy"],
