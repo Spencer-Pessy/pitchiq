@@ -120,6 +120,23 @@ class InternationalFeedTests(unittest.TestCase):
         self.assertEqual(row["status"], "PST")
         self.assertIsNone(row["score"])
 
+    def test_cancelled_post_event_with_numeric_scores_has_no_result(self):
+        event = {
+            "id": "cancelled-post-1",
+            "date": "2026-11-14T16:00:00Z",
+            "status": {"type": {
+                "state": "post", "name": "STATUS_CANCELED",
+                "description": "Canceled",
+            }},
+            "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"name": "Kenya"}, "score": "2"},
+                {"homeAway": "away", "team": {"name": "Uganda"}, "score": "1"},
+            ]}],
+        }
+        row = normalize_espn_event(event, "fifa.friendly", "Friendlies")
+        self.assertEqual(row["status"], "CANC")
+        self.assertIsNone(row["score"])
+
     def test_rejects_malformed_espn_event(self):
         self.assertIsNone(normalize_espn_event({}, "fifa.friendly", "Friendlies"))
         self.assertIsNone(normalize_espn_event({
