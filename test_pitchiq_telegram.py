@@ -173,7 +173,12 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertIn("cron: '43 7 * * *'", workflow)
         odds_workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "23 7 * * *"', odds_workflow)
-        self.assertLess(odds_workflow.index('cron: "23 7 * * *"'), workflow.index("cron: '43 7 * * *'"))
+        import re
+        odds_minute = re.search(r'cron: "(\\d+) 7 \\* \\* \\*"', odds_workflow)
+        picks_minute = re.search(r"cron: '(\\d+) 7 \\* \\* \\*'", workflow)
+        self.assertIsNotNone(odds_minute)
+        self.assertIsNotNone(picks_minute)
+        self.assertLess(int(odds_minute.group(1)), int(picks_minute.group(1)))
         self.assertIn("no Telegram post will be sent", Path("telegram.py").read_text(encoding="utf-8"))
 
     def test_daily_picks_workflow_never_falls_back_to_unrequested_news(self):
