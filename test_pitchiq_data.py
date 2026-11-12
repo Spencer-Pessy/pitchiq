@@ -2,6 +2,7 @@ import unittest
 
 from pitchiq_data import (
     INTERNATIONAL_COMPETITIONS,
+    build_head_to_head,
     average_bucket,
     goal_average_keys,
     build_feed_health,
@@ -14,6 +15,31 @@ from pitchiq_data import (
     goal_rate_calibration,
     clean_prediction_ledger,
 )
+
+
+class HeadToHeadTests(unittest.TestCase):
+    def test_last_five_meetings_are_sorted_and_scored_from_fixture_home_perspective(self):
+        matches = [
+            {"status":"FINISHED","utcDate":"2025-01-01T12:00:00Z","homeTeam":{"id":1,"shortName":"Alpha"},"awayTeam":{"id":2,"shortName":"Beta"},"score":{"fullTime":{"home":2,"away":0}}},
+            {"status":"FINISHED","utcDate":"2025-02-01T12:00:00Z","homeTeam":{"id":2,"shortName":"Beta"},"awayTeam":{"id":1,"shortName":"Alpha"},"score":{"fullTime":{"home":1,"away":1}}},
+            {"status":"FINISHED","utcDate":"2025-03-01T12:00:00Z","homeTeam":{"id":1,"shortName":"Alpha"},"awayTeam":{"id":2,"shortName":"Beta"},"score":{"fullTime":{"home":0,"away":1}}},
+            {"status":"FINISHED","utcDate":"2025-04-01T12:00:00Z","homeTeam":{"id":1,"shortName":"Alpha"},"awayTeam":{"id":2,"shortName":"Beta"},"score":{"fullTime":{"home":3,"away":0}}},
+            {"status":"FINISHED","utcDate":"2025-05-01T12:00:00Z","homeTeam":{"id":2,"shortName":"Beta"},"awayTeam":{"id":1,"shortName":"Alpha"},"score":{"fullTime":{"home":0,"away":2}}},
+            {"status":"FINISHED","utcDate":"2025-06-01T12:00:00Z","homeTeam":{"id":1,"shortName":"Alpha"},"awayTeam":{"id":2,"shortName":"Beta"},"score":{"fullTime":{"home":1,"away":0}}},
+            {"status":"SCHEDULED","utcDate":"2025-07-01T12:00:00Z","homeTeam":{"id":1},"awayTeam":{"id":2},"score":{"fullTime":{"home":9,"away":0}}},
+            {"status":"FINISHED","utcDate":"2026-01-01T12:00:00Z","homeTeam":{"id":1},"awayTeam":{"id":2},"score":{"fullTime":{"home":9,"away":0}}},
+        ]
+        result = build_head_to_head(matches, 1, 2, "2025-08-01T00:00:00Z")
+        self.assertEqual(result["played"], 5)
+        self.assertEqual((result["home_wins"], result["draws"], result["away_wins"]), (3, 1, 1))
+        self.assertEqual((result["home_goals"], result["away_goals"]), (7, 2))
+        self.assertEqual(result["meetings"][0]["utc"], "2025-06-01T12:00:00+00:00")
+
+    def test_h2h_requires_completed_matches_and_stops_at_kickoff(self):
+        result = build_head_to_head([
+            {"status":"FINISHED","utcDate":"2025-01-01T12:00:00Z","homeTeam":{"id":1},"awayTeam":{"id":2},"score":{"fullTime":{"home":1,"away":0}}},
+        ], 1, 2, "2025-01-01T12:00:00Z")
+        self.assertEqual(result["played"], 0)
 
 
 class TeamVenueStatsTests(unittest.TestCase):
