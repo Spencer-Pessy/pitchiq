@@ -130,7 +130,27 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertIn("python telegram.py", workflow)
         self.assertNotIn("pip install", workflow)
         self.assertNotIn("odds.py", workflow)
-        self.assertIn("group: pitchiq-publish", workflow)
+        self.assertIn("group: pitchiq-telegram-results", workflow)
+
+    def test_publisher_workflows_use_independent_concurrency_groups(self):
+        paths = (
+            ".github/workflows/update.yml",
+            ".github/workflows/international.yml",
+            ".github/workflows/telegram.yml",
+            ".github/workflows/telegram-results.yml",
+            ".github/workflows/odds.yml",
+        )
+        groups = []
+        for path in paths:
+            workflow = Path(path).read_text(encoding="utf-8")
+            group_line = next(
+                line.strip() for line in workflow.splitlines()
+                if line.strip().startswith("group:")
+            )
+            groups.append(group_line.split(":", 1)[1].strip())
+        self.assertEqual(len(groups), len(set(groups)))
+        self.assertNotIn("pitchiq-publish", groups)
+
 
 
     def test_daily_picks_are_scheduled_after_odds_refresh(self):
