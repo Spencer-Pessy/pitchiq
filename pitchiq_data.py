@@ -2,8 +2,32 @@
 
 from datetime import datetime
 import math
+import re
+import unicodedata
 
 INTERNATIONAL_COMPETITIONS = frozenset({"WC", "EC"})
+
+_TEAM_NAME_STOPWORDS = {
+    "fc", "cf", "afc", "ac", "as", "ssc", "sc", "sv", "vfb", "vfl", "fsv",
+    "rb", "1", "de", "the", "club", "calcio", "fk", "sk", "us", "ud",
+    "cd", "rc", "rcd", "bsc", "tsg", "if",
+}
+
+
+def normalize_team_name(value):
+    """Normalize harmless spelling, punctuation, accents and club suffixes."""
+    if not isinstance(value, str):
+        return ""
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode().lower()
+    value = re.sub(r"[^a-z0-9 ]", " ", value)
+    return " ".join(word for word in value.split() if word not in _TEAM_NAME_STOPWORDS)
+
+
+def same_team_name(left, right):
+    """Match team names conservatively; ambiguous fuzzy matches are rejected."""
+    a, b = normalize_team_name(left), normalize_team_name(right)
+    return bool(a and b and a == b)
+
 
 
 def goal_average_keys(code):
