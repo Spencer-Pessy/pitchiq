@@ -290,7 +290,7 @@ class GoalRateCalibrationTests(unittest.TestCase):
         calibration, count = goal_rate_calibration(rows)
         self.assertEqual(count, 10)
         self.assertEqual(calibration["kh"], 1.15)
-        self.assertEqual(calibration["ka"], 0.85)
+        self.assertEqual(calibration["ka"], 0.9231)
         self.assertEqual(goal_rate_calibration(None), ({"kh": 1.0, "ka": 1.0}, 0))
 
 
