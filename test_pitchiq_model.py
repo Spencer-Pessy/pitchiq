@@ -209,6 +209,21 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["groups"]["home_form_points"][0]["matches"], 0)
         self.assertEqual(result["groups"]["away_form_points"][1]["matches"], 1)
 
+    def test_input_diagnostics_rejects_fractional_and_boolean_venue_counts(self):
+        rows = [{
+            "final": [1, 0], "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
+            "inputs": {"schema": 2,
+                       "home": {"venue_matches": 2.5, "form": "WW"},
+                       "away": {"venue_matches": True, "form": "LL"}},
+        }]
+        result = input_diagnostics(rows)
+        self.assertEqual(result["snapshot_forecasts"], 1)
+        self.assertTrue(all(row["matches"] == 0
+                            for row in result["groups"]["home_venue_sample"]))
+        self.assertTrue(all(row["matches"] == 0
+                            for row in result["groups"]["away_venue_sample"]))
+        self.assertTrue(all(row["matches"] == 0 for row in result["venue_support"]))
+
     def test_input_diagnostics_ignores_malformed_snapshots(self):
         result = input_diagnostics([
             {"final": [1, 0], "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
