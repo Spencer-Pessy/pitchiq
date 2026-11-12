@@ -22,3 +22,5 @@ jobs:
         run: python -m py_compile update.py test_update.py international.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_news.py test_pitchiq_news.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py
       - name: Run offline test suite
         run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_pitchiq_odds test_pitchiq_telegram test_pitchiq_news test_update
+      - name: Test service-worker cache and offline fallbacks
+        run: node test_sw.js
