@@ -113,6 +113,27 @@ class InternationalFeedTests(unittest.TestCase):
         self.assertEqual(row["status"], "FT")
         self.assertIsNone(row["score"])
 
+    def test_espn_rejects_boolean_and_fractional_score_values(self):
+        base = {
+            "date": "2026-11-14T16:00:00Z",
+            "status": {"type": {"state": "post", "name": "STATUS_FINAL", "description": "Final"}},
+            "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"name": "Japan"}},
+                {"homeAway": "away", "team": {"name": "Brazil"}},
+            ]}],
+        }
+        invalid_pairs = [(True, "1"), (1.5, "1"), ("1.5", "1")]
+        for index, (home_score, away_score) in enumerate(invalid_pairs):
+            with self.subTest(home_score=home_score):
+                event = dict(base, id=f"invalid-score-{index}")
+                event["competitions"] = [{"competitors": [
+                    {"homeAway": "home", "team": {"name": "Japan"}, "score": home_score},
+                    {"homeAway": "away", "team": {"name": "Brazil"}, "score": away_score},
+                ]}]
+                row = normalize_espn_event(event, "fifa.friendly", "International Friendlies")
+                self.assertEqual(row["status"], "FT")
+                self.assertIsNone(row["score"])
+
     def test_normalizes_espn_final_score_and_status(self):
         event = {
             "id": "987",
