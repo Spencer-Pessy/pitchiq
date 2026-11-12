@@ -10,6 +10,18 @@ class InternationalFeedTests(unittest.TestCase):
     def test_concacaf_nations_league_uses_valid_espn_slug(self):
         self.assertIn(("concacaf.nations.league", "CONCACAF Nations League"), ESPN_LEAGUES)
 
+    def test_supported_senior_womens_national_team_competitions_are_listed(self):
+        expected = {
+            ("fifa.wwc", "FIFA Women's World Cup"),
+            ("fifa.wworldq.uefa", "FIFA Women's World Cup Qualifying - UEFA"),
+            ("uefa.w.nations", "UEFA Women's Nations League"),
+            ("uefa.weuro", "UEFA Women's European Championship"),
+            ("fifa.shebelieves", "SheBelieves Cup"),
+            ("concacaf.w.gold", "CONCACAF W Gold Cup"),
+            ("conmebol.america.femenina", "Copa America Femenina"),
+        }
+        self.assertTrue(expected.issubset(set(ESPN_LEAGUES)))
+
     def test_timezone_is_converted_to_utc(self):
         self.assertEqual(parse_kickoff("2026-06-11", "13:00 UTC-6"), "2026-06-11T19:00:00+00:00")
         self.assertEqual(parse_kickoff("2026-06-11", "20:00 UTC+3"), "2026-06-11T17:00:00+00:00")
