@@ -61,6 +61,11 @@ class InternationalMatchCentreTests(unittest.TestCase):
         self.assertIn("!inactiveStatuses.has(f.status)&&Array.isArray(f.score)", source)
         self.assertIn("!inactiveStatuses.has(f.status)&&new Date(f.utc).getTime()>now", source)
         self.assertIn("tabsHtml()+filterHtml+summaryHtml+coverageHtml", source)
+    def test_international_fixture_sections_use_responsive_two_column_grid(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("items.length?'<div class=\"fixture-grid\">'+items.map(card).join('')+'</div>'", source)
+        self.assertIn(".fixture-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))", source)
+        self.assertIn(".fixture-grid{grid-template-columns:1fr", source)
 
 
 class WebsiteOutputSafetyTests(unittest.TestCase):
