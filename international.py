@@ -23,7 +23,7 @@ ESPN_LEAGUES = (
     ("caf.nations_qual", "Africa Cup of Nations Qualification"),
     ("concacaf.nations", "CONCACAF Nations League"),
     ("fifa.worldq", "FIFA World Cup Qualifying"),
-    ("afc.asian.cup", "AFC Asian Cup"),
+    ("fifa.world", "FIFA World Cup"),
 )
 
 
@@ -136,34 +136,36 @@ def normalize_espn_event(event, league_slug, league_label):
 
 
 def fetch_espn_fixtures(now=None, opener=urllib.request.urlopen):
-    """Fetch a rolling international fixture window; tolerate individual league failures."""
+    """Fetch a rolling seven-day international window using one-day scoreboard queries."""
     now = now or datetime.now(timezone.utc)
-    # ESPN scoreboard date ranges are kept short to avoid provider-side 400s.
-    # A rolling seven-day window is enough for the upcoming international window.
-    date_from = (now.date() - timedelta(days=2)).strftime("%Y%m%d")
-    date_to = (now.date() + timedelta(days=4)).strftime("%Y%m%d")
-    fixtures, successful = [], []
-    for index, (slug, label) in enumerate(ESPN_LEAGUES):
-        url = f"{ESPN_BASE}/{slug}/scoreboard?dates={date_from}-{date_to}"
-        request = urllib.request.Request(url, headers={"User-Agent": "PitchIQ/1.0"})
-        try:
-            with opener(request, timeout=25) as response:
-                if response.status != 200:
+    days = [(now.date() + timedelta(days=offset)).strftime("%Y%m%d") for offset in range(-2, 5)]
+    fixtures, successful = [], set()
+    request_count = 0
+    for day in days:
+        for slug, label in ESPN_LEAGUES:
+            url = f"{ESPN_BASE}/{slug}/scoreboard?dates={day}"
+            request = urllib.request.Request(url, headers={"User-Agent": "PitchIQ/1.0"})
+            try:
+                with opener(request, timeout=20) as response:
+                    if response.status != 200:
+                        continue
+                    payload = json.load(response)
+                if not isinstance(payload, dict) or not isinstance(payload.get("events"), list):
                     continue
-                payload = json.load(response)
-            if not isinstance(payload, dict) or not isinstance(payload.get("events"), list):
-                continue
-            successful.append(slug)
-            for event in payload["events"]:
-                row = normalize_espn_event(event, slug, label)
-                if row:
-                    fixtures.append(row)
-        except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as error:
-            print(f"ESPN {slug} unavailable: {error}")
-        if index < len(ESPN_LEAGUES) - 1:
-            time.sleep(1.0)
-
-    return deduplicate(fixtures), successful
+                successful.add(slug)
+                for event in payload["events"]:
+                    row = normalize_espn_event(event, slug, label)
+                    if row:
+                        fixtures.append(row)
+            except urllib.error.HTTPError as error:
+                detail = error.read(300).decode("utf-8", "replace").replace("\\n", " ")
+                print(f"ESPN {slug} {day} unavailable: HTTP {error.code} {detail}")
+            except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as error:
+                print(f"ESPN {slug} {day} unavailable: {error}")
+            request_count += 1
+            if request_count < len(days) * len(ESPN_LEAGUES):
+                time.sleep(0.25)
+    return deduplicate(fixtures), sorted(successful)
 
 
 def deduplicate(fixtures):
