@@ -332,6 +332,15 @@ class InternationalFixtureGroupingTests(unittest.TestCase):
         self.assertIn("I.scope||'Coverage may vary by competition and source.'", source)
 
 
+class ServiceWorkerLiveDataTests(unittest.TestCase):
+    def test_published_pick_ledger_uses_network_first_live_data_cache(self):
+        source = Path("sw.js").read_text(encoding="utf-8")
+        self.assertIn("pitchiq-cache-v9", source)
+        self.assertIn("url.pathname.endsWith('/daily/published_picks.json')", source)
+        self.assertIn("fetch(request)", source)
+        self.assertIn("{version: 1, pending: [], results: [], sent_ids: []}", source)
+
+
 class InternationalFixtureFilterTests(unittest.TestCase):
     def test_international_view_exposes_gender_competition_and_search_filters(self):
         source = Path("index.html").read_text(encoding="utf-8")
