@@ -57,6 +57,9 @@ class InternationalMatchCentreTests(unittest.TestCase):
         self.assertIn("upcoming.length+'</b><span>Upcoming", source)
         self.assertIn("completed.length+'</b><span>Completed", source)
         self.assertIn("counts reflect the filters selected below", source.lower())
+        self.assertIn("const inactiveStatuses=new Set(['PST','CANC','SUSP','ABD'])", source)
+        self.assertIn("!inactiveStatuses.has(f.status)&&Array.isArray(f.score)", source)
+        self.assertIn("!inactiveStatuses.has(f.status)&&new Date(f.utc).getTime()>now", source)
         self.assertIn("tabsHtml()+filterHtml+summaryHtml+coverageHtml", source)
 
 
