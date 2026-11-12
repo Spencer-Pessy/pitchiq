@@ -96,3 +96,18 @@ The exact-scoreline Record panel also compares the average probability assigned 
 The Record diagnostics compare the saved Dixon–Coles scoreline distribution with an independent Poisson model using the same saved pre-match expected-goal rates, the same 8×8 (0–7 goals) grid, and separate normalisation. It reports paired exact-score negative log likelihood, the mean Dixon–Coles-minus-independent difference, a deterministic paired-bootstrap 95% interval, and match-level wins/ties. A negative difference favours Dixon–Coles; an interval crossing zero does not establish a clear improvement. Invalid rates and scores outside the grid are excluded and counted. This is a retrospective diagnostic, not an automatic model switch.
 
 The fixture updater no longer reads a stale injury cache: automated injury feeds remain disabled until a reliable free source is validated. Manual key-player absence adjustments remain available in the website.
+
+
+### Telegram football news channel (opt-in)
+
+The separate `.github/workflows/telegram-news.yml` workflow can publish a compact digest of up to three recent, unseen BBC Sport football headlines every four hours. It uses the public BBC Sport football RSS feed, keeps the publisher's headline/short feed summary intact, links each story to BBC, and stores canonical article URLs in `daily/news_seen.json` to avoid ordinary repeat posts. It does not invent stories, scrape article bodies, or use a paid news API.
+
+**It is disabled by default and will not post until explicitly configured.** To enable it:
+
+1. Add a repository Actions variable named `PITCHIQ_NEWS_ENABLED` with value `true`.
+2. Add a repository Actions secret named `TELEGRAM_NEWS_CHAT_ID` containing the news channel's `@username` or numeric chat ID.
+3. Ensure the bot whose token is stored in `TELEGRAM_BOT_TOKEN` has permission to post in that channel.
+
+The news workflow deliberately uses `TELEGRAM_NEWS_CHAT_ID`, separate from the picks workflow's `TELEGRAM_CHAT_ID`, so enabling news cannot silently redirect forecast posts or vice versa. Setting the variable to anything other than `true` leaves the publisher inert. A confirmed Telegram send is followed by saving the deduplication ledger; Git publication retries do not rerun the send step. As with any remote messaging API, a process crash after Telegram accepts a message but before the ledger is saved can still leave a narrow duplicate-delivery risk.
+
+Run `python -m unittest -v test_pitchiq_news` to test feed parsing, BBC-link allowlisting, recency filtering, deduplication, attribution, and the disabled-by-default guard. This integration does not add a news tab to the website; it serves the separate Telegram news channel.
