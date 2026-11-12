@@ -137,8 +137,8 @@ class OddsWorkflowActivationTests(unittest.TestCase):
         self.assertIn('cron: "23 7 * * *"', workflow)
         self.assertIn("ODDS_API_KEY is not configured; no odds request was made.", workflow)
         self.assertIn("ODDS_FREE_TIER_CONFIRMED", workflow)
-        self.assertIn("Free-tier use has not been confirmed; no odds request was made.", workflow)
-        self.assertIn('vars.ODDS_FREE_TIER_CONFIRMED', workflow)
+        self.assertIn("Free-tier use has not been confirmed in repository Variables or Secrets; no odds request was made.", workflow)
+        self.assertIn('vars.ODDS_FREE_TIER_CONFIRMED || secrets.ODDS_FREE_TIER_CONFIRMED', workflow)
         self.assertIn("steps.credentials.outputs.available == 'true'", workflow)
         self.assertIn("group: pitchiq-odds", workflow)
 
