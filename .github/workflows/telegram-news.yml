@@ -1,0 +1,59 @@
+name: Telegram football news
+on:
+  schedule:
+    - cron: '43 */4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+
+concurrency:
+  group: pitchiq-telegram-news
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate news publisher syntax
+        run: python -m py_compile pitchiq_news.py pitchiq_telegram.py
+      - name: Publish opt-in BBC football news digest
+        run: python pitchiq_news.py
+        env:
+          PITCHIQ_NEWS_ENABLED: ${{ vars.PITCHIQ_NEWS_ENABLED }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_NEWS_CHAT_ID: ${{ secrets.TELEGRAM_NEWS_CHAT_ID }}
+      # Retry only the Git publication; never rerun the Telegram send step.
+      - name: Save news deduplication ledger with safe retry
+        run: |
+          set -euo pipefail
+          git config user.name "pitchiq-bot"
+          git config user.email "bot@users.noreply.github.com"
+          rm -rf /tmp/pitchiq-news
+          mkdir -p /tmp/pitchiq-news
+          if [ -d daily ]; then cp -a daily/. /tmp/pitchiq-news/; fi
+          for attempt in 1 2 3; do
+            echo "News ledger publication attempt $attempt of 3"
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p daily
+            cp -a /tmp/pitchiq-news/. daily/
+            git add daily/news_seen.json
+            if git diff --cached --quiet; then
+              echo "No news ledger changes to publish."
+              exit 0
+            fi
+            git commit -m "Record published football news links"
+            if git push; then
+              echo "News deduplication ledger published."
+              exit 0
+            fi
+            echo "Push rejected; retrying from latest main without resending Telegram."
+            sleep 5
+          done
+          echo "Unable to publish news ledger after 3 fresh attempts."
+          exit 1
