@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pitchiq-telegram-picks
+  group: pitchiq-telegram-published-picks
   cancel-in-progress: false
 jobs:
   post:
@@ -36,14 +36,17 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           rm -rf /tmp/pitchiq-daily
           mkdir -p /tmp/pitchiq-daily
-          if [ -d daily ]; then cp -a daily/. /tmp/pitchiq-daily/; fi
+          for artifact in published_picks.json top3.png; do
+            if [ -f "daily/$artifact" ]; then cp "daily/$artifact" "/tmp/pitchiq-daily/$artifact"; fi
+          done
           for attempt in 1 2 3; do
             echo "Telegram artifact publication attempt $attempt of 3"
             git fetch origin main
             git reset --hard origin/main
             mkdir -p daily
             cp -a /tmp/pitchiq-daily/. daily/
-            git add -A daily
+            git add -A daily/published_picks.json
+            if [ -f daily/top3.png ]; then git add daily/top3.png; fi
             if git diff --cached --quiet; then
               echo "No Telegram artifacts to publish."
               exit 0
