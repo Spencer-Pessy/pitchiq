@@ -44,8 +44,10 @@ def predict(stats, calibration=None, use_elo=True, use_form=True):
 
     home_form = ppg(home["form"]) if use_form else 1.5
     away_form = ppg(away["form"]) if use_form else 1.5
-    home_rate *= 1.15 ** elo_difference * (1 + (home_form - 1.5) * 0.04)
-    away_rate *= 1.15 ** -elo_difference * (1 + (away_form - 1.5) * 0.04)
+    home_absences = float(home.get("out", 0) or 0)
+    away_absences = float(away.get("out", 0) or 0)
+    home_rate *= 1.15 ** elo_difference * (1 + (home_form - 1.5) * 0.04) * (1 - 0.04 * home_absences)
+    away_rate *= 1.15 ** -elo_difference * (1 + (away_form - 1.5) * 0.04) * (1 - 0.04 * away_absences)
     home_rate, away_rate = max(home_rate, 0.05), max(away_rate, 0.05)
 
     raw_home_rate, raw_away_rate = home_rate, away_rate
