@@ -21,7 +21,7 @@ try:
         for match in current_data.get("matches", [])
         if isinstance(match, dict) and match.get("id") is not None
     }
-except (OSError, ValueError, TypeError):
+except (OSError, ValueError, TypeError, AttributeError):
     # Missing current status data must never be treated as proof a fixture is scheduled.
     current_statuses = {}
 
