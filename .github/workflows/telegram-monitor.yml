@@ -1,0 +1,56 @@
+name: Telegram workflow health monitor
+on:
+  schedule:
+    - cron: '11,41 * * * *'
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: pitchiq-telegram-health-monitor
+  cancel-in-progress: false
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate and test read-only monitor
+        run: |
+          python -m py_compile telegram_monitor.py test_telegram_monitor.py
+          python -m unittest -v test_telegram_monitor
+      - name: Record scheduled workflow health (no Telegram messages)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python telegram_monitor.py
+      - name: Publish health snapshot with safe retry
+        run: |
+          set -euo pipefail
+          git config user.name "pitchiq-bot"
+          git config user.email "bot@users.noreply.github.com"
+          cp daily/telegram_health.json /tmp/pitchiq-telegram-health.json
+          for attempt in 1 2 3; do
+            echo "Telegram health snapshot publication attempt $attempt of 3"
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p daily
+            cp /tmp/pitchiq-telegram-health.json daily/telegram_health.json
+            git add daily/telegram_health.json
+            if git diff --cached --quiet; then
+              echo "Telegram health snapshot unchanged."
+              exit 0
+            fi
+            git commit -m "Record Telegram workflow health"
+            if git push; then
+              echo "Telegram health snapshot published."
+              exit 0
+            fi
+            echo "Push rejected; retrying from latest main."
+            sleep 5
+          done
+          echo "Unable to publish Telegram health snapshot after 3 attempts."
+          exit 1
