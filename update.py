@@ -10,9 +10,28 @@ COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
 BASE = "https://api.football-data.org/v4"
 
 
+# Football-Data.org's free tier is limited to 10 requests per minute.
+# Pace every network attempt centrally so standings, scorers, and retries
+# cannot accidentally bypass the limit.
+REQUEST_INTERVAL_SECONDS = 7.0
+_last_api_request_at = None
+
+
+def _pace_api_request():
+    global _last_api_request_at
+    if _last_api_request_at is not None:
+        elapsed = time.monotonic() - _last_api_request_at
+        remaining = REQUEST_INTERVAL_SECONDS - elapsed
+        if remaining > 0:
+            time.sleep(remaining)
+    _last_api_request_at = time.monotonic()
+
+
 def get(path):
     req = urllib.request.Request(BASE + path, headers={"X-Auth-Token": KEY})
     for _ in range(3):
+        # This runs before every attempt, including retries after transient errors.
+        _pace_api_request()
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 return json.load(r)
@@ -44,9 +63,6 @@ for i, c in enumerate(COMPS):
         m["_c"] = c
         m["_cn"] = d["competition"]["name"]
         matches.append(m)
-    if i < len(COMPS) - 1:
-        time.sleep(7)  # free plan allows 10 calls per minute
-
 
 def tname(t):
     return t.get("shortName") or t.get("name") or "?"
@@ -61,7 +77,6 @@ def goals(m):
 tables = {}
 standings_failed = []
 for c in COMPS:
-    time.sleep(7)
     d = get(f"/competitions/{c}/standings")
     if not d or not isinstance(d.get("standings"), list):
         standings_failed.append(c)
@@ -81,7 +96,6 @@ for c in COMPS:
              "a": x.get("assists"), "pen": x.get("penalties"), "m": x.get("playedMatches"),
              **player_rate_stats(x.get("goals"), x.get("assists"), x.get("playedMatches"))}
             for x in sc.get("scorers", [])]
-    time.sleep(7)
 
 
 fin = sorted(
