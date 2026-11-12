@@ -78,7 +78,7 @@ class UpdateRequestPacingTests(unittest.TestCase):
 
     def test_calibration_uses_validated_club_history_and_excludes_internationals(self):
         self.assertIn("goal_rate_calibration", self.source)
-        self.assertIn('p.get("code") not in INTERNATIONAL_COMPETITIONS', self.source)
+        self.assertIn('is_club_competition(p.get("code"))', self.source)
         self.assertIn('"valid results"', self.source)
 
     def test_international_competitions_stay_out_of_club_forecast_pipeline(self):
