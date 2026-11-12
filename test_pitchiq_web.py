@@ -301,6 +301,12 @@ class ForwardResearchPendingStateTests(unittest.TestCase):
 
 
 class InternationalFixtureGroupingTests(unittest.TestCase):
+    def test_international_cards_show_local_kickoff_and_source(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("date.toLocaleString([],{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})", source)
+        self.assertIn("f.source||'public fixture feed'", source)
+        self.assertIn("Kickoff times use your device local time.", source)
+
     def test_international_view_separates_upcoming_live_and_completed_matches(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("section('Live now',liveSorted", source)
