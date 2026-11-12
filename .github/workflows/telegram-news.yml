@@ -21,7 +21,7 @@ jobs:
           python-version: '3.12'
       - name: Validate news publisher syntax
         run: python -m py_compile pitchiq_news.py pitchiq_telegram.py
-      - name: Publish opt-in BBC football news digest
+      - name: Publish enabled BBC football news digest
         run: python pitchiq_news.py
         env:
           PITCHIQ_NEWS_ENABLED: "true"
