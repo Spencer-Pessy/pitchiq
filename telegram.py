@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 from pitchiq_telegram import (parse_kickoff, valid_forecast, valid_final, clean_seen_urls,
-                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label)
+                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label, eligible_forecast)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT = os.environ.get("TELEGRAM_CHAT_ID")
@@ -12,6 +12,18 @@ SITE = "https://spencer-pessy.github.io/pitchiq/?ref=telegram"
 with open("predictions.json") as f:
     raw_preds = json.load(f)
 preds = list(raw_preds.values()) if isinstance(raw_preds, dict) else []
+
+try:
+    with open("data.json", encoding="utf-8") as f:
+        current_data = json.load(f)
+    current_statuses = {
+        str(match["id"]): match.get("status")
+        for match in current_data.get("matches", [])
+        if isinstance(match, dict) and match.get("id") is not None
+    }
+except (OSError, ValueError, TypeError):
+    # Missing current status data must never be treated as proof a fixture is scheduled.
+    current_statuses = {}
 
 now = datetime.now(timezone.utc)
 lim = now + timedelta(hours=36)
@@ -75,8 +87,8 @@ if RESULTS_ONLY:
     print("Results-only check complete; no new picks or news posts were requested.")
     raise SystemExit(0)
 
-up = [p for p in preds if valid_forecast(p) and snapshot_published_pick(p) is not None
-      and not p.get("final") and now < when(p) < lim]
+up = [p for p in preds if snapshot_published_pick(p) is not None
+      and eligible_forecast(p, current_statuses, now, lim)]
 if not up:
     print("No eligible matches in the next 36 hours; no Telegram post will be sent.")
     save_pick_state(pick_state)
