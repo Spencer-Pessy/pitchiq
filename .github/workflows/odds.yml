@@ -11,7 +11,9 @@ concurrency:
   group: pitchiq-publish
   cancel-in-progress: false
 jobs:
+  # Paused until the user explicitly approves any Odds API credit usage.
   odds:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
