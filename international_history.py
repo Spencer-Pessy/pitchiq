@@ -5,6 +5,7 @@ club forecasts / Telegram picks. The upstream CSV is CC0 and contains men's
 full internationals; it also includes some non-FIFA representative teams.
 """
 import csv
+import hashlib
 import io
 import json
 import urllib.request
@@ -140,6 +141,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
         "stale": (today - latest).days > 120,
         "source": "Mart Jürisoo international_results.csv",
         "source_url": SOURCE_URL,
+        "source_checksum": hashlib.sha256(csv_text.encode("utf-8")).hexdigest(),
         "license": SOURCE_LICENSE,
         "scope": "Men's full internationals; source also contains some non-FIFA representative teams",
         "matches_processed": len(matches),
@@ -165,6 +167,14 @@ def main():
             raise RuntimeError(f"International results source returned HTTP {response.status}")
         csv_text = response.read().decode("utf-8-sig")
     snapshot = build_snapshot(csv_text)
+    try:
+        with open(OUTPUT, "r", encoding="utf-8") as existing_file:
+            existing = json.load(existing_file)
+    except (OSError, ValueError):
+        existing = {}
+    if existing.get("source_checksum") == snapshot["source_checksum"]:
+        print("International historical source is unchanged; preserving the existing snapshot.")
+        return
     with open(OUTPUT, "w", encoding="utf-8") as output:
         json.dump(snapshot, output, ensure_ascii=False, separators=(",", ":"))
     print("International historical matches processed:", snapshot["matches_processed"])
