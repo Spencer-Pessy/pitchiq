@@ -153,7 +153,7 @@ def input_diagnostics(predictions):
                 continue
             try:
                 value = _nonnegative_integer(team.get("venue_matches")) if is_venue else form_points(team.get("form"))
-            except (KeyError, TypeError, ValueError):
+            except (KeyError, TypeError, ValueError, OverflowError):
                 continue
             if value is None or (is_venue and value < 0):
                 continue
@@ -175,7 +175,7 @@ def input_diagnostics(predictions):
             away_n = _nonnegative_integer(away.get("venue_matches"))
             if home_n is not None and away_n is not None:
                 venue_rows.append((min(home_n, away_n), (item, actual, probs)))
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             pass
         home_form, away_form = form_points(home.get("form")), form_points(away.get("form"))
         if home_form is not None and away_form is not None:
@@ -219,7 +219,7 @@ def outcome_class_metrics(predictions):
         probs = item.get("p") or {}
         try:
             values = [float(probs[key]) for key in ("ph", "pd", "pa")]
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             continue
         if (not all(math.isfinite(x) for x in [home, away] + values)
                 or min(home, away) < 0 or any(x < 0 or x > 1 for x in values)
@@ -326,7 +326,7 @@ def ablation_comparison(predictions):
                         variant_brier = sum((value - target[index]) ** 2
                                             for index, value in enumerate(forecasts[name]))
                         paired_deltas[name].append(variant_brier - full_brier)
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             continue
 
     results = {name: _probability_scores(rows) for name, rows in scored.items()}
@@ -420,7 +420,7 @@ def baseline_comparison(predictions):
         probs = item.get("p") or {}
         try:
             model = [float(probs[key]) for key in ("ph", "pd", "pa")]
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             continue
         if (not all(math.isfinite(x) for x in [home, away] + model)
                 or min(home, away) < 0 or any(x < 0 or x > 1 for x in model)
@@ -728,7 +728,7 @@ def evaluate(predictions):
                 home_bias += expected_home - home
                 away_bias += expected_away - away
                 goal_n += 1
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             pass
 
     populated_bins = [
