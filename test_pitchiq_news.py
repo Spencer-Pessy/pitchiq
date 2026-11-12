@@ -81,6 +81,10 @@ class PitchIQNewsWorkflowTests(unittest.TestCase):
         self.assertIn("group: pitchiq-telegram-news", workflow)
         self.assertNotIn("TELEGRAM_CHAT_ID:", workflow)
         self.assertIn("never rerun the Telegram send step", workflow)
+        self.assertIn("cp daily/news_seen.json /tmp/pitchiq-news-seen.json", workflow)
+        self.assertIn("cp /tmp/pitchiq-news-seen.json daily/news_seen.json", workflow)
+        self.assertNotIn("cp -a daily/. /tmp/pitchiq-news/", workflow)
+        self.assertNotIn("cp -a /tmp/pitchiq-news/. daily/", workflow)
 
     def test_existing_news_history_is_preserved_as_a_list(self):
         import json
@@ -88,10 +92,6 @@ class PitchIQNewsWorkflowTests(unittest.TestCase):
         history = json.loads(Path("daily/news_seen.json").read_text(encoding="utf-8"))
         self.assertIsInstance(history, list)
         self.assertTrue(all(isinstance(url, str) for url in history))
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 if __name__ == "__main__":
