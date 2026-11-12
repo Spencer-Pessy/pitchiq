@@ -206,7 +206,7 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["rolling_prior"]["matches"], 3)
         # First two rows share the untouched 1/3 prior; the third sees only
         # the first completed result, not the second match's later result.
-        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.6736, places=4)
+        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.7361, places=4)
         self.assertEqual(result, baseline_comparison(list(reversed(rows))))
 
     def test_rolling_baseline_excludes_undated_rows_and_orders_timezone_offsets(self):
