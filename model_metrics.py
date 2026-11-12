@@ -8,6 +8,26 @@ from pitchiq_model import predict as model_predict, pois, tau
 
 
 
+
+def _final_score(item):
+    """Return a valid integer, non-negative full-time score or None."""
+    if not isinstance(item, dict):
+        return None
+    final = item.get("final")
+    if not isinstance(final, (list, tuple)) or len(final) != 2:
+        return None
+    if any(isinstance(value, bool) for value in final):
+        return None
+    try:
+        values = [float(value) for value in final]
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if (not all(math.isfinite(value) and value >= 0 and value.is_integer()
+                for value in values)):
+        return None
+    return int(values[0]), int(values[1])
+
+
 def wilson_interval(successes, total, z=1.96):
     """Return a two-sided Wilson score interval for a binomial proportion."""
     if total <= 0 or successes < 0 or successes > total:
@@ -56,16 +76,16 @@ def input_diagnostics(predictions):
     valid = []
     completed = 0
     for item in predictions:
-        final = item.get("final")
-        probs = item.get("p") or {}
-        if not isinstance(final, list) or len(final) != 2:
+        score = _final_score(item)
+        if score is None:
             continue
+        home, away = score
         completed += 1
+        probs = item.get("p") or {}
         inputs = item.get("inputs")
         if not isinstance(inputs, dict) or inputs.get("schema") not in (1, 2):
             continue
         try:
-            home, away = float(final[0]), float(final[1])
             p = [float(probs[key]) for key in ("ph", "pd", "pa")]
             if (not all(math.isfinite(x) for x in [home, away] + p)
                     or min(home, away) < 0 or any(x < 0 or x > 1 for x in p)
@@ -172,12 +192,12 @@ def outcome_class_metrics(predictions):
     names = ("home", "draw", "away")
     rows = []
     for item in predictions:
-        final = item.get("final")
-        probs = item.get("p") or {}
-        if not isinstance(final, list) or len(final) != 2:
+        score = _final_score(item)
+        if score is None:
             continue
+        home, away = score
+        probs = item.get("p") or {}
         try:
-            home, away = float(final[0]), float(final[1])
             values = [float(probs[key]) for key in ("ph", "pd", "pa")]
         except (KeyError, TypeError, ValueError):
             continue
@@ -254,13 +274,12 @@ def ablation_comparison(predictions):
     scored = {name: [] for name in variants}
     paired_deltas = {name: [] for name in variants if name != "full_model"}
     for item in predictions:
-        final = item.get("final")
-        snapshot = item.get("inputs")
-        if (not isinstance(final, list) or len(final) != 2
-                or not isinstance(snapshot, dict) or snapshot.get("schema") != 2):
+        score = _final_score(item)
+        snapshot = item.get("inputs") if isinstance(item, dict) else None
+        if score is None or not isinstance(snapshot, dict) or snapshot.get("schema") != 2:
             continue
+        home_goals, away_goals = score
         try:
-            home_goals, away_goals = float(final[0]), float(final[1])
             stats = {
                 "h": snapshot["home"], "a": snapshot["away"],
                 "lh": float(snapshot["league_home"]),
@@ -312,12 +331,13 @@ def binary_market_metrics(predictions, key):
     """Score a saved binary market probability against its completed outcome."""
     rows = []
     for item in predictions:
-        final = item.get("final")
-        value = (item.get("p") or {}).get(key)
-        if not isinstance(final, list) or len(final) != 2:
+        score = _final_score(item)
+        if score is None or not isinstance(item, dict):
             continue
+        home, away = score
+        value = (item.get("p") or {}).get(key)
         try:
-            home, away, probability = float(final[0]), float(final[1]), float(value)
+            probability = float(value)
         except (TypeError, ValueError):
             continue
         if (not all(math.isfinite(x) for x in (home, away, probability))
@@ -373,12 +393,12 @@ def baseline_comparison(predictions):
     """Compare forecasts with a no-look-ahead rolling prior and de-vigged odds."""
     records = []
     for item in predictions:
-        final = item.get("final")
-        probs = item.get("p") or {}
-        if not isinstance(final, list) or len(final) != 2:
+        score = _final_score(item)
+        if score is None:
             continue
+        home, away = score
+        probs = item.get("p") or {}
         try:
-            home, away = float(final[0]), float(final[1])
             model = [float(probs[key]) for key in ("ph", "pd", "pa")]
         except (KeyError, TypeError, ValueError):
             continue
@@ -607,12 +627,12 @@ def evaluate(predictions):
     """Calculate outcome accuracy, multiclass Brier/log loss and goal MAE."""
     records = []
     for item in predictions:
-        final = item.get("final")
-        probs = item.get("p") or {}
-        if not isinstance(final, list) or len(final) != 2:
+        score = _final_score(item)
+        if score is None:
             continue
+        home_goals, away_goals = score
+        probs = item.get("p") or {}
         try:
-            home_goals, away_goals = float(final[0]), float(final[1])
             p = [float(probs[k]) for k in ("ph", "pd", "pa")]
         except (KeyError, TypeError, ValueError):
             continue
