@@ -187,7 +187,7 @@ class MetricsTests(unittest.TestCase):
         split = result["chronological_split"]
         self.assertEqual([row["matches"] for row in split], [1, 2])
         self.assertEqual(split[0]["accuracy"], 1.0)
-        self.assertAlmostEqual(split[0]["brier"], 0.86, places=4)
+        self.assertAlmostEqual(split[0]["brier"], 0.06, places=4)
         self.assertEqual(split[1]["accuracy"], 0.5)
         self.assertAlmostEqual(split[1]["brier"], 0.76, places=4)
 
