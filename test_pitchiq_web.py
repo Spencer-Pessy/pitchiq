@@ -230,7 +230,9 @@ class InternationalStatusPresentationTests(unittest.TestCase):
     def test_international_view_groups_live_and_non_playable_statuses_safely(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("const liveStatuses=new Set(['1H','HT','2H','ET','P','LIVE'])", source)
-        self.assertIn("!['PST','CANC','SUSP','ABD'].includes(f.status)", source)
+        self.assertIn("const inactiveStatuses=new Set(['PST','CANC','SUSP','ABD'])", source)
+        self.assertIn("!inactiveStatuses.has(f.status)&&Array.isArray(f.score)", source)
+        self.assertIn("!inactiveStatuses.has(f.status)&&new Date(f.utc).getTime()>now", source)
         self.assertIn("ABD:'ABANDONED',LIVE:'LIVE'", source)
 
 
