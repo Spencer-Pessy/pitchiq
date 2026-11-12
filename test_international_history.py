@@ -1,7 +1,7 @@
 import unittest
 from datetime import date, timedelta
 from international_history import (
-    backtest_elo, build_ratings, parse_results, tournament_weight,
+    backtest_elo, build_ratings, classify_team, load_team_registry, parse_results, tournament_weight,
 )
 
 
@@ -99,6 +99,27 @@ class InternationalHistoryTests(unittest.TestCase):
         expected_rating = round(1500 + 2 * 20 * 0.75 * (1 - expected_home), 2)
         ratings = {row["team"]: row["elo"] for row in build_ratings(same_day)}
         self.assertEqual(ratings["Kenya"], expected_rating)
+
+    def test_fifa_registry_has_211_unique_member_associations(self):
+        registry, official, aliases = load_team_registry()
+        self.assertEqual(len(registry["fifa_member_associations"]), 211)
+        self.assertEqual(len(official), 211)
+        self.assertTrue(aliases)
+
+    def test_team_identity_aliases_and_non_fifa_sides_are_separated(self):
+        registry_data = load_team_registry()
+        self.assertEqual(
+            classify_team("Ivory Coast", registry_data)["canonical_team"],
+            "Côte d'Ivoire",
+        )
+        self.assertEqual(
+            classify_team("Korea Republic", registry_data)["association_status"],
+            "fifa_member_association",
+        )
+        representative = classify_team("Abkhazia", registry_data)
+        self.assertEqual(representative["association_status"], "non_fifa_or_unverified")
+        self.assertFalse(representative["forecast_eligible"])
+        self.assertFalse(classify_team("Kenya", registry_data)["forecast_eligible"])
 
     def test_tournament_weights_are_conservative_and_ordered(self):
         self.assertLess(tournament_weight("Friendly"), tournament_weight("FIFA World Cup qualification"))
