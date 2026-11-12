@@ -106,6 +106,21 @@ class InternationalHistoryTests(unittest.TestCase):
         self.assertEqual(len(official), 211)
         self.assertTrue(aliases)
 
+    def test_fixture_source_name_variants_resolve_to_fifa_registry(self):
+        variants = {
+            "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+            "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+            "St. Kitts and Nevis": "St Kitts and Nevis",
+            "St. Lucia": "St Lucia",
+            "St. Vincent and the Grenadines": "St Vincent and the Grenadines",
+        }
+        for source, canonical in variants.items():
+            with self.subTest(source=source):
+                identity = classify_team(source)
+                self.assertEqual(identity["canonical_team"], canonical)
+                self.assertEqual(identity["association_status"], "fifa_member_association")
+                self.assertFalse(identity["forecast_eligible"])
+
     def test_historical_aliases_share_one_canonical_elo_identity(self):
         csv_text = (
             "date,home_team,away_team,home_score,away_score,tournament,city,country,neutral\n"
