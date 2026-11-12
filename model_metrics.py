@@ -3,7 +3,7 @@ import json
 import math
 import random
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from pitchiq_model import predict as model_predict, pois, tau
 
@@ -424,6 +424,20 @@ def _forecast_datetime(item):
 
 
 
+
+def _forecast_kickoff_datetime(item):
+    """Return the timezone-aware kickoff; a result cannot be used before this."""
+    if not isinstance(item, dict):
+        return None
+    value = item.get("utc")
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        return parsed.astimezone(timezone.utc) if parsed.tzinfo is not None and parsed.utcoffset() is not None else None
+    except (ValueError, OverflowError):
+        return None
+
 def _forecast_available_datetime(item):
     """Return when this forecast was made; only legacy rows fall back to kickoff."""
     if not isinstance(item, dict):
@@ -472,7 +486,8 @@ def baseline_comparison(predictions):
             continue
         actual = 0 if home > away else 1 if home == away else 2
         date = _forecast_available_datetime(item)
-        if date is None:
+        kickoff = _forecast_kickoff_datetime(item)
+        if date is None or kickoff is None:
             continue
         market = None
         odds = item.get("odds")
@@ -486,54 +501,58 @@ def baseline_comparison(predictions):
                         market = [value / total for value in implied]
             except (TypeError, ValueError):
                 pass
-        records.append({"date": date, "actual": actual, "model": model, "market": market,
+
+        records.append({"date": date, "kickoff": kickoff, "id": item.get("id"),
+                        "actual": actual, "model": model, "market": market,
                         "competition": item.get("code") or item.get("comp") or "Other"})
 
-    records.sort(key=lambda row: row["date"])
-    counts = [1, 1, 1]
     prior_rows, competition_prior_rows, model_market_rows, market_rows = [], [], [], []
     model_market_brier_deltas, model_market_log_deltas = [], []
     model_prior_brier_deltas, model_prior_log_deltas = [], []
-    competition_counts = {}
-    index = 0
-    while index < len(records):
-        # Matches sharing a kickoff timestamp all receive the same prior;
-        # none can learn from another result at that same kickoff.
-        end = index + 1
-        while end < len(records) and records[end]["date"] == records[index]["date"]:
-            end += 1
+    # Rebuild the information set available at each forecast's creation time.
+    # A completed result is conservatively considered available three hours
+    # after kickoff; later matches must never leak into an earlier forecast.
+    result_buffer = timedelta(hours=3)
+    for row in records:
+        available = [
+            prior_row for prior_row in records
+            if prior_row is not row
+            and (row["id"] is None or prior_row["id"] != row["id"])
+            and prior_row["kickoff"] + result_buffer <= row["date"]
+        ]
+        counts = [1, 1, 1]
+        competition_counts = {}
+        for prior_row in available:
+            counts[prior_row["actual"]] += 1
+            code = str(prior_row.get("competition") or "Other")
+            competition_counts.setdefault(code, [0, 0, 0])[prior_row["actual"]] += 1
+
         total = sum(counts)
         prior = [value / total for value in counts]
-        for row in records[index:end]:
-            prior_rows.append((prior, row["actual"]))
-            code = str(row.get("competition") or "Other")
-            comp_counts = competition_counts.get(code, [0, 0, 0])
-            comp_total = sum(comp_counts)
-            shrink = 5.0
-            competition_prior = [
-                (comp_counts[outcome] + shrink * prior[outcome]) / (comp_total + shrink)
-                for outcome in range(3)
-            ]
-            competition_prior_rows.append((competition_prior, row["actual"]))
-            target = [1 if outcome == row["actual"] else 0 for outcome in range(3)]
-            model_brier = sum((value - target[i]) ** 2 for i, value in enumerate(row["model"]))
-            prior_brier = sum((value - target[i]) ** 2 for i, value in enumerate(competition_prior))
-            model_loss = -math.log(max(row["model"][row["actual"]], 1e-15))
-            prior_loss = -math.log(max(competition_prior[row["actual"]], 1e-15))
-            model_prior_brier_deltas.append(model_brier - prior_brier)
-            model_prior_log_deltas.append(model_loss - prior_loss)
-            if row["market"] is not None:
-                model_market_rows.append((row["model"], row["actual"]))
-                market_rows.append((row["market"], row["actual"]))
-                market_brier = sum((value - target[i]) ** 2 for i, value in enumerate(row["market"]))
-                market_loss = -math.log(max(row["market"][row["actual"]], 1e-15))
-                model_market_brier_deltas.append(model_brier - market_brier)
-                model_market_log_deltas.append(model_loss - market_loss)
-        for row in records[index:end]:
-            counts[row["actual"]] += 1
-            code = str(row.get("competition") or "Other")
-            competition_counts.setdefault(code, [0, 0, 0])[row["actual"]] += 1
-        index = end
+        prior_rows.append((prior, row["actual"]))
+        code = str(row.get("competition") or "Other")
+        comp_counts = competition_counts.get(code, [0, 0, 0])
+        comp_total = sum(comp_counts)
+        shrink = 5.0
+        competition_prior = [
+            (comp_counts[outcome] + shrink * prior[outcome]) / (comp_total + shrink)
+            for outcome in range(3)
+        ]
+        competition_prior_rows.append((competition_prior, row["actual"]))
+        target = [1 if outcome == row["actual"] else 0 for outcome in range(3)]
+        model_brier = sum((value - target[i]) ** 2 for i, value in enumerate(row["model"]))
+        prior_brier = sum((value - target[i]) ** 2 for i, value in enumerate(competition_prior))
+        model_loss = -math.log(max(row["model"][row["actual"]], 1e-15))
+        prior_loss = -math.log(max(competition_prior[row["actual"]], 1e-15))
+        model_prior_brier_deltas.append(model_brier - prior_brier)
+        model_prior_log_deltas.append(model_loss - prior_loss)
+        if row["market"] is not None:
+            model_market_rows.append((row["model"], row["actual"]))
+            market_rows.append((row["market"], row["actual"]))
+            market_brier = sum((value - target[i]) ** 2 for i, value in enumerate(row["market"]))
+            market_loss = -math.log(max(row["market"][row["actual"]], 1e-15))
+            model_market_brier_deltas.append(model_brier - market_brier)
+            model_market_log_deltas.append(model_loss - market_loss)
 
     prior_scores = _probability_scores(prior_rows)
     competition_prior_scores = _probability_scores(competition_prior_rows)
