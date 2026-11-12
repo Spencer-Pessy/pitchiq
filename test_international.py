@@ -142,6 +142,40 @@ class InternationalFeedTests(unittest.TestCase):
         self.assertEqual(len(calls), 7 * len(ESPN_LEAGUES))
         self.assertEqual(sleep.call_count, len(calls) - 1)
 
+    def test_world_cup_archive_is_explicitly_mens(self):
+        payload = {
+            "name": "World Cup 2026",
+            "matches": [{
+                "date": "2026-06-11", "time": "13:00 UTC-6",
+                "team1": "Mexico", "team2": "South Africa", "score": {},
+            }],
+        }
+        row = normalize_matches(payload)[0]
+        self.assertEqual(row["gender"], "men")
+
+    def test_espn_womens_slug_is_separated_from_mens_friendlies(self):
+        event = {
+            "id": "women-1",
+            "date": "2026-11-14T16:00:00Z",
+            "status": {"type": {"state": "pre", "name": "STATUS_SCHEDULED"}},
+            "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"name": "Kenya"}},
+                {"homeAway": "away", "team": {"name": "Uganda"}},
+            ]}],
+        }
+        women = normalize_espn_event(event, "fifa.friendly.w", "Women's International Friendlies")
+        men = normalize_espn_event(event, "fifa.friendly", "International Friendlies")
+        self.assertEqual(women["gender"], "women")
+        self.assertEqual(men["gender"], "men")
+
+    def test_deduplication_keeps_distinct_mens_and_womens_fixture_streams(self):
+        base = {"utc": "2026-11-14T16:00:00+00:00", "h": "Kenya", "a": "Uganda"}
+        rows = deduplicate([
+            dict(base, id="men", gender="men"),
+            dict(base, id="women", gender="women"),
+        ])
+        self.assertEqual({row["gender"] for row in rows}, {"men", "women"})
+
     def test_rejects_malformed_or_empty_openfootball_source(self):
         with self.assertRaises(ValueError):
             normalize_matches({"matches": []})
