@@ -503,3 +503,12 @@ class ServiceWorkerDataFallbackTests(unittest.TestCase):
         self.assertIn("fetch(request)", source)
         self.assertIn("The page reads the snapshot's own updated timestamp", source)
 
+class InternationalFixtureDetailTests(unittest.TestCase):
+    def test_international_fixture_cards_open_a_fixture_only_detail_view(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("function internationalDetail()", source)
+        self.assertIn("if(tab==='intl'){internationalDetail();return}detail()", source)
+        self.assertIn("INTERNATIONAL MATCH DETAIL", source)
+        self.assertIn("Pitch IQ does not currently publish model forecasts for international fixtures", source)
+        self.assertIn("$('#bk').onclick=()=>{tab='intl';list()}", source)
+
