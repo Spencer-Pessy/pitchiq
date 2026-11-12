@@ -14,6 +14,54 @@ _TEAM_NAME_STOPWORDS = {
 }
 
 
+def build_head_to_head(matches, home_team_id, away_team_id, before_utc, limit=5):
+    """Summarize completed meetings before kickoff from the upcoming home team's perspective."""
+    empty = {"played": 0, "home_wins": 0, "draws": 0, "away_wins": 0,
+             "home_goals": 0, "away_goals": 0, "meetings": []}
+    if home_team_id is None or away_team_id is None or home_team_id == away_team_id:
+        return empty
+    cutoff = datetime.fromisoformat(str(before_utc).replace("Z", "+00:00"))
+    rows = []
+    for match in matches:
+        if match.get("status") != "FINISHED":
+            continue
+        try:
+            kickoff = datetime.fromisoformat(str(match.get("utcDate", "")).replace("Z", "+00:00"))
+            if kickoff >= cutoff:
+                continue
+            actual_home = match.get("homeTeam", {}).get("id")
+            actual_away = match.get("awayTeam", {}).get("id")
+            if not ((actual_home == home_team_id and actual_away == away_team_id) or
+                    (actual_home == away_team_id and actual_away == home_team_id)):
+                continue
+            scores = match.get("score", {}).get("fullTime", {})
+            hg, ag = scores.get("home"), scores.get("away")
+            if not isinstance(hg, int) or isinstance(hg, bool) or not isinstance(ag, int) or isinstance(ag, bool):
+                continue
+            home_goals, away_goals = (hg, ag) if actual_home == home_team_id else (ag, hg)
+            rows.append({
+                "utc": kickoff.isoformat(),
+                "comp": match.get("_cn") or match.get("competition", {}).get("name") or "Competition unavailable",
+                "home": match.get("homeTeam", {}).get("shortName") or match.get("homeTeam", {}).get("name") or "Home",
+                "away": match.get("awayTeam", {}).get("shortName") or match.get("awayTeam", {}).get("name") or "Away",
+                "score": [hg, ag],
+                "home_team_goals": home_goals, "away_team_goals": away_goals,
+            })
+        except (TypeError, ValueError, AttributeError):
+            continue
+    rows.sort(key=lambda row: row["utc"], reverse=True)
+    meetings = rows[:max(0, int(limit))]
+    hw = sum(row["home_team_goals"] > row["away_team_goals"] for row in meetings)
+    aw = sum(row["home_team_goals"] < row["away_team_goals"] for row in meetings)
+    return {
+        "played": len(meetings), "home_wins": hw, "draws": len(meetings) - hw - aw,
+        "away_wins": aw,
+        "home_goals": sum(row["home_team_goals"] for row in meetings),
+        "away_goals": sum(row["away_team_goals"] for row in meetings),
+        "meetings": meetings,
+    }
+
+
 def normalize_team_name(value):
     """Normalize harmless spelling, punctuation, accents and club suffixes."""
     if not isinstance(value, str):
