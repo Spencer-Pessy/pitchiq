@@ -91,6 +91,31 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["matches"], 0)
         self.assertTrue(all(value["matches"] == 0 for value in result["variants"].values()))
 
+    def test_ablation_rejects_malformed_nested_inputs_and_calibration(self):
+        base = {
+            "final": [1, 0], "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
+            "inputs": {"schema": 2, "home": {}, "away": {},
+                       "league_home": 1.4, "league_away": 1.1,
+                       "calibration": {}},
+        }
+        malformed = []
+        for field, value in (("home", "broken"), ("away", []),
+                             ("calibration", "broken")):
+            row = {"final": base["final"], "p": base["p"],
+                   "inputs": dict(base["inputs"])}
+            row["inputs"][field] = value
+            malformed.append(row)
+        self.assertEqual(ablation_comparison(malformed)["matches"], 0)
+
+    def test_ablation_rejects_nonpositive_league_goal_rates(self):
+        row = {
+            "final": [1, 0], "p": {"ph": 0.6, "pd": 0.2, "pa": 0.2},
+            "inputs": {"schema": 2, "home": {}, "away": {},
+                       "league_home": 0, "league_away": 1.1,
+                       "calibration": {}},
+        }
+        self.assertEqual(ablation_comparison([row])["matches"], 0)
+
     def test_ablation_comparison_is_empty_without_schema_two_snapshots(self):
         result = ablation_comparison([
             {"final": [1, 0], "inputs": {"schema": 1}},
