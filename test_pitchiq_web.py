@@ -198,6 +198,22 @@ class HomepageOverviewTests(unittest.TestCase):
 
 
 
+class HeadToHeadPresentationTests(unittest.TestCase):
+    def test_club_and_international_details_render_h2h_sections(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("function h2hPanel(home,away,summary)", source)
+        self.assertIn("function internationalH2H(f)", source)
+        self.assertIn("${h2hPanel(f.h,f.a,f.h2h)}", source)
+        self.assertIn("h2hPanel(f.h,f.a,internationalH2H(f))", source)
+        self.assertIn("Only completed meetings before this fixture’s kickoff are counted", source)
+
+    def test_h2h_international_matches_are_gender_scoped_and_pre_kickoff(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("t<cutoff", source)
+        self.assertIn("m.gender===f.gender", source)
+        self.assertIn("['FT','AET','PEN'].includes(m.status)", source)
+
+
 class OddsFreshnessWebTests(unittest.TestCase):
     def test_market_value_comparison_requires_fresh_snapshot(self):
         source = Path("index.html").read_text(encoding="utf-8")
