@@ -3,6 +3,22 @@ from pathlib import Path
 import unittest
 
 
+class DynamicInputAccessibilityTests(unittest.TestCase):
+    def test_adjustment_inputs_have_associated_names(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('<label for="${k}-${x}">${l}</label>', source)
+        self.assertIn('aria-label="${esc(n)} ${l}"', source)
+        self.assertIn('aria-label="Home decimal odds"', source)
+        self.assertIn('aria-label="Draw decimal odds"', source)
+        self.assertIn('aria-label="Away decimal odds"', source)
+
+    def test_keyboard_focus_and_reduced_motion_are_supported(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('textarea:focus-visible', source)
+        self.assertIn('prefers-reduced-motion:reduce', source)
+        self.assertIn('#splash{display:none!important}', source)
+
+
 class WebsiteOutputSafetyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
