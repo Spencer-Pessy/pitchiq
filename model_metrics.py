@@ -423,6 +423,21 @@ def _forecast_datetime(item):
     return None
 
 
+
+def _forecast_available_datetime(item):
+    """Return when this forecast was made; only legacy rows fall back to kickoff."""
+    if not isinstance(item, dict):
+        return None
+    made = item.get("made")
+    if isinstance(made, str) and made.strip():
+        try:
+            parsed = datetime.fromisoformat(made.strip().replace("Z", "+00:00"))
+            if parsed.tzinfo is not None and parsed.utcoffset() is not None:
+                return parsed.astimezone(timezone.utc)
+        except (ValueError, OverflowError):
+            pass
+    return _forecast_datetime(item)
+
 def _probability_scores(rows):
     """Summarize (probabilities, actual outcome) rows on a common sample."""
     count = len(rows)
@@ -456,7 +471,7 @@ def baseline_comparison(predictions):
                 or abs(sum(model) - 1.0) > 0.02):
             continue
         actual = 0 if home > away else 1 if home == away else 2
-        date = _forecast_datetime(item)
+        date = _forecast_available_datetime(item)
         if date is None:
             continue
         market = None
