@@ -22,7 +22,12 @@ jobs:
           sudo apt-get install -y fonts-dejavu-extra
           pip install pillow
       - name: Validate Telegram script syntax
-        run: python -m py_compile telegram.py
+        run: python -m py_compile telegram.py pitchiq_telegram.py telegram_preflight.py
+      - name: Verify bot and picks destination (read-only)
+        run: python telegram_preflight.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       - run: python telegram.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
