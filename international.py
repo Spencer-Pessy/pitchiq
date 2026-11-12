@@ -58,7 +58,7 @@ def parse_kickoff(day, time_text):
     offset_minutes = int(match.group(5) or 0)
     if offset_hours > 14 or offset_minutes > 59 or (offset_hours == 14 and offset_minutes != 0):
         return None
-    if not isinstance(day, str) or not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", day):
+    if not isinstance(day, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
         return None
     try:
         local = datetime.fromisoformat(day).replace(
