@@ -372,6 +372,31 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(result["ph"] + result["pd"] + result["pa"], 1.0, delta=0.001)
 
 
+class FinalScoreValidationTests(unittest.TestCase):
+    def test_all_outcome_metrics_reject_fractional_boolean_and_negative_scores(self):
+        invalid = [
+            {"final": [1.5, 0], "p": {"ph": .6, "pd": .2, "pa": .2,
+                                      "o25": .5, "bt": .5}},
+            {"final": [True, 0], "p": {"ph": .6, "pd": .2, "pa": .2,
+                                      "o25": .5, "bt": .5}},
+            {"final": [-1, 0], "p": {"ph": .6, "pd": .2, "pa": .2,
+                                     "o25": .5, "bt": .5}},
+        ]
+        self.assertEqual(evaluate(invalid)["matches"], 0)
+        self.assertEqual(sum(row["matches"] for row in outcome_class_metrics(invalid).values()), 0)
+        self.assertEqual(baseline_comparison(invalid)["matches"], 0)
+        self.assertEqual(binary_market_metrics(invalid, "o25")["matches"], 0)
+        self.assertEqual(scoreline_baseline_comparison(invalid)["matches"], 0)
+
+    def test_valid_integer_scores_remain_in_metrics(self):
+        rows = [{"final": [2, 1], "p": {"ph": .6, "pd": .2, "pa": .2,
+                                        "lh": 1.8, "la": 1.1,
+                                        "o25": .7, "bt": .6}}]
+        self.assertEqual(evaluate(rows)["matches"], 1)
+        self.assertEqual(sum(row["matches"] for row in outcome_class_metrics(rows).values()), 3)
+        self.assertEqual(binary_market_metrics(rows, "o25")["matches"], 1)
+
+
 class ScorelineBaselineComparisonTests(unittest.TestCase):
     def test_identical_rates_produce_a_valid_paired_comparison(self):
         rows = [
