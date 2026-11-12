@@ -1,5 +1,11 @@
 name: Telegram workflow health monitor
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/telegram-monitor.yml'
+      - 'telegram_monitor.py'
+      - 'test_telegram_monitor.py'
   schedule:
     - cron: '11,41 * * * *'
   workflow_dispatch:
