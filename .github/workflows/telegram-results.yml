@@ -6,7 +6,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: pitchiq-telegram-results
+  group: pitchiq-telegram-published-picks
   cancel-in-progress: false
 jobs:
   results:
@@ -32,14 +32,19 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           rm -rf /tmp/pitchiq-results
           mkdir -p /tmp/pitchiq-results
-          if [ -d daily ]; then cp -a daily/. /tmp/pitchiq-results/; fi
+          if [ -f daily/published_picks.json ]; then cp daily/published_picks.json /tmp/pitchiq-results/published_picks.json; fi
           for attempt in 1 2 3; do
             echo "Results ledger publication attempt $attempt of 3"
             git fetch origin main
             git reset --hard origin/main
             mkdir -p daily
-            cp -a /tmp/pitchiq-results/. daily/
-            git add -A daily
+            if [ -f /tmp/pitchiq-results/published_picks.json ]; then
+              cp /tmp/pitchiq-results/published_picks.json daily/published_picks.json
+            else
+              echo "No published-pick ledger was available to save."
+              exit 0
+            fi
+            git add daily/published_picks.json
             if git diff --cached --quiet; then
               echo "No new published-pick results to save."
               exit 0
