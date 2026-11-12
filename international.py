@@ -33,6 +33,17 @@ ESPN_LEAGUES = (
     ("fifa.world", "FIFA World Cup"),
 )
 
+WOMENS_ESPN_LEAGUES = frozenset({
+    "fifa.friendly.w",
+    "fifa.wwc",
+    "fifa.wworldq.uefa",
+    "uefa.w.nations",
+    "uefa.weuro",
+    "fifa.shebelieves",
+    "concacaf.w.gold",
+    "conmebol.america.femenina",
+})
+
 
 def parse_kickoff(day, time_text):
     """Convert Football.TXT time such as '13:00 UTC-6' into a UTC ISO timestamp."""
@@ -167,7 +178,7 @@ def normalize_espn_event(event, league_slug, league_label):
         "score": score,
         "venue": venue,
         "source": "ESPN public scoreboard (unofficial)",
-        "gender": "women" if str(league_slug).casefold().endswith(".w") else "men",
+        "gender": "women" if league_slug in WOMENS_ESPN_LEAGUES else "men",
     }
 
 
