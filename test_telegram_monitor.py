@@ -35,6 +35,20 @@ class TelegramMonitorTests(unittest.TestCase):
         )
         self.assertEqual(result["status"], "no_scheduled_runs")
 
+    def test_hourly_results_schedule_allows_three_hours_of_grace(self):
+        recent = evaluate_workflow(
+            "telegram-results.yml", 1, 3,
+            [self.run_row(3)],
+            self.now,
+        )
+        stale = evaluate_workflow(
+            "telegram-results.yml", 1, 3,
+            [self.run_row(5)],
+            self.now,
+        )
+        self.assertEqual(recent["status"], "healthy")
+        self.assertEqual(stale["status"], "stale")
+
     def test_failed_scheduled_run_is_failed_even_if_recent(self):
         result = evaluate_workflow(
             "telegram-results.yml", 1, 1,
