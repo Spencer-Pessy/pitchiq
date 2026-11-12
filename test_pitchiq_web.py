@@ -303,9 +303,9 @@ class ForwardResearchPendingStateTests(unittest.TestCase):
 class InternationalFixtureGroupingTests(unittest.TestCase):
     def test_international_view_separates_upcoming_live_and_completed_matches(self):
         source = Path("index.html").read_text(encoding="utf-8")
-        self.assertIn("Live now · ", source)
-        self.assertIn("Upcoming fixtures · ", source)
-        self.assertIn("Completed results · ", source)
+        self.assertIn("section('Live now',liveSorted", source)
+        self.assertIn("section('Upcoming fixtures',upcomingSorted", source)
+        self.assertIn("section('Completed results',completedSorted.slice(0,12)", source)
         self.assertIn("No upcoming World Cup fixtures are listed in the current snapshot.", source)
         self.assertIn("Showing the 12 most recent completed matches.", source)
         self.assertIn("This dataset covers the tournament only, not the full international calendar.", source)
