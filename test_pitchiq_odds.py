@@ -38,6 +38,16 @@ class SnapshotPublicationGuardTests(unittest.TestCase):
                 require_nonempty_snapshot({"soccer_epl"}, {"soccer_epl"}, events)
 
 
+class OddsPublisherIntegrationGuardTests(unittest.TestCase):
+    def test_publisher_invokes_nonempty_guard_before_overwriting_snapshot(self):
+        from pathlib import Path
+        source = Path("odds.py").read_text(encoding="utf-8")
+        guard = "events = require_nonempty_snapshot(active, WANT, events)"
+        write = 'with open("odds.json", "w", encoding="utf-8") as f:'
+        self.assertIn(guard, source)
+        self.assertLess(source.index(guard), source.index(write))
+
+
 class OddsMarketValidationTests(unittest.TestCase):
     def test_averages_three_way_prices_in_home_draw_away_order(self):
         events = market_events([{
