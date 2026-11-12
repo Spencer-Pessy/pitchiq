@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pitchiq-publish
+  group: pitchiq-international
   cancel-in-progress: false
 
 jobs:
