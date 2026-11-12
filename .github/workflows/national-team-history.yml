@@ -16,8 +16,10 @@ permissions:
   contents: write
 
 concurrency:
-  group: pitchiq-publish
-  cancel-in-progress: false
+  # Historical research output is not used by live forecasts or Telegram.
+  # Keep it out of the production publisher queue and discard superseded runs.
+  group: pitchiq-national-history
+  cancel-in-progress: true
 
 jobs:
   history:
