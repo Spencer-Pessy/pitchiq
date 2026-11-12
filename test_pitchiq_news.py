@@ -72,12 +72,12 @@ class PitchIQNewsValidationTests(unittest.TestCase):
 
 
 class PitchIQNewsWorkflowTests(unittest.TestCase):
-    def test_news_workflow_is_opt_in_and_uses_a_separate_channel_target(self):
+    def test_news_workflow_is_enabled_for_the_news_channel_and_keeps_a_separate_target(self):
         from pathlib import Path
         workflow = Path(".github/workflows/telegram-news.yml").read_text(encoding="utf-8")
         self.assertIn("cron: '43 */4 * * *'", workflow)
-        self.assertIn("PITCHIQ_NEWS_ENABLED: ${{ vars.PITCHIQ_NEWS_ENABLED }}", workflow)
-        self.assertIn("TELEGRAM_NEWS_CHAT_ID: ${{ secrets.TELEGRAM_NEWS_CHAT_ID }}", workflow)
+        self.assertIn('PITCHIQ_NEWS_ENABLED: "true"', workflow)
+        self.assertIn('TELEGRAM_NEWS_CHAT_ID: "@pitchiq_picks"', workflow)
         self.assertIn("group: pitchiq-telegram-news", workflow)
         self.assertNotIn("TELEGRAM_CHAT_ID:", workflow)
         self.assertIn("never rerun the Telegram send step", workflow)
