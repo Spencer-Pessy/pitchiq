@@ -82,6 +82,21 @@ class TelegramValidationTests(unittest.TestCase):
         self.assertEqual(results, [])
         self.assertEqual([x["id"] for x in state["pending"]], ["m1"])
 
+    def test_settled_results_are_unique_and_override_stale_pending_entries(self):
+        snap = snapshot_published_pick({"id": "settled-1", "h": "A", "a": "B", "comp": "L",
+            "utc": "2026-11-12T19:00:00Z", "p": {"ph": .6, "pd": .2, "pa": .2}})
+        result = dict(snap, final=[2, 0], actual_index=0, correct=True)
+        stale_pending = dict(snap, pick_index=2)
+        state = clean_pick_state({
+            "pending": [stale_pending],
+            "results": [result, result],
+            "sent_ids": ["settled-1"],
+        })
+        self.assertEqual(state["pending"], [])
+        self.assertEqual(len(state["results"]), 1)
+        self.assertEqual(state["results"][0]["pick_index"], 0)
+        self.assertTrue(state["results"][0]["correct"])
+
     def test_pick_state_rejects_malformed_entries_and_duplicate_ids(self):
         snap = snapshot_published_pick({"id": 7, "h": "A", "a": "B", "comp": "L",
             "utc": "2026-11-12T19:00:00Z", "p": {"ph": .5, "pd": .3, "pa": .2}})
