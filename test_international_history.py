@@ -106,6 +106,33 @@ class InternationalHistoryTests(unittest.TestCase):
         self.assertEqual(len(official), 211)
         self.assertTrue(aliases)
 
+    def test_historical_aliases_share_one_canonical_elo_identity(self):
+        csv_text = (
+            "date,home_team,away_team,home_score,away_score,tournament,city,country,neutral\n"
+            "2024-01-01,South Korea,Japan,2,1,Friendly,Seoul,South Korea,FALSE\n"
+            "2024-02-01,Korea Republic,China,1,0,Friendly,Seoul,South Korea,FALSE\n"
+        )
+        rows, invalid = parse_results(csv_text, today=date(2024, 12, 31))
+        self.assertEqual(invalid, 0)
+        self.assertEqual([row["home"] for row in rows], ["Korea Republic", "Korea Republic"])
+        self.assertEqual(rows[0]["home_source"], "South Korea")
+        self.assertEqual(rows[1]["home_source"], "Korea Republic")
+        ratings = build_ratings(rows)
+        korea = [row for row in ratings if row["team"] == "Korea Republic"]
+        self.assertEqual(len(korea), 1)
+        self.assertEqual(korea[0]["matches"], 2)
+
+    def test_alias_and_canonical_duplicate_fixture_is_deduplicated(self):
+        csv_text = (
+            "date,home_team,away_team,home_score,away_score,tournament,city,country,neutral\n"
+            "2024-01-01,South Korea,Japan,2,1,Friendly,Seoul,South Korea,FALSE\n"
+            "2024-01-01,Korea Republic,Japan,2,1,Friendly,Seoul,South Korea,FALSE\n"
+        )
+        rows, invalid = parse_results(csv_text, today=date(2024, 12, 31))
+        self.assertEqual(invalid, 0)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["home"], "Korea Republic")
+
     def test_team_identity_aliases_and_non_fifa_sides_are_separated(self):
         registry_data = load_team_registry()
         self.assertEqual(
