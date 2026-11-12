@@ -368,7 +368,7 @@ function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
  const ps=$('#ps');if(ps)ps.onchange=e=>{playerSort=e.target.value;list()};
  const ig=$('#intlGender');if(ig)ig.onchange=e=>{intlGender=e.target.value;list()};
  const ic=$('#intlCompetition');if(ic)ic.onchange=e=>{intlCompetition=e.target.value;list()};
- const iq=$('#intlSearch');if(iq)iq.oninput=e=>{intlQuery=e.target.value;list()};
+ const iq=$('#intlSearch');if(iq)iq.oninput=e=>{const start=e.target.selectionStart,end=e.target.selectionEnd;intlQuery=e.target.value;international();const next=$('#intlSearch');if(next){next.focus();next.setSelectionRange(start,end)}};
  document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{const source=tab=='intl'?(I.fixtures||[]):D.matches;sel=source.find(x=>String(x.id)==b.dataset.id);if(!sel)return;sel.odds=sel.odds||null;detail()});}
 let pk='conf';
 function picks(){
