@@ -175,7 +175,7 @@ def normalize_espn_event(event, league_slug, league_label):
             return None
         if isinstance(raw, int):
             return raw if raw >= 0 else None
-        if isinstance(raw, str) and re.fullmatch(r"\\d+", raw.strip()):
+        if isinstance(raw, str) and re.fullmatch(r"\d+", raw.strip()):
             return int(raw.strip())
         return None
 
