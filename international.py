@@ -102,11 +102,38 @@ def normalize_espn_event(event, league_slug, league_label):
 
     status_type = (event.get("status") or {}).get("type") or {}
     state = status_type.get("state")
-    detail = " ".join(str(status_type.get(k) or "") for k in ("name", "description", "detail", "shortDetail")).lower()
-    if state == "post":
-        status = "PEN" if "penalt" in detail else "AET" if "extra time" in detail else "FT"
+    detail = " ".join(
+        str(status_type.get(k) or "")
+        for k in ("name", "description", "detail", "shortDetail")
+    ).lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", detail).strip()
+
+    # Do not turn every live event into 2H: ESPN's period and status text
+    # distinguish first half, half-time, second half and extra time.
+    if any(word in normalized for word in ("postponed", "delayed")):
+        status = "PST"
+    elif any(word in normalized for word in ("cancelled", "canceled")):
+        status = "CANC"
+    elif "abandoned" in normalized:
+        status = "ABD"
+    elif "suspended" in normalized:
+        status = "SUSP"
+    elif state == "post":
+        status = "PEN" if "penalt" in normalized else "AET" if "extra time" in normalized else "FT"
     elif state == "in":
-        status = "HT" if "half" in detail and "time" in detail else "ET" if "extra time" in detail else "2H"
+        period = status_type.get("period")
+        if "half time" in normalized or "halftime" in normalized:
+            status = "HT"
+        elif "penalt" in normalized:
+            status = "P"
+        elif "extra time" in normalized or period in (3, 4):
+            status = "ET"
+        elif "second half" in normalized or "2nd half" in normalized or period == 2:
+            status = "2H"
+        elif "first half" in normalized or "1st half" in normalized or period == 1:
+            status = "1H"
+        else:
+            status = "LIVE"
     else:
         status = "NS"
 
@@ -141,29 +168,34 @@ def fetch_espn_fixtures(now=None, opener=urllib.request.urlopen):
     days = [(now.date() + timedelta(days=offset)).strftime("%Y%m%d") for offset in range(-2, 5)]
     fixtures, successful = [], set()
     request_count = 0
+    total_requests = len(days) * len(ESPN_LEAGUES)
     for day in days:
         for slug, label in ESPN_LEAGUES:
+            request_count += 1
             url = f"{ESPN_BASE}/{slug}/scoreboard?dates={day}"
             request = urllib.request.Request(url, headers={"User-Agent": "PitchIQ/1.0"})
             try:
                 with opener(request, timeout=20) as response:
                     if response.status != 200:
-                        continue
-                    payload = json.load(response)
-                if not isinstance(payload, dict) or not isinstance(payload.get("events"), list):
-                    continue
-                successful.add(slug)
-                for event in payload["events"]:
-                    row = normalize_espn_event(event, slug, label)
-                    if row:
-                        fixtures.append(row)
+                        print(f"ESPN {slug} {day} unavailable: HTTP {response.status}")
+                    else:
+                        payload = json.load(response)
+                        if isinstance(payload, dict) and isinstance(payload.get("events"), list):
+                            successful.add(slug)
+                            for event in payload["events"]:
+                                row = normalize_espn_event(event, slug, label)
+                                if row:
+                                    fixtures.append(row)
+                        else:
+                            print(f"ESPN {slug} {day} returned an invalid scoreboard payload")
             except urllib.error.HTTPError as error:
                 print(f"ESPN {slug} {day} unavailable: HTTP {error.code}")
             except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as error:
                 print(f"ESPN {slug} {day} unavailable: {error}")
-            request_count += 1
-            if request_count < len(days) * len(ESPN_LEAGUES):
-                time.sleep(0.25)
+            finally:
+                # Pace every attempted request, including HTTP errors and non-200 responses.
+                if request_count < total_requests:
+                    time.sleep(0.25)
     return deduplicate(fixtures), sorted(successful)
 
 
