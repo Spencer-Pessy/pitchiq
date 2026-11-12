@@ -14,7 +14,7 @@ OUTPUT = Path("daily/telegram_health.json")
 WORKFLOWS = (
     ("telegram.yml", 24, 12),
     ("telegram-news.yml", 4, 4),
-    ("telegram-results.yml", 1, 1),
+    ("telegram-results.yml", 1, 3),
 )
 
 
