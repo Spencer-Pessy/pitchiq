@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 from pitchiq_telegram import (parse_kickoff, valid_forecast, valid_final, clean_seen_urls,
-                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label, eligible_forecast, current_fixture_statuses)
+                              snapshot_published_pick, clean_pick_state, resolve_published_picks, pick_label, eligible_forecast, current_fixture_statuses, photo_error_allows_text_fallback)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT = os.environ.get("TELEGRAM_CHAT_ID")
@@ -225,7 +225,10 @@ try:
     if not delivered:
         print("Telegram did not confirm photo delivery; trying text fallback.")
 except Exception as e:
-    print("Photo failed, sending text only:", e)
+    if not photo_error_allows_text_fallback(e):
+        print("Photo delivery outcome is uncertain; skipping text fallback to avoid a duplicate Telegram post:", e)
+        raise SystemExit(1)
+    print("Photo request was rejected before delivery; sending text fallback:", e)
 
 if not delivered:
     try:
