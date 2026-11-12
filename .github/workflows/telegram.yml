@@ -1,7 +1,7 @@
 name: Telegram picks
 on:
   schedule:
-    - cron: '13 7 * * *'
+    - cron: '43 7 * * *'
   workflow_dispatch:
 permissions:
   contents: write
