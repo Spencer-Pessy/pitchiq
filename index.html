@@ -401,7 +401,7 @@ function list(){
  if(tab!='up')ms.reverse();
  const codes=[...new Map(D.matches.map(m=>[m.code,m.comp]))];
  let html=tab=='done'?publishedResultsHtml():'',last='';
- if(tab=='up')html+='<div class="fixture-grid">';
+ if(tab=='up'&&ms.length)html+='<div class="fixture-grid">';
  for(const m of ms){
   const d=dy(m);if(d!=last){html+=`<div class="day">${d}</div>`;last=d}
   const r=model(m.s);
