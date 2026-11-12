@@ -7,7 +7,7 @@ import math
 
 def ppg(form):
     """Points per game from the last five W/D/L results."""
-    form = (form or "")[-5:]
+    form = "".join(char for char in str(form or "").upper() if char in "WDL")[-5:]
     if not form:
         return 1.5
     return sum(3 if c == "W" else 1 if c == "D" else 0 for c in form) / len(form)
