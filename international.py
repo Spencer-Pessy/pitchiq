@@ -274,6 +274,26 @@ def merge_failed_league_fixtures(fetched, successful_leagues, previous_fixtures,
     return deduplicate(list(fetched or []) + retained)
 
 
+
+def summarize_espn_coverage(successful_leagues, checked_requests):
+    """Report request-level success separately from league-level coverage."""
+    successful_dates = {
+        (str(value[0]), str(value[1]))
+        for value in successful_leagues
+        if isinstance(value, (tuple, list)) and len(value) == 2
+    }
+    successful_slugs = {
+        str(value[0]) if isinstance(value, (tuple, list)) and len(value) == 2 else str(value)
+        for value in successful_leagues
+    }
+    return {
+        "requests_checked": int(checked_requests),
+        "requests_successful": len(successful_dates),
+        "leagues_checked": len(ESPN_LEAGUES),
+        "leagues_successful": sorted(successful_slugs),
+    }
+
+
 def fetch_dataset():
     request = urllib.request.Request(SOURCE, headers={"User-Agent": "PitchIQ/1.0"})
     with urllib.request.urlopen(request, timeout=45) as response:
@@ -289,10 +309,10 @@ def main():
     if not successful_leagues:
         print("All ESPN scoreboard requests failed; leaving the last published international.json untouched.")
         return
-    successful_league_slugs = sorted({
-        value[0] if isinstance(value, (tuple, list)) and len(value) == 2 else value
-        for value in successful_leagues
-    })
+    coverage = summarize_espn_coverage(
+        successful_leagues, 7 * len(ESPN_LEAGUES)
+    )
+    successful_league_slugs = coverage["leagues_successful"]
     previous_fixtures = []
     try:
         with open("international.json", encoding="utf-8") as previous:
@@ -313,8 +333,10 @@ def main():
         "sources": {
             "openfootball_world_cup": len(world_cup),
             "espn_fixtures": len(espn),
-            "espn_leagues_checked": list(ESPN_LEAGUES[i][0] for i in range(len(ESPN_LEAGUES))),
+            "espn_leagues_checked": [slug for slug, _label in ESPN_LEAGUES],
             "espn_leagues_successful": successful_league_slugs,
+            "espn_scoreboard_requests_checked": coverage["requests_checked"],
+            "espn_scoreboard_requests_successful": coverage["requests_successful"],
         },
         "fixtures": fixtures,
     }
