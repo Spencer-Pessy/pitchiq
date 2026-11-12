@@ -231,3 +231,13 @@ class TelegramLedgerWorkflowIsolationTests(unittest.TestCase):
         self.assertNotIn("cp -a daily/. ", picks)
         self.assertNotIn("cp -a daily/. ", results)
 
+class PickIndexValidationTests(unittest.TestCase):
+    def test_boolean_pick_index_is_rejected_for_pending_and_settled_entries(self):
+        snap = snapshot_published_pick({"id": "bool-index", "h": "A", "a": "B", "comp": "L",
+            "utc": "2026-11-12T19:00:00Z", "p": {"ph": .5, "pd": .3, "pa": .2}})
+        pending = dict(snap, pick_index=True)
+        settled = dict(snap, pick_index=True, final=[1, 0], correct=True)
+        state = clean_pick_state({"pending": [pending], "results": [settled]})
+        self.assertEqual(state["pending"], [])
+        self.assertEqual(state["results"], [])
+
