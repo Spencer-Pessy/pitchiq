@@ -201,7 +201,7 @@ def fetch_espn_fixtures(now=None, opener=urllib.request.urlopen):
                     else:
                         payload = json.load(response)
                         if isinstance(payload, dict) and isinstance(payload.get("events"), list):
-                            successful.add(slug)
+                            successful.add((slug, day))
                             for event in payload["events"]:
                                 row = normalize_espn_event(event, slug, label)
                                 if row:
@@ -236,7 +236,16 @@ def merge_failed_league_fixtures(fetched, successful_leagues, previous_fixtures,
     """Keep still-relevant last-known fixtures for ESPN leagues whose requests failed."""
     now = now or datetime.now(timezone.utc)
     lower, upper = now - timedelta(days=2), now + timedelta(days=4)
-    successful = set(successful_leagues)
+    # New fetches report success per (league slug, UTC scoreboard date).
+    # Legacy callers may still pass a bare slug to mean every date succeeded.
+    successful_dates = {
+        (str(value[0]), str(value[1]))
+        for value in successful_leagues
+        if isinstance(value, (tuple, list)) and len(value) == 2
+    }
+    successful_all_dates = {
+        str(value) for value in successful_leagues if isinstance(value, str)
+    }
     retained = []
     for item in previous_fixtures if isinstance(previous_fixtures, list) else []:
         if not isinstance(item, dict):
@@ -244,13 +253,15 @@ def merge_failed_league_fixtures(fetched, successful_leagues, previous_fixtures,
         fixture_id = str(item.get("id") or "")
         slug = next((value for value, _label in ESPN_LEAGUES
                      if fixture_id.startswith("espn-" + value + "-")), None)
-        if slug is None or slug in successful:
+        if slug is None:
             continue
         try:
             kickoff = datetime.fromisoformat(str(item.get("utc", "")).replace("Z", "+00:00"))
         except (TypeError, ValueError):
             continue
         if kickoff.tzinfo is None or kickoff.utcoffset() is None or not lower <= kickoff <= upper:
+            continue
+        if slug in successful_all_dates or (slug, kickoff.astimezone(timezone.utc).strftime("%Y%m%d")) in successful_dates:
             continue
         retained.append(item)
     return deduplicate(list(fetched or []) + retained)
@@ -271,6 +282,10 @@ def main():
     if not successful_leagues:
         print("All ESPN scoreboard requests failed; leaving the last published international.json untouched.")
         return
+    successful_league_slugs = sorted({
+        value[0] if isinstance(value, (tuple, list)) and len(value) == 2 else value
+        for value in successful_leagues
+    })
     previous_fixtures = []
     try:
         with open("international.json", encoding="utf-8") as previous:
@@ -292,14 +307,14 @@ def main():
             "openfootball_world_cup": len(world_cup),
             "espn_fixtures": len(espn),
             "espn_leagues_checked": list(ESPN_LEAGUES[i][0] for i in range(len(ESPN_LEAGUES))),
-            "espn_leagues_successful": successful_leagues,
+            "espn_leagues_successful": successful_league_slugs,
         },
         "fixtures": fixtures,
     }
     with open("international.json", "w", encoding="utf-8") as output:
         json.dump(snapshot, output, ensure_ascii=False)
     print("International fixtures stored:", len(fixtures))
-    print("ESPN leagues responding:", ", ".join(successful_leagues))
+    print("ESPN leagues responding:", ", ".join(successful_league_slugs))
     print("ESPN fixtures stored:", len(espn))
 
 
