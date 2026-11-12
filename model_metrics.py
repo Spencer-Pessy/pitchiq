@@ -3,6 +3,7 @@ import json
 import math
 import random
 import sys
+from datetime import datetime, timezone
 
 from pitchiq_model import predict as model_predict, pois, tau
 
@@ -400,6 +401,23 @@ def binary_market_metrics(predictions, key):
             "expected_calibration_error": round(ece, 4), "bins": bins}
 
 
+
+def _forecast_datetime(item):
+    """Parse the first valid timezone-aware UTC or creation timestamp."""
+    if not isinstance(item, dict):
+        return None
+    for value in (item.get("utc"), item.get("made")):
+        if not isinstance(value, str) or not value.strip():
+            continue
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+            if parsed.tzinfo is not None and parsed.utcoffset() is not None:
+                return parsed.astimezone(timezone.utc)
+        except (ValueError, OverflowError):
+            continue
+    return None
+
+
 def _probability_scores(rows):
     """Summarize (probabilities, actual outcome) rows on a common sample."""
     count = len(rows)
@@ -433,7 +451,9 @@ def baseline_comparison(predictions):
                 or abs(sum(model) - 1.0) > 0.02):
             continue
         actual = 0 if home > away else 1 if home == away else 2
-        date = str(item.get("utc") or item.get("made") or "")
+        date = _forecast_datetime(item)
+        if date is None:
+            continue
         market = None
         odds = item.get("odds")
         if isinstance(odds, list) and len(odds) == 3:
