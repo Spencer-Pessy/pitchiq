@@ -170,6 +170,27 @@ class MetricsTests(unittest.TestCase):
         reversed_result = baseline_comparison(list(reversed(rows)))
         self.assertEqual(result, reversed_result)
 
+    def test_evaluate_chronological_split_uses_utc_order_and_ignores_undated(self):
+        rows = [
+            {"utc": "2026-01-02T07:00:00Z", "final": [1, 0],
+             "p": {"ph": 0.1, "pd": 0.1, "pa": 0.8}},
+            # 19:00 UTC on the previous day; this is the earliest timestamp.
+            {"utc": "2026-01-02T09:00:00+14:00", "final": [0, 1],
+             "p": {"ph": 0.1, "pd": 0.1, "pa": 0.8}},
+            {"utc": "2026-01-02T08:00:00Z", "final": [1, 1],
+             "p": {"ph": 0.1, "pd": 0.8, "pa": 0.1}},
+            {"utc": "not-a-date", "final": [10, 0],
+             "p": {"ph": 0.99, "pd": 0.005, "pa": 0.005}},
+        ]
+        result = evaluate(rows)
+        self.assertEqual(result["matches"], 4)
+        split = result["chronological_split"]
+        self.assertEqual([row["matches"] for row in split], [1, 2])
+        self.assertEqual(split[0]["accuracy"], 1.0)
+        self.assertAlmostEqual(split[0]["brier"], 0.86, places=4)
+        self.assertEqual(split[1]["accuracy"], 0.5)
+        self.assertAlmostEqual(split[1]["brier"], 0.76, places=4)
+
     def test_rolling_baseline_excludes_undated_rows_and_orders_timezone_offsets(self):
         rows = [
             {"utc": "2026-01-02T07:00:00Z", "final": [1, 0],
