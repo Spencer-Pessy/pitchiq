@@ -339,6 +339,17 @@ class ModelTests(unittest.TestCase):
     def test_ablation_switches_do_not_change_default_forecast(self):
         self.assertEqual(predict(self.stats), predict(self.stats, use_elo=True, use_form=True))
 
+    def test_manual_absences_reduce_the_affected_team_goal_rate(self):
+        baseline = predict(self.stats)
+        home_out = dict(self.stats)
+        home_out["h"] = {**self.stats["h"], "out": 2}
+        away_out = dict(self.stats)
+        away_out["a"] = {**self.stats["a"], "out": 3}
+        self.assertLess(predict(home_out)["lh"], baseline["lh"])
+        self.assertAlmostEqual(predict(home_out)["la"], baseline["la"])
+        self.assertLess(predict(away_out)["la"], baseline["la"])
+        self.assertAlmostEqual(predict(away_out)["lh"], baseline["lh"])
+
     def test_calibration_changes_rates_not_raw_rates(self):
         baseline = predict(self.stats)
         adjusted = predict(self.stats, {"kh": 1.1, "ka": 0.9})
