@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -208,25 +208,15 @@ for x in out:
             break
 
 # Self-calibration: compare past raw goal forecasts with real scores, adjust gently
-CAL = {"kh": 1.0, "ka": 1.0}
 try:
     with open("predictions.json") as f:
-        _pp = [
-            p for p in json.load(f).values()
-            if p.get("final") and p.get("code") not in INTERNATIONAL_COMPETITIONS
-        ]
+        _prediction_data = json.load(f)
+    _pp = list(_prediction_data.values()) if isinstance(_prediction_data, dict) else []
 except Exception:
     _pp = []
-if len(_pp) >= 10:
-    _n = len(_pp)
-    _w = _n / (_n + 120)  # trust the data more as it grows
-    _ph = sum(p["p"].get("rlh", p["p"]["lh"]) for p in _pp) / _n
-    _pa = sum(p["p"].get("rla", p["p"]["la"]) for p in _pp) / _n
-    _ah = sum(p["final"][0] for p in _pp) / _n
-    _aa = sum(p["final"][1] for p in _pp) / _n
-    CAL["kh"] = round(min(1.15, max(0.85, 1 + (_ah / _ph - 1) * _w)), 4)
-    CAL["ka"] = round(min(1.15, max(0.85, 1 + (_aa / _pa - 1) * _w)), 4)
-print("calibration:", CAL, "from", len(_pp), "results")
+CAL, _calibration_count = goal_rate_calibration(_pp)
+
+print("calibration:", CAL, "from", _calibration_count, "valid results")
 
 
 def predict(s):
