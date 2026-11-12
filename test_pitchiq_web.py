@@ -66,6 +66,25 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
 
 
 
+class PicksPresentationTests(unittest.TestCase):
+    def test_picks_screen_explains_shortlist_and_market_freshness(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("PITCH IQ MODEL WATCHLIST", source)
+        self.assertIn("Next 36 hours", source)
+        self.assertIn("eligible matches", source)
+        self.assertIn("Market snapshot fresh", source)
+        self.assertIn("Market snapshot paused", source)
+        self.assertIn("Confidence is not certainty", source)
+
+    def test_pick_cards_show_probability_without_changing_model_selection(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('class="card pick-card"', source)
+        self.assertIn('class="pick-meter" aria-label="Leading outcome probability"', source)
+        self.assertIn("Math.max(0,Math.min(100,Math.round(x.c*100)))", source)
+        self.assertIn("sort((a,b)=>pk=='gap'", source)
+        self.assertIn("No eligible fixtures right now", source)
+
+
 class MatchPreviewTests(unittest.TestCase):
     def test_match_detail_has_dynamic_preview_and_discloses_missing_context(self):
         source = Path("index.html").read_text(encoding="utf-8")
