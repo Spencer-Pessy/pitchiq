@@ -21,7 +21,7 @@ ESPN_LEAGUES = (
     ("fifa.friendly.w", "Women's International Friendlies"),
     ("uefa.nations", "UEFA Nations League"),
     ("caf.nations_qual", "Africa Cup of Nations Qualification"),
-    ("concacaf.nations", "CONCACAF Nations League"),
+    ("concacaf.nations.league", "CONCACAF Nations League"),
     ("fifa.worldq", "FIFA World Cup Qualifying"),
     ("fifa.world", "FIFA World Cup"),
 )
@@ -158,8 +158,7 @@ def fetch_espn_fixtures(now=None, opener=urllib.request.urlopen):
                     if row:
                         fixtures.append(row)
             except urllib.error.HTTPError as error:
-                detail = error.read(300).decode("utf-8", "replace").replace("\\n", " ")
-                print(f"ESPN {slug} {day} unavailable: HTTP {error.code} {detail}")
+                print(f"ESPN {slug} {day} unavailable: HTTP {error.code}")
             except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as error:
                 print(f"ESPN {slug} {day} unavailable: {error}")
             request_count += 1
