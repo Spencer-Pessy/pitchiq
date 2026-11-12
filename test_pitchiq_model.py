@@ -145,6 +145,22 @@ class MetricsTests(unittest.TestCase):
         reversed_result = baseline_comparison(list(reversed(rows)))
         self.assertEqual(result, reversed_result)
 
+    def test_rolling_baseline_excludes_undated_rows_and_orders_timezone_offsets(self):
+        rows = [
+            {"utc": "2026-01-02T07:00:00Z", "final": [1, 0],
+             "p": {"ph": 0.4, "pd": 0.3, "pa": 0.3}},
+            {"utc": "2026-01-02T09:00:00+14:00", "final": [0, 1],
+             "p": {"ph": 0.3, "pd": 0.3, "pa": 0.4}},
+            {"utc": "2026-01-02T08:00:00Z", "final": [1, 1],
+             "p": {"ph": 0.3, "pd": 0.4, "pa": 0.3}},
+            {"final": [10, 0], "p": {"ph": 0.99, "pd": 0.005, "pa": 0.005}},
+            {"utc": "not-a-date", "made": "also-not-a-date", "final": [10, 0],
+             "p": {"ph": 0.99, "pd": 0.005, "pa": 0.005}},
+        ]
+        result = baseline_comparison(rows)
+        self.assertEqual(result["rolling_prior"]["matches"], 3)
+        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.7539, places=4)
+
     def test_competition_rolling_prior_is_smoothed_and_leakage_safe(self):
         rows = [
             {"utc": "2026-01-01T12:00:00Z", "code": "PL", "final": [1, 0],
