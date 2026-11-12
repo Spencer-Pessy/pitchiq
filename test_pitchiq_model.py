@@ -426,8 +426,9 @@ class FinalScoreValidationTests(unittest.TestCase):
         self.assertEqual(sum(x["matches"] for x in outcome_class_metrics([row]).values()), 0)
         self.assertEqual(baseline_comparison([row])["rolling_prior"]["matches"], 0)
         self.assertEqual(binary_market_metrics([row], "o25")["matches"], 0)
-        self.assertTrue(all(x["matches"] == 0 for rows in
-                            expected_goals_calibration([row]).values() for x in rows))
+        goal_metrics = expected_goals_calibration([row])
+        self.assertTrue(all(x["matches"] == 0 for x in goal_metrics["home"]))
+        self.assertEqual(sum(x["matches"] for x in goal_metrics["away"]), 1)
         snapshot_row = {
             "final": [1, 0], "p": {"ph": .6, "pd": .2, "pa": .2},
             "inputs": {"schema": 2, "home": {"venue_matches": 2, "form": "WW"},
