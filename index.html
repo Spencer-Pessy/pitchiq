@@ -404,7 +404,7 @@ function picks(){
  const lim=Date.now()+36*3600e3;
  const nm=m=>['Home win: '+esc(m.h),'Draw','Away win: '+esc(m.a)];
  const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null;
- const oddsFresh=Number.isFinite(oh)&&oh>=0&&oh<=36;
+ const oddsFresh=marketSnapshotFresh(D.odds_updated);
  const ms=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{
   const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));let g=null,gi=-1;
   if(oddsFresh&&Array.isArray(m.odds)&&m.odds.length===3&&m.odds.every(x=>Number.isFinite(Number(x))&&Number(x)>1&&Number(x)<1000)){const inv=m.odds.map(x=>1/Number(x)),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*Number(m.odds[k])-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
@@ -583,7 +583,7 @@ function res(){
  };
 })();
 async function shareTop3(){
- const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null,oddsFresh=Number.isFinite(oh)&&oh>=0&&oh<=36;
+ const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null,oddsFresh=marketSnapshotFresh(D.odds_updated);
  const nm=m=>['Home win: '+m.h,'Draw','Away win: '+m.a];
  const lim=Date.now()+36*3600e3;
  const L=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{
