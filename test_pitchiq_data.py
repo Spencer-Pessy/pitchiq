@@ -358,6 +358,23 @@ class MarketOddsBackfillTests(unittest.TestCase):
         self.assertIsNone(post["1"]["odds"])
         self.assertIsNone(distant["1"]["odds"])
 
+
+
+    def test_rejects_market_snapshots_with_wrong_number_of_prices(self):
+        from datetime import datetime, timezone
+        now = datetime(2026, 11, 11, 12, tzinfo=timezone.utc)
+        base = {"utc": "2026-11-22T15:00:00Z", "h": "Arsenal",
+                "a": "Chelsea", "odds": None}
+        for prices in ([1.8, 3.7], [1.8, 3.7, 4.5, 5.0], []):
+            with self.subTest(prices=prices):
+                predictions = {"1": dict(base)}
+                events = [{"home": "Arsenal", "away": "Chelsea",
+                           "commence": "2026-11-22T15:00:00Z", "odds": prices}]
+                self.assertEqual(backfill_market_odds(
+                    predictions, events, "2026-11-11T07:00:00Z", now,
+                    lambda a, b: a == b), 0)
+                self.assertIsNone(predictions["1"]["odds"])
+
     def test_rejects_future_dated_odds_snapshot(self):
         from datetime import datetime, timezone
         predictions = {"1": {"utc": "2026-11-22T15:00:00Z", "h": "Arsenal",
