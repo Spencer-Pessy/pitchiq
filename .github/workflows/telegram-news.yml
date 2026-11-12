@@ -24,9 +24,9 @@ jobs:
       - name: Publish opt-in BBC football news digest
         run: python pitchiq_news.py
         env:
-          PITCHIQ_NEWS_ENABLED: ${{ vars.PITCHIQ_NEWS_ENABLED }}
+          PITCHIQ_NEWS_ENABLED: "true"
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_NEWS_CHAT_ID: ${{ secrets.TELEGRAM_NEWS_CHAT_ID }}
+          TELEGRAM_NEWS_CHAT_ID: "@pitchiq_picks"
       # Retry only the Git publication; never rerun the Telegram send step.
       - name: Save news deduplication ledger with safe retry
         run: |
