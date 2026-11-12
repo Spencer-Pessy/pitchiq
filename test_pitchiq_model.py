@@ -413,6 +413,9 @@ class FinalScoreValidationTests(unittest.TestCase):
         self.assertEqual(baseline_comparison(invalid)["rolling_prior"]["matches"], 0)
         self.assertEqual(binary_market_metrics(invalid, "o25")["matches"], 0)
         self.assertEqual(scoreline_baseline_comparison(invalid)["matches"], 0)
+        goal_metrics = expected_goals_calibration(invalid)
+        self.assertTrue(all(row["matches"] == 0
+                            for rows in goal_metrics.values() for row in rows))
 
     def test_valid_integer_scores_remain_in_metrics(self):
         rows = [{"final": [2, 1], "p": {"ph": .6, "pd": .2, "pa": .2,
