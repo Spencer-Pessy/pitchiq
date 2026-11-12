@@ -84,7 +84,13 @@ def normalize_matches(payload):
             continue
         score_data = match.get("score") or {}
         full_time = score_data.get("ft")
-        score = full_time if isinstance(full_time, list) and len(full_time) == 2 else None
+        score = (
+            full_time
+            if isinstance(full_time, list) and len(full_time) == 2
+            and all(isinstance(value, int) and not isinstance(value, bool) and value >= 0
+                    for value in full_time)
+            else None
+        )
         output.append({
             "id": f"openfootball-wc2026-{index}-{day}",
             "comp": payload.get("name") or "FIFA World Cup 2026",
@@ -164,7 +170,8 @@ def normalize_espn_event(event, league_slug, league_label):
     def score_value(team):
         raw = team.get("score")
         try:
-            return int(raw)
+            value = int(raw)
+            return value if value >= 0 else None
         except (TypeError, ValueError):
             return None
 
