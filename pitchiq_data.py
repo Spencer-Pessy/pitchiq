@@ -183,13 +183,24 @@ def goal_rate_calibration(predictions, minimum_results=10, prior_strength=120,
     return calibration, count
 
 
+
+def clean_prediction_ledger(value):
+    """Return a safe ID-keyed ledger, dropping only malformed non-record entries."""
+    if not isinstance(value, dict):
+        return {}
+    return {
+        str(key): item for key, item in value.items()
+        if isinstance(item, dict) and str(key).strip()
+    }
+
+
 def record_forward_evaluations(existing, fixtures, finished_scores, now, predict_fn, snapshot_fn):
     """Create immutable research forecasts and attach final scores when available.
 
     This separate ledger lets new model experiments start from already-published
     upcoming fixtures without rewriting the public prediction history.
     """
-    ledger = existing if isinstance(existing, dict) else {}
+    ledger = clean_prediction_ledger(existing)
     for fixture in fixtures:
         if fixture.get("status") not in ("SCHEDULED", "TIMED"):
             continue
