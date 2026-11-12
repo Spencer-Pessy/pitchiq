@@ -408,10 +408,16 @@ function res(){
   <p class="note">If the model and the market differ a lot, trust the market more. It knows lineups and news this model doesn’t.</p></div>`;
  }
  const st=(k,x)=>`<div class="stat"><span>${k}</span><b>${x}</b></div>`;
+ const outcomeNames=[f.h+' win','Draw',f.a+' win'],probs=[r.ph,r.pd,r.pa],ranked=probs.map((p,i)=>({p,i})).sort((a,b)=>b.p-a.p),lead=ranked[0].p-ranked[1].p;
+ const lean=lead<.06?'The model sees a closely balanced outcome; its leading result is not a strong separation.':`The model's leading outcome is ${outcomeNames[ranked[0].i]} at ${pct(ranked[0].p)}. The next most likely outcome is ${pct(ranked[1].p)}.`;
+ const eloGap=Number(s.h.elo||0)-Number(s.a.elo||0),formGap=ppg(s.h.form)-ppg(s.a.form);
+ const formRead=Math.abs(formGap)<.15?'Recent form ratings are close.':(formGap>0?f.h:f.a)+' has the stronger recent form rating.';
+ const eloRead=Math.abs(eloGap)<20?'Elo ratings are close.':`${esc(eloGap>0?f.h:f.a)} has a ${Math.abs(Math.round(eloGap))}-point Elo advantage.`;
+ const preview=`<div class="panel"><h2>Match preview</h2><p class="note">${lean}</p><div class="stats">${st('Form comparison',formRead)}${st('Team strength',eloRead)}${st('Expected goal balance',`${r.lh.toFixed(2)} – ${r.la.toFixed(2)}`)}${st('Goal outlook',`${pct(r.o25)} over 2.5 · ${pct(r.bt)} both teams score`)}</div><p class="note">Form samples: ${Number(s.h.form_matches??0)} for ${esc(f.h)} and ${Number(s.a.form_matches??0)} for ${esc(f.a)}. Venue scoring samples: ${Number(s.h.venue_matches??0)} home matches and ${Number(s.a.venue_matches??0)} away matches. This preview summarises the model inputs; it does not include confirmed lineups, tactics, weather or late team news.</p></div>`;
  $('#res').innerHTML=`<div class="panel"><h2>Forecast</h2>
  <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
  <div class="legend"><span>${esc(f.h)}</span><span>Draw</span><span>${esc(f.a)}</span></div>
- <div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
+ ${preview}<div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
  <h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${esc(f.h)} ${x[0]}–${x[1]} ${esc(f.a)} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
  <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
 }
