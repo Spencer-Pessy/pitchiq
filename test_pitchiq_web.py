@@ -48,6 +48,18 @@ class FinishedMatchForecastIntegrityTests(unittest.TestCase):
         self.assertIn("top:all.slice(0,5).map(([h,a,value])=>[h,a,value/total])", self.html)
 
 
+class InternationalMatchCentreTests(unittest.TestCase):
+    def test_international_tab_shows_filtered_live_upcoming_and_completed_counts(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('aria-label="International fixture summary"', source)
+        self.assertIn("INTERNATIONAL MATCH CENTRE", source)
+        self.assertIn("live.length+'</b><span>Live now", source)
+        self.assertIn("upcoming.length+'</b><span>Upcoming", source)
+        self.assertIn("completed.length+'</b><span>Completed", source)
+        self.assertIn("counts reflect the filters selected below", source.lower())
+        self.assertIn("tabsHtml()+filterHtml+summaryHtml+coverageHtml", source)
+
+
 class WebsiteOutputSafetyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
