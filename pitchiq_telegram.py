@@ -76,22 +76,9 @@ def clean_pick_state(value):
     """Validate the small persistent ledger of published picks."""
     if not isinstance(value, dict):
         value = {}
-    pending, seen = [], set()
-    raw_pending = value.get("pending", [])
-    if isinstance(raw_pending, list):
-        for item in raw_pending:
-            if not isinstance(item, dict):
-                continue
-            snap = snapshot_published_pick(item)
-            if snap is None or snap["id"] in seen:
-                continue
-            # Preserve the original stored pick, never recompute it from a new forecast.
-            if item.get("pick_index") not in (0, 1, 2):
-                continue
-            snap["pick_index"] = item["pick_index"]
-            pending.append(snap)
-            seen.add(snap["id"])
-    results = []
+    # Settled results take precedence over pending entries for the same fixture.
+    # This makes recovery from stale/merged ledger snapshots idempotent.
+    results, result_ids = [], set()
     raw_results = value.get("results", [])
     if isinstance(raw_results, list):
         for item in raw_results:
@@ -99,12 +86,30 @@ def clean_pick_state(value):
                 continue
             snap = snapshot_published_pick(item)
             final = item.get("final")
-            if snap is None or not valid_final(final) or item.get("pick_index") not in (0, 1, 2):
+            if (snap is None or snap["id"] in result_ids or not valid_final(final)
+                    or item.get("pick_index") not in (0, 1, 2)):
                 continue
             actual = 0 if final[0] > final[1] else 1 if final[0] == final[1] else 2
             snap["pick_index"] = item["pick_index"]
             results.append({**snap, "final": list(final), "actual_index": actual,
                             "correct": snap["pick_index"] == actual})
+            result_ids.add(snap["id"])
+
+    pending, seen = [], set()
+    raw_pending = value.get("pending", [])
+    if isinstance(raw_pending, list):
+        for item in raw_pending:
+            if not isinstance(item, dict):
+                continue
+            snap = snapshot_published_pick(item)
+            if snap is None or snap["id"] in seen or snap["id"] in result_ids:
+                continue
+            # Preserve the original stored pick, never recompute it from a new forecast.
+            if item.get("pick_index") not in (0, 1, 2):
+                continue
+            snap["pick_index"] = item["pick_index"]
+            pending.append(snap)
+            seen.add(snap["id"])
     raw_ids = value.get("sent_ids", [])
     sent_ids = []
     if isinstance(raw_ids, list):
