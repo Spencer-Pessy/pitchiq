@@ -116,6 +116,14 @@ class InternationalHistoryTests(unittest.TestCase):
             classify_team("Korea Republic", registry_data)["association_status"],
             "fifa_member_association",
         )
+        self.assertEqual(
+            classify_team("South Korea", registry_data)["canonical_team"],
+            "Korea Republic",
+        )
+        self.assertEqual(
+            classify_team("Hong Kong", registry_data)["canonical_team"],
+            "Hong Kong, China",
+        )
         representative = classify_team("Abkhazia", registry_data)
         self.assertEqual(representative["association_status"], "non_fifa_or_unverified")
         self.assertFalse(representative["forecast_eligible"])
