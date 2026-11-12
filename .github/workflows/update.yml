@@ -5,6 +5,7 @@ on:
     paths:
       - update.py
       - pitchiq_data.py
+      - international.json
       - .github/workflows/update.yml
   schedule:
     - cron: "7,37 * * * *"
