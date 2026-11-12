@@ -358,7 +358,7 @@ def binary_market_metrics(predictions, key):
         value = (item.get("p") or {}).get(key)
         try:
             probability = float(value)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             continue
         if (not all(math.isfinite(x) for x in (home, away, probability))
                 or min(home, away) < 0 or not 0 <= probability <= 1):
@@ -526,15 +526,15 @@ def expected_goals_calibration(predictions):
     for side, key, score_index in (("home", "lh", 0), ("away", "la", 1)):
         groups = [[] for _ in labels]
         for item in predictions:
-            final = item.get("final")
-            probs = item.get("p") or {}
-            if not isinstance(final, list) or len(final) != 2:
+            score = _final_score(item)
+            if score is None:
                 continue
+            probs = item.get("p") or {}
             try:
                 predicted = float(probs[key])
-                actual = float(final[score_index])
-            except (KeyError, TypeError, ValueError):
+            except (KeyError, TypeError, ValueError, OverflowError):
                 continue
+            actual = score[score_index]
             if (not math.isfinite(predicted) or not math.isfinite(actual)
                     or predicted < 0 or actual < 0):
                 continue
