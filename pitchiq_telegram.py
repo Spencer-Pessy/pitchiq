@@ -152,3 +152,23 @@ def resolve_published_picks(state, predictions):
 
 def pick_label(snapshot):
     return ("Home win: " + snapshot["h"], "Draw", "Away win: " + snapshot["a"])[snapshot["pick_index"]]
+
+def eligible_forecast(record, current_statuses, now, limit):
+    """Allow a Telegram pick only when the latest fixture feed confirms it is scheduled."""
+    if not valid_forecast(record) or record.get("final") is not None:
+        return False
+    if not isinstance(current_statuses, dict):
+        return False
+    match_id = record.get("id")
+    if isinstance(match_id, bool) or not isinstance(match_id, (str, int)):
+        return False
+    if current_statuses.get(str(match_id)) not in ("SCHEDULED", "TIMED"):
+        return False
+    kickoff = parse_kickoff(record.get("utc"))
+    if kickoff is None:
+        return False
+    try:
+        return now < kickoff < limit
+    except TypeError:
+        return False
+
