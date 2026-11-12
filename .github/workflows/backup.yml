@@ -1,0 +1,105 @@
+name: Build PITCH IQ portable backup
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pitchiq-portable-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out complete repository snapshot
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Assemble portable backup without credential files
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import os, shutil, subprocess, zipfile, hashlib
+          from datetime import datetime, timezone
+
+          root = Path.cwd()
+          staging = root / "PITCHIQ_PORTABLE_BACKUP"
+          staging.mkdir()
+          excluded_names = {
+              ".env", ".env.local", ".env.production", ".npmrc", ".pypirc",
+              "credentials.json", "secrets.json", "service-account.json",
+          }
+          excluded_suffixes = {".pem", ".key", ".p12", ".pfx", ".keystore"}
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          copied = []
+          skipped = []
+          for item in filter(None, tracked):
+              rel = Path(item)
+              name = rel.name.lower()
+              if name in excluded_names or name.startswith(".env.") or rel.suffix.lower() in excluded_suffixes:
+                  skipped.append(item)
+                  continue
+              src = root / rel
+              if not src.is_file():
+                  continue
+              dst = staging / rel
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(src, dst)
+              copied.append(item)
+
+          sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          generated = datetime.now(timezone.utc).isoformat()
+          info = [
+              "PITCH IQ PORTABLE PROJECT BACKUP",
+              f"Repository: https://github.com/Spencer-Pessy/pitchiq",
+              f"Branch: {os.environ.get('GITHUB_REF_NAME', 'main')}",
+              f"Commit: {sha}",
+              f"Generated (UTC): {generated}",
+              f"Tracked files included: {len(copied)}",
+              f"Credential-like files excluded: {len(skipped)}",
+              "",
+              "This is a source-and-data snapshot. It intentionally excludes Git's internal .git directory.",
+              "Use the GitHub repository or a fresh git clone when full commit history is required.",
+              "GitHub Actions secrets are not included. Restore API keys and bot tokens manually as GitHub Actions secrets.",
+              "Never put API keys, bot tokens, passwords, or private credentials on an unsecured flash drive.",
+              "",
+              "Included files:",
+              *copied,
+              "",
+              "Excluded credential-like files:",
+              *(skipped or ["(none)"]),
+          ]
+          (staging / "BACKUP_INFO.txt").write_text("\n".join(info) + "\n", encoding="utf-8")
+
+          out = root / "PITCHIQ_PORTABLE_BACKUP.zip"
+          with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=8) as z:
+              for p in sorted(staging.rglob("*")):
+                  if p.is_file():
+                      z.write(p, p.relative_to(root))
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          Path("backup-sha256.txt").write_text(f"{digest}  {out.name}\n", encoding="utf-8")
+          print(f"Packaged {len(copied)} tracked files into {out.name}; SHA-256 {digest}")
+          PY
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload portable backup archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: PITCHIQ-Portable-Backup
+          path: |
+            PITCHIQ_PORTABLE_BACKUP.zip
+            backup-sha256.txt
+          if-no-files-found: error
+          retention-days: 90
