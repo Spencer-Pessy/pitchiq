@@ -20,9 +20,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check Python syntax
-        run: python -m py_compile update.py test_update.py international.py international_history.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py test_international.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international_history.py
+        run: python -m py_compile update.py test_update.py international.py international_history.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_news.py test_pitchiq_news.py test_international.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international_history.py
       - name: Run offline model and feed tests
-        run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_international_history test_pitchiq_odds test_pitchiq_telegram test_update
+        run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_international_history test_pitchiq_odds test_pitchiq_telegram test_pitchiq_news test_update
       - name: Check service worker JavaScript syntax
         run: node --check sw.js
       - name: Check website JavaScript syntax
