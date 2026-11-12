@@ -9,7 +9,7 @@ on:
       - test_pitchiq_telegram.py
       - .github/workflows/update.yml
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 permissions:
   contents: write

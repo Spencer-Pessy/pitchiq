@@ -34,6 +34,12 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertIn("time.monotonic()", pacer_source)
         self.assertIn("time.sleep(remaining)", pacer_source)
 
+    def test_scheduled_jobs_are_staggered_away_from_hour_boundaries(self):
+        update_workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
+        odds_workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
+        self.assertIn('cron: "7,37 * * * *"', update_workflow)
+        self.assertIn('cron: "23 7 * * *"', odds_workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

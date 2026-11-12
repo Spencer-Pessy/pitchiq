@@ -125,12 +125,18 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
 
     def test_hourly_results_workflow_does_not_install_pillow_or_call_odds(self):
         workflow = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
-        self.assertIn("cron: '0 * * * *'", workflow)
+        self.assertIn("cron: '17 * * * *'", workflow)
         self.assertIn('PITCHIQ_RESULTS_ONLY: "1"', workflow)
         self.assertIn("python telegram.py", workflow)
         self.assertNotIn("pip install", workflow)
         self.assertNotIn("odds.py", workflow)
         self.assertIn("group: pitchiq-publish", workflow)
+
+
+    def test_daily_picks_are_scheduled_after_odds_refresh(self):
+        workflow = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
+        self.assertIn("cron: '13 7 * * *'", workflow)
+        self.assertIn("no Telegram post will be sent", Path("telegram.py").read_text(encoding="utf-8"))
 
     def test_daily_picks_workflow_never_falls_back_to_unrequested_news(self):
         source = Path("telegram.py").read_text(encoding="utf-8")
