@@ -107,7 +107,8 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
     def test_published_pick_ledger_starts_with_valid_empty_schema(self):
         import json
         ledger = json.loads(Path("daily/published_picks.json").read_text(encoding="utf-8"))
-        self.assertEqual(set(ledger), {"pending", "results", "sent_ids"})
+        self.assertEqual(set(ledger), {"version", "pending", "results", "sent_ids"})
+        self.assertEqual(ledger["version"], 1)
         self.assertEqual(ledger["pending"], [])
         self.assertEqual(ledger["results"], [])
         self.assertEqual(ledger["sent_ids"], [])
