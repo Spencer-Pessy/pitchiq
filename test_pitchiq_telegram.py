@@ -155,16 +155,23 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
             ".github/workflows/telegram-results.yml",
             ".github/workflows/odds.yml",
         )
-        groups = []
+        groups = {}
         for path in paths:
             workflow = Path(path).read_text(encoding="utf-8")
             group_line = next(
                 line.strip() for line in workflow.splitlines()
                 if line.strip().startswith("group:")
             )
-            groups.append(group_line.split(":", 1)[1].strip())
-        self.assertEqual(len(groups), len(set(groups)))
-        self.assertNotIn("pitchiq-publish", groups)
+            groups[path] = group_line.split(":", 1)[1].strip()
+        shared = "pitchiq-telegram-published-picks"
+        self.assertEqual(groups[".github/workflows/telegram.yml"], shared)
+        self.assertEqual(groups[".github/workflows/telegram-results.yml"], shared)
+        independent = [groups[path] for path in paths
+                       if path not in (".github/workflows/telegram.yml",
+                                       ".github/workflows/telegram-results.yml")]
+        self.assertEqual(len(independent), len(set(independent)))
+        self.assertNotIn(shared, independent)
+        self.assertNotIn("pitchiq-publish", groups.values())
 
 
 
@@ -207,3 +214,20 @@ class TelegramDeliverySafetyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TelegramLedgerWorkflowIsolationTests(unittest.TestCase):
+    def test_pick_and_results_workflows_serialize_shared_ledger_updates(self):
+        picks = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
+        results = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
+        self.assertIn("group: pitchiq-telegram-published-picks", picks)
+        self.assertIn("group: pitchiq-telegram-published-picks", results)
+
+    def test_telegram_publishers_do_not_copy_unrelated_daily_ledgers(self):
+        picks = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
+        results = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
+        self.assertIn("published_picks.json top3.png", picks)
+        self.assertIn("git add -A daily/published_picks.json", picks)
+        self.assertIn("git add daily/published_picks.json", results)
+        self.assertNotIn("cp -a daily/. ", picks)
+        self.assertNotIn("cp -a daily/. ", results)
+
