@@ -156,31 +156,57 @@ def _elo_gap_bucket(gap):
 
 
 def backtest_elo(matches):
-    """Chronological 80/20 holdout; draw calibration is fitted on training data only."""
+    """Chronological date-grouped 80/20 holdout; calibration uses training dates only."""
     ordered = sorted(matches, key=lambda row: (row["date"], row["home"].casefold(), row["away"].casefold()))
-    split = int(len(ordered) * 0.8)
-    if split < 10 or len(ordered) - split < 5:
+    unique_dates = sorted({row["date"] for row in ordered})
+    split_date_index = int(len(unique_dates) * 0.8)
+    if split_date_index < 1 or len(unique_dates) - split_date_index < 2:
+        raise ValueError("Not enough international match dates for a chronological Elo backtest")
+    split_date = unique_dates[split_date_index]
+    training = [row for row in ordered if row["date"] < split_date]
+    testing = [row for row in ordered if row["date"] >= split_date]
+    if len(training) < 10 or len(testing) < 5:
         raise ValueError("Not enough international results for a chronological Elo backtest")
+
+    def grouped_by_date(rows):
+        groups = []
+        for row in rows:
+            if not groups or groups[-1][0]["date"] != row["date"]:
+                groups.append([row])
+            else:
+                groups[-1].append(row)
+        return groups
 
     training_ratings = defaultdict(lambda: INITIAL_RATING)
     draw_counts = defaultdict(lambda: [0, 0])
     outcome_counts = [0, 0, 0]
-    for match in ordered[:split]:
-        expected = _elo_expected_score(training_ratings, match)
-        venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
-        pre_match_gap = abs(
-            training_ratings[match["home"]] + venue_bonus - training_ratings[match["away"]]
-        )
-        outcome = _elo_update(training_ratings, match, expected)
-        outcome_counts[outcome] += 1
-        # Draw-rate bins are keyed by venue and the pre-match rating gap.
-        key = ("neutral" if match["neutral"] else "home") + ":" + _elo_gap_bucket(pre_match_gap)
-        draw_counts[key][0] += 1
-        if outcome == 1:
-            draw_counts[key][1] += 1
+    for day_matches in grouped_by_date(training):
+        prepared = []
+        for match in day_matches:
+            expected = _elo_expected_score(training_ratings, match)
+            venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
+            pre_match_gap = abs(
+                training_ratings[match["home"]] + venue_bonus - training_ratings[match["away"]]
+            )
+            if match["home_score"] > match["away_score"]:
+                outcome = 0
+            elif match["home_score"] == match["away_score"]:
+                outcome = 1
+            else:
+                outcome = 2
+            key = ("neutral" if match["neutral"] else "home") + ":" + _elo_gap_bucket(pre_match_gap)
+            draw_counts[key][0] += 1
+            if outcome == 1:
+                draw_counts[key][1] += 1
+            outcome_counts[outcome] += 1
+            prepared.append((match, expected))
+        # Apply results only after every fixture on the date has used the same prior state.
+        for match, expected in prepared:
+            _elo_update(training_ratings, match, expected)
 
-    global_draw_rate = outcome_counts[1] / split
-    baseline = [(count + 1) / (split + 3) for count in outcome_counts]
+    training_count = len(training)
+    global_draw_rate = outcome_counts[1] / training_count
+    baseline = [(count + 1) / (training_count + 3) for count in outcome_counts]
     calibrated_draw = {
         key: (draws + 50.0 * global_draw_rate) / (count + 50.0)
         for key, (count, draws) in draw_counts.items()
@@ -189,43 +215,44 @@ def backtest_elo(matches):
     ratings = defaultdict(lambda: INITIAL_RATING)
     model_brier = model_log_loss = model_correct = 0.0
     baseline_brier = baseline_log_loss = baseline_correct = 0.0
-    test_rows = []
-    for index, match in enumerate(ordered):
-        expected = _elo_expected_score(ratings, match)
-        outcome = 0 if match["home_score"] > match["away_score"] else 1 if match["home_score"] == match["away_score"] else 2
-        if index >= split:
-            venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
-            pre_match_gap = abs(
-                ratings[match["home"]] + venue_bonus - ratings[match["away"]]
-            )
-            key = ("neutral" if match["neutral"] else "home") + ":" + _elo_gap_bucket(pre_match_gap)
-            draw_probability = calibrated_draw.get(key, global_draw_rate)
-            draw_probability = min(0.45, max(0.05, draw_probability))
-            conditional_home = (expected - 0.5 * draw_probability) / (1.0 - draw_probability)
-            conditional_home = min(0.999, max(0.001, conditional_home))
-            probabilities = [
-                (1.0 - draw_probability) * conditional_home,
-                draw_probability,
-                (1.0 - draw_probability) * (1.0 - conditional_home),
-            ]
-            for outcome_index in range(3):
-                target = 1.0 if outcome_index == outcome else 0.0
-                model_brier += (probabilities[outcome_index] - target) ** 2
-                baseline_brier += (baseline[outcome_index] - target) ** 2
-            model_log_loss -= math.log(max(1e-15, probabilities[outcome]))
-            baseline_log_loss -= math.log(max(1e-15, baseline[outcome]))
-            model_correct += int(max(range(3), key=lambda i: probabilities[i]) == outcome)
-            baseline_correct += int(max(range(3), key=lambda i: baseline[i]) == outcome)
-            test_rows.append(match["date"])
-        _elo_update(ratings, match, expected)
+    for day_matches in grouped_by_date(ordered):
+        prepared = []
+        for match in day_matches:
+            expected = _elo_expected_score(ratings, match)
+            outcome = 0 if match["home_score"] > match["away_score"] else 1 if match["home_score"] == match["away_score"] else 2
+            if match["date"] >= split_date:
+                venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
+                pre_match_gap = abs(ratings[match["home"]] + venue_bonus - ratings[match["away"]])
+                key = ("neutral" if match["neutral"] else "home") + ":" + _elo_gap_bucket(pre_match_gap)
+                draw_probability = calibrated_draw.get(key, global_draw_rate)
+                draw_probability = min(0.45, max(0.05, draw_probability))
+                conditional_home = (expected - 0.5 * draw_probability) / (1.0 - draw_probability)
+                conditional_home = min(0.999, max(0.001, conditional_home))
+                probabilities = [
+                    (1.0 - draw_probability) * conditional_home,
+                    draw_probability,
+                    (1.0 - draw_probability) * (1.0 - conditional_home),
+                ]
+                for outcome_index in range(3):
+                    target = 1.0 if outcome_index == outcome else 0.0
+                    model_brier += (probabilities[outcome_index] - target) ** 2
+                    baseline_brier += (baseline[outcome_index] - target) ** 2
+                model_log_loss -= math.log(max(1e-15, probabilities[outcome]))
+                baseline_log_loss -= math.log(max(1e-15, baseline[outcome]))
+                model_correct += int(max(range(3), key=lambda i: probabilities[i]) == outcome)
+                baseline_correct += int(max(range(3), key=lambda i: baseline[i]) == outcome)
+            prepared.append((match, expected))
+        # Same-date results are applied together, after all same-date probabilities are scored.
+        for match, expected in prepared:
+            _elo_update(ratings, match, expected)
 
-    n = len(test_rows)
+    n = len(testing)
     return {
-        "method": "chronological 80/20 Elo holdout with training-only draw calibration",
-        "training_matches": split,
+        "method": "date-grouped chronological 80/20 Elo holdout with training-only draw calibration",
+        "training_matches": training_count,
         "test_matches": n,
-        "holdout_start": test_rows[0],
-        "holdout_end": test_rows[-1],
+        "holdout_start": testing[0]["date"],
+        "holdout_end": testing[-1]["date"],
         "model": {
             "accuracy": round(model_correct / n, 5),
             "multiclass_brier": round(model_brier / n, 5),
@@ -240,7 +267,7 @@ def backtest_elo(matches):
             key: {"training_matches": count, "draws": draws}
             for key, (count, draws) in sorted(draw_counts.items())
         },
-        "note": "Holdout probabilities use only prior Elo ratings and draw-rate bins learned from the chronological training segment. Ratings update after each held-out result. Research diagnostic only; not a production forecast.",
+        "note": "Holdout probabilities use only prior-date Elo ratings and draw-rate bins learned from earlier training dates. All fixtures on the same date share the same pre-date ratings. Research diagnostic only; not a production forecast.",
     }
 
 
