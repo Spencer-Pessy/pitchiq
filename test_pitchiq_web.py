@@ -531,3 +531,11 @@ class InternationalFreshnessEdgeCaseTests(unittest.TestCase):
         self.assertIn("const stale=age===null||age>36", source)
         self.assertIn("missing, invalid or in the future", source)
 
+class OddsDisplayDisclosureTests(unittest.TestCase):
+    def test_match_detail_discloses_saved_odds_snapshot_time_and_non_live_status(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("saved market snapshot, editable", source)
+        self.assertIn("Market snapshot captured", source)
+        self.assertIn("This is a stored pre-match comparison, not live odds.", source)
+        self.assertIn("No verified bookmaker snapshot is available for this fixture.", source)
+
