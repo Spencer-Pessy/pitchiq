@@ -231,6 +231,31 @@ def deduplicate(fixtures):
     return output
 
 
+
+def merge_failed_league_fixtures(fetched, successful_leagues, previous_fixtures, now=None):
+    """Keep still-relevant last-known fixtures for ESPN leagues whose requests failed."""
+    now = now or datetime.now(timezone.utc)
+    lower, upper = now - timedelta(days=2), now + timedelta(days=4)
+    successful = set(successful_leagues)
+    retained = []
+    for item in previous_fixtures if isinstance(previous_fixtures, list) else []:
+        if not isinstance(item, dict):
+            continue
+        fixture_id = str(item.get("id") or "")
+        slug = next((value for value, _label in ESPN_LEAGUES
+                     if fixture_id.startswith("espn-" + value + "-")), None)
+        if slug is None or slug in successful:
+            continue
+        try:
+            kickoff = datetime.fromisoformat(str(item.get("utc", "")).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            continue
+        if kickoff.tzinfo is None or kickoff.utcoffset() is None or not lower <= kickoff <= upper:
+            continue
+        retained.append(item)
+    return deduplicate(list(fetched or []) + retained)
+
+
 def fetch_dataset():
     request = urllib.request.Request(SOURCE, headers={"User-Agent": "PitchIQ/1.0"})
     with urllib.request.urlopen(request, timeout=45) as response:
@@ -246,6 +271,17 @@ def main():
     if not successful_leagues:
         print("All ESPN scoreboard requests failed; leaving the last published international.json untouched.")
         return
+    previous_fixtures = []
+    try:
+        with open("international.json", encoding="utf-8") as previous:
+            previous_fixtures = json.load(previous).get("fixtures", [])
+    except (OSError, ValueError, TypeError):
+        pass
+    # A successful empty response means that league has no fixtures. A failed
+    # request means unknown: preserve its still-relevant last-known fixtures.
+    espn = merge_failed_league_fixtures(
+        espn, successful_leagues, previous_fixtures
+    )
     fixtures = deduplicate(world_cup + espn)
     snapshot = {
         "updated": datetime.now(timezone.utc).isoformat(),
