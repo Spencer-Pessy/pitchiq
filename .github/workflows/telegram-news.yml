@@ -33,15 +33,13 @@ jobs:
           set -euo pipefail
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
-          rm -rf /tmp/pitchiq-news
-          mkdir -p /tmp/pitchiq-news
-          if [ -d daily ]; then cp -a daily/. /tmp/pitchiq-news/; fi
+          cp daily/news_seen.json /tmp/pitchiq-news-seen.json
           for attempt in 1 2 3; do
             echo "News ledger publication attempt $attempt of 3"
             git fetch origin main
             git reset --hard origin/main
             mkdir -p daily
-            cp -a /tmp/pitchiq-news/. daily/
+            cp /tmp/pitchiq-news-seen.json daily/news_seen.json
             git add daily/news_seen.json
             if git diff --cached --quiet; then
               echo "No news ledger changes to publish."
