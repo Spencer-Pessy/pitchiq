@@ -70,6 +70,11 @@ class UpdateRequestPacingTests(unittest.TestCase):
         namespace["_pace_api_request"]()
         self.assertEqual(FakeTime.sleeps, [5.0])
 
+    def test_calibration_uses_validated_club_history_and_excludes_internationals(self):
+        self.assertIn("goal_rate_calibration", self.source)
+        self.assertIn('p.get("code") not in INTERNATIONAL_COMPETITIONS', self.source)
+        self.assertIn('"valid results"', self.source)
+
     def test_scheduled_jobs_are_staggered_away_from_hour_boundaries(self):
         update_workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
         odds_workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
