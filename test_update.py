@@ -34,6 +34,42 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertIn("time.monotonic()", pacer_source)
         self.assertIn("time.sleep(remaining)", pacer_source)
 
+    def test_pacer_waits_for_full_seven_second_interval(self):
+        pacer = next(
+            node for node in self.tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "_pace_api_request"
+        )
+
+        class FakeTime:
+            now = 0.0
+            sleeps = []
+
+            @classmethod
+            def monotonic(cls):
+                return cls.now
+
+            @classmethod
+            def sleep(cls, seconds):
+                cls.sleeps.append(seconds)
+                cls.now += seconds
+
+        namespace = {
+            "time": FakeTime,
+            "REQUEST_INTERVAL_SECONDS": 7.0,
+            "_last_api_request_at": None,
+        }
+        module = ast.Module(body=[pacer], type_ignores=[])
+        exec(compile(module, "<pacer-test>", "exec"), namespace)
+
+        namespace["_pace_api_request"]()
+        self.assertEqual(FakeTime.sleeps, [])
+        FakeTime.now += 2.0
+        namespace["_pace_api_request"]()
+        self.assertEqual(FakeTime.sleeps, [5.0])
+        FakeTime.now += 7.0
+        namespace["_pace_api_request"]()
+        self.assertEqual(FakeTime.sleeps, [5.0])
+
     def test_scheduled_jobs_are_staggered_away_from_hour_boundaries(self):
         update_workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
         odds_workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
