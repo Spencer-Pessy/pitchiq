@@ -138,8 +138,10 @@ def normalize_espn_event(event, league_slug, league_label):
 def fetch_espn_fixtures(now=None, opener=urllib.request.urlopen):
     """Fetch a rolling international fixture window; tolerate individual league failures."""
     now = now or datetime.now(timezone.utc)
-    date_from = (now.date() - timedelta(days=3)).strftime("%Y%m%d")
-    date_to = (now.date() + timedelta(days=30)).strftime("%Y%m%d")
+    # ESPN scoreboard date ranges are kept short to avoid provider-side 400s.
+    # A rolling seven-day window is enough for the upcoming international window.
+    date_from = (now.date() - timedelta(days=2)).strftime("%Y%m%d")
+    date_to = (now.date() + timedelta(days=4)).strftime("%Y%m%d")
     fixtures, successful = [], []
     for index, (slug, label) in enumerate(ESPN_LEAGUES):
         url = f"{ESPN_BASE}/{slug}/scoreboard?dates={date_from}-{date_to}"
@@ -161,8 +163,6 @@ def fetch_espn_fixtures(now=None, opener=urllib.request.urlopen):
         if index < len(ESPN_LEAGUES) - 1:
             time.sleep(1.0)
 
-    if not successful:
-        raise RuntimeError("All ESPN international scoreboard requests failed; preserving last good snapshot")
     return deduplicate(fixtures), successful
 
 
@@ -190,6 +190,9 @@ def fetch_dataset():
 def main():
     world_cup = normalize_matches(fetch_dataset())
     espn, successful_leagues = fetch_espn_fixtures()
+    if not successful_leagues:
+        print("All ESPN scoreboard requests failed; leaving the last published international.json untouched.")
+        return
     fixtures = deduplicate(world_cup + espn)
     snapshot = {
         "updated": datetime.now(timezone.utc).isoformat(),
