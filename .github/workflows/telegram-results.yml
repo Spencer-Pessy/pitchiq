@@ -6,7 +6,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: pitchiq-publish
+  group: pitchiq-telegram-results
   cancel-in-progress: false
 jobs:
   results:
