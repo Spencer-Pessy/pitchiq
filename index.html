@@ -417,7 +417,9 @@ function international(){
  const upcoming=valid.filter(f=>!liveStatuses.has(f.status)&&!finalStatuses.has(f.status)&&!['PST','CANC','SUSP','ABD'].includes(f.status)&&new Date(f.utc).getTime()>now);
  const completed=valid.filter(f=>finalStatuses.has(f.status)||(!liveStatuses.has(f.status)&&Array.isArray(f.score)&&new Date(f.utc).getTime()<=now));
  const other=valid.filter(f=>!live.includes(f)&&!upcoming.includes(f)&&!completed.includes(f));
- const age=I.updated?Math.max(0,Math.round((now-new Date(I.updated))/36e5)):null;
+ const rawAge=I.updated?(now-new Date(I.updated))/36e5:null;
+ const age=Number.isFinite(rawAge)?Math.max(0,Math.round(rawAge)):null;
+ const stale=age!==null&&age>36;
  const label=f=>{const value=({NS:'UPCOMING',TBD:'TIME TO BE CONFIRMED','1H':'LIVE',HT:'HALF TIME','2H':'LIVE',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED',ABD:'ABANDONED',LIVE:'LIVE'}[f.status]||f.status||'SCHEDULED');return value==='UPCOMING'&&new Date(f.utc).getTime()<=now?'STATUS UNCONFIRMED':value};
  const card=f=>{
   const score=Array.isArray(f.score)?esc(f.score[0])+' – '+esc(f.score[1]):tm(f);
@@ -433,7 +435,7 @@ function international(){
  const completedSorted=[...completed].sort((a,b)=>new Date(b.utc)-new Date(a.utc));
  const otherSorted=[...other].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
  const filterHtml='<section class="panel intl-filters" aria-label="Filter international fixtures"><div class="hero-kicker">FIND INTERNATIONAL MATCHES</div><label for="intlGender">Team category</label><select id="intlGender"><option value="all" '+(intlGender==='all'?'selected':'')+'>All teams</option><option value="men" '+(intlGender==='men'?'selected':'')+'>Men</option><option value="women" '+(intlGender==='women'?'selected':'')+'>Women</option><option value="other" '+(intlGender==='other'?'selected':'')+'>Unlabelled</option></select><label for="intlCompetition">Competition</label><select id="intlCompetition"><option value="all">All competitions</option>'+competitions.map(c=>'<option value="'+esc(c)+'" '+(intlCompetition===c?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select><label for="intlSearch">Search teams, competition or country</label><input id="intlSearch" type="search" value="'+esc(intlQuery)+'" placeholder="e.g. Kenya, World Cup, UEFA" autocomplete="off"><p class="note" style="margin:8px 0 0">Showing '+valid.length+' of '+allFixtures.length+' fixtures in this snapshot.</p></section>';
- $('#app').innerHTML=head()+tabsHtml()+filterHtml+'<p class="note">International fixtures · '+esc(I.source||'Public fixture sources')+' · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. '+esc(I.scope||'Coverage may vary by competition and source.')+'. Kickoff times use your device local time. No model forecasts are shown until reliable national-team form data is integrated.</p>'+
+ $('#app').innerHTML=head()+tabsHtml()+filterHtml+(stale?'<p class="note" role="status">International feed may be stale: last successful snapshot is '+age+' hours old. The scheduled refresh has not published a newer snapshot yet.</p>':'')+'<p class="note">International fixtures · '+esc(I.source||'Public fixture sources')+' · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. '+esc(I.scope||'Coverage may vary by competition and source.')+'. Kickoff times use your device local time. No model forecasts are shown until reliable national-team form data is integrated.</p>'+
  section('Live now',liveSorted,'No live international matches in this snapshot.')+
  section('Upcoming fixtures',upcomingSorted,'No upcoming international fixtures are listed in the current snapshot.')+
  section('Completed results',completedSorted.slice(0,12),'No completed international results are available.')+
