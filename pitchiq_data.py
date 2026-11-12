@@ -18,6 +18,11 @@ def normalize_team_name(value):
     """Normalize harmless spelling, punctuation, accents and club suffixes."""
     if not isinstance(value, str):
         return ""
+    value = value.translate(str.maketrans({
+        "ø": "o", "Ø": "O", "æ": "ae", "Æ": "AE", "œ": "oe", "Œ": "OE",
+        "ß": "ss", "ł": "l", "Ł": "L", "đ": "d", "Đ": "D",
+        "ð": "d", "Ð": "D", "þ": "th", "Þ": "TH",
+    }))
     value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode().lower()
     value = re.sub(r"[^a-z0-9 ]", " ", value)
     return " ".join(word for word in value.split() if word not in _TEAM_NAME_STOPWORDS)
