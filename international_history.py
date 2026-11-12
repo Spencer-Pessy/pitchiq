@@ -349,7 +349,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
     data_through = matches[-1]["date"]
     latest = date.fromisoformat(data_through)
     return {
-        "version": 4,
+        "version": 5,
         "updated": fetched_at or datetime.now(timezone.utc).isoformat(),
         "data_through": data_through,
         "freshness_days": (today - latest).days,
