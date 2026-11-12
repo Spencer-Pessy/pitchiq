@@ -400,6 +400,13 @@ class InternationalFixtureGroupingTests(unittest.TestCase):
         self.assertIn("I.scope||'Coverage may vary by competition and source.'", source)
 
 
+class FeedHealthLabelTests(unittest.TestCase):
+    def test_world_cup_euro_archive_is_not_mislabeled_as_all_international_fixtures(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("World Cup/EURO archive", source)
+        self.assertNotIn("fixtures · international '", source)
+
+
 class ServiceWorkerLiveDataTests(unittest.TestCase):
     def test_published_pick_ledger_uses_network_first_live_data_cache(self):
         source = Path("sw.js").read_text(encoding="utf-8")
