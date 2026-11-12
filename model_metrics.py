@@ -301,14 +301,19 @@ def ablation_comparison(predictions):
             continue
         home_goals, away_goals = score
         try:
+            home_inputs, away_inputs = snapshot["home"], snapshot["away"]
+            calibration = snapshot["calibration"]
+            if (not isinstance(home_inputs, dict) or not isinstance(away_inputs, dict)
+                    or not isinstance(calibration, dict)):
+                continue
             stats = {
-                "h": snapshot["home"], "a": snapshot["away"],
+                "h": home_inputs, "a": away_inputs,
                 "lh": float(snapshot["league_home"]),
                 "la": float(snapshot["league_away"]),
             }
-            calibration = snapshot["calibration"]
             actual = 0 if home_goals > away_goals else 1 if home_goals == away_goals else 2
-            if (not all(math.isfinite(x) for x in (home_goals, away_goals, stats["lh"], stats["la"]))
+            if (not all(math.isfinite(x) and x > 0
+                        for x in (stats["lh"], stats["la"]))
                     or min(home_goals, away_goals) < 0):
                 continue
             forecasts = {}
@@ -333,7 +338,7 @@ def ablation_comparison(predictions):
                 variant_brier = sum((value - target[index]) ** 2
                                     for index, value in enumerate(forecasts[name]))
                 paired_deltas[name].append(variant_brier - full_brier)
-        except (KeyError, TypeError, ValueError, OverflowError):
+        except (KeyError, TypeError, ValueError, OverflowError, AttributeError):
             continue
 
     results = {name: _probability_scores(rows) for name, rows in scored.items()}
