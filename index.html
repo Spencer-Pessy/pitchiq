@@ -395,16 +395,16 @@ function tables(){
  bind();
 }
 function international(){
- const liveStatuses=new Set(['1H','HT','2H','ET','P']);
+ const liveStatuses=new Set(['1H','HT','2H','ET','P','LIVE']);
  const finalStatuses=new Set(['FT','AET','PEN']);
  const valid=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a);
  const now=Date.now();
  const live=valid.filter(f=>liveStatuses.has(f.status));
- const upcoming=valid.filter(f=>!liveStatuses.has(f.status)&&!finalStatuses.has(f.status)&&!['PST','CANC','SUSP'].includes(f.status)&&new Date(f.utc).getTime()>now);
+ const upcoming=valid.filter(f=>!liveStatuses.has(f.status)&&!finalStatuses.has(f.status)&&!['PST','CANC','SUSP','ABD'].includes(f.status)&&new Date(f.utc).getTime()>now);
  const completed=valid.filter(f=>finalStatuses.has(f.status)||(!liveStatuses.has(f.status)&&Array.isArray(f.score)&&new Date(f.utc).getTime()<=now));
  const other=valid.filter(f=>!live.includes(f)&&!upcoming.includes(f)&&!completed.includes(f));
  const age=I.updated?Math.max(0,Math.round((now-new Date(I.updated))/36e5)):null;
- const label=f=>{const value=({NS:'UPCOMING',TBD:'TIME TO BE CONFIRMED','1H':'LIVE',HT:'HALF TIME','2H':'LIVE',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED'}[f.status]||f.status||'SCHEDULED');return value==='UPCOMING'&&new Date(f.utc).getTime()<=now?'STATUS UNCONFIRMED':value};
+ const label=f=>{const value=({NS:'UPCOMING',TBD:'TIME TO BE CONFIRMED','1H':'LIVE',HT:'HALF TIME','2H':'LIVE',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED',ABD:'ABANDONED',LIVE:'LIVE'}[f.status]||f.status||'SCHEDULED');return value==='UPCOMING'&&new Date(f.utc).getTime()<=now?'STATUS UNCONFIRMED':value};
  const card=f=>{
   const score=Array.isArray(f.score)?esc(f.score[0])+' – '+esc(f.score[1]):tm(f);
   const date=new Date(f.utc);
