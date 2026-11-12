@@ -156,7 +156,7 @@ def goal_rate_calibration(predictions, minimum_results=10, prior_strength=120,
             actual_home, actual_away = (float(value) for value in final)
             predicted_home = float(forecast.get("rlh", forecast.get("lh")))
             predicted_away = float(forecast.get("rla", forecast.get("la")))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             continue
         values = (actual_home, actual_away, predicted_home, predicted_away)
         if (not all(math.isfinite(value) for value in values)
