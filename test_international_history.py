@@ -1,7 +1,7 @@
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from international_history import (
-    build_ratings, parse_results, tournament_weight,
+    backtest_elo, build_ratings, parse_results, tournament_weight,
 )
 
 
@@ -46,6 +46,35 @@ class InternationalHistoryTests(unittest.TestCase):
         neutral_ratings = {row["team"]: row["elo"] for row in build_ratings([neutral_match])}
         self.assertLess(home_ratings["Kenya"], neutral_ratings["Kenya"])
         self.assertGreater(home_ratings["Uganda"], neutral_ratings["Uganda"])
+
+    def test_elo_backtest_uses_date_grouped_chronological_holdout(self):
+        matches = []
+        start = date(2020, 1, 1)
+        teams = ["Kenya", "Uganda", "Tanzania"]
+        scores = [(1, 0), (0, 0), (0, 1), (2, 1)]
+        for index in range(60):
+            home = teams[index % 3]
+            away = teams[(index + 1) % 3]
+            home_score, away_score = scores[index % len(scores)]
+            matches.append({
+                "date": (start + timedelta(days=index)).isoformat(),
+                "home": home,
+                "away": away,
+                "home_score": home_score,
+                "away_score": away_score,
+                "tournament": "Friendly" if index % 2 else "World Cup qualification",
+                "neutral": index % 2 == 0,
+            })
+        result = backtest_elo(matches)
+        self.assertEqual(result["training_matches"], 48)
+        self.assertEqual(result["test_matches"], 12)
+        self.assertEqual(result["holdout_start"], (start + timedelta(days=48)).isoformat())
+        self.assertIn("same date share the same pre-date ratings", result["note"])
+        for section in ("model", "training_frequency_baseline"):
+            self.assertGreaterEqual(result[section]["multiclass_brier"], 0)
+            self.assertGreater(result[section]["log_loss"], 0)
+            self.assertGreaterEqual(result[section]["accuracy"], 0)
+            self.assertLessEqual(result[section]["accuracy"], 1)
 
     def test_tournament_weights_are_conservative_and_ordered(self):
         self.assertLess(tournament_weight("Friendly"), tournament_weight("FIFA World Cup qualification"))
