@@ -74,7 +74,7 @@ def _diagnostic_group(rows, label):
             home_error += abs(float(prediction["lh"]) - float(final[0]))
             away_error += abs(float(prediction["la"]) - float(final[1]))
             goal_count += 1
-        except (KeyError, TypeError, ValueError, OverflowError):
+        except (KeyError, TypeError, ValueError, OverflowError, AttributeError):
             pass
     return {
         "band": label,
@@ -149,6 +149,8 @@ def input_diagnostics(predictions):
         values = []
         for item, actual, probs in valid:
             team = item["inputs"].get(side) or {}
+            if not isinstance(team, dict):
+                continue
             try:
                 value = _nonnegative_integer(team.get("venue_matches")) if is_venue else form_points(team.get("form"))
             except (KeyError, TypeError, ValueError):
@@ -166,6 +168,8 @@ def input_diagnostics(predictions):
     for item, actual, probs in valid:
         home = item["inputs"].get("home") or {}
         away = item["inputs"].get("away") or {}
+        if not isinstance(home, dict) or not isinstance(away, dict):
+            continue
         try:
             home_n = _nonnegative_integer(home.get("venue_matches"))
             away_n = _nonnegative_integer(away.get("venue_matches"))
