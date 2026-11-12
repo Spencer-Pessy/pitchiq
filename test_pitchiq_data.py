@@ -12,6 +12,7 @@ from pitchiq_data import (
     record_forward_evaluations,
     backfill_market_odds,
     goal_rate_calibration,
+    clean_prediction_ledger,
 )
 
 
@@ -257,6 +258,21 @@ class ForwardEvaluationLedgerTests(unittest.TestCase):
         ledger = record_forward_evaluations(
             existing, [], {123: [2, 2]}, now, lambda _: {}, lambda _: {})
         self.assertEqual(ledger["123"]["final"], [1, 0])
+
+
+class PredictionLedgerCleaningTests(unittest.TestCase):
+    def test_non_dictionary_ledgers_become_empty(self):
+        for value in (None, [], "bad", 7):
+            self.assertEqual(clean_prediction_ledger(value), {})
+
+    def test_non_record_entries_are_removed_and_valid_records_preserved(self):
+        valid = {"id": 123, "final": None, "p": {"ph": 0.5}}
+        cleaned = clean_prediction_ledger({
+            "123": valid, "bad": None, "list": [], "": {"id": 1},
+        })
+        self.assertEqual(cleaned, {"123": valid})
+
+
 
 
 class GoalRateCalibrationTests(unittest.TestCase):
