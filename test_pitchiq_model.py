@@ -191,6 +191,24 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(split[1]["accuracy"], 0.5)
         self.assertAlmostEqual(split[1]["brier"], 0.76, places=4)
 
+    def test_rolling_baseline_uses_only_results_available_when_forecast_was_made(self):
+        rows = [
+            # Both forecasts were frozen before either match kicked off.
+            {"utc": "2026-01-01T12:00:00Z", "made": "2025-12-31T12:00:00Z",
+             "final": [1, 0], "p": {"ph": 0.5, "pd": 0.3, "pa": 0.2}},
+            {"utc": "2026-01-02T12:00:00Z", "made": "2025-12-31T12:00:00Z",
+             "final": [0, 1], "p": {"ph": 0.2, "pd": 0.3, "pa": 0.5}},
+            # This forecast was made after match one finished, but before match two.
+            {"utc": "2026-01-03T12:00:00Z", "made": "2026-01-02T10:00:00Z",
+             "final": [1, 1], "p": {"ph": 0.3, "pd": 0.4, "pa": 0.3}},
+        ]
+        result = baseline_comparison(rows)
+        self.assertEqual(result["rolling_prior"]["matches"], 3)
+        # First two rows share the untouched 1/3 prior; the third sees only
+        # the first completed result, not the second match's later result.
+        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.6736, places=4)
+        self.assertEqual(result, baseline_comparison(list(reversed(rows))))
+
     def test_rolling_baseline_excludes_undated_rows_and_orders_timezone_offsets(self):
         rows = [
             {"utc": "2026-01-02T07:00:00Z", "final": [1, 0],
