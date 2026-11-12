@@ -48,6 +48,7 @@ def clean_summary(value, limit=260):
     value = re.sub(r"<[^>]*>", " ", value)
     value = html.unescape(value)
     value = re.sub(r"\s+", " ", value).strip()
+    value = re.sub(r"\s+([,.;:!?])", r"\1", value)
     return value[:limit].rstrip()
 
 
