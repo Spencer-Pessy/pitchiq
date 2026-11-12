@@ -410,7 +410,7 @@ class FinalScoreValidationTests(unittest.TestCase):
         ]
         self.assertEqual(evaluate(invalid)["matches"], 0)
         self.assertEqual(sum(row["matches"] for row in outcome_class_metrics(invalid).values()), 0)
-        self.assertEqual(baseline_comparison(invalid)["matches"], 0)
+        self.assertEqual(baseline_comparison(invalid)["rolling_prior"]["matches"], 0)
         self.assertEqual(binary_market_metrics(invalid, "o25")["matches"], 0)
         self.assertEqual(scoreline_baseline_comparison(invalid)["matches"], 0)
 
