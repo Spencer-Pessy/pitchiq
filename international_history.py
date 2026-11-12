@@ -126,6 +126,125 @@ def build_ratings(matches):
     return teams
 
 
+
+def _elo_expected_score(ratings, match):
+    home_rating = ratings[match["home"]]
+    away_rating = ratings[match["away"]]
+    venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
+    return 1.0 / (1.0 + 10.0 ** (-((home_rating + venue_bonus - away_rating) / 400.0)))
+
+
+def _elo_update(ratings, match, expected_home):
+    if match["home_score"] > match["away_score"]:
+        actual_home = 1.0
+    elif match["home_score"] == match["away_score"]:
+        actual_home = 0.5
+    else:
+        actual_home = 0.0
+    change = K_FACTOR * tournament_weight(match["tournament"]) * (actual_home - expected_home)
+    ratings[match["home"]] += change
+    ratings[match["away"]] -= change
+    return 0 if actual_home == 1.0 else 1 if actual_home == 0.5 else 2
+
+
+def _elo_gap_bucket(gap):
+    for upper in (50, 100, 150, 200, 300, 500):
+        if gap < upper:
+            return f"0-{upper}"
+    return "500+"
+
+
+def backtest_elo(matches):
+    """Chronological 80/20 holdout; draw calibration is fitted on training data only."""
+    ordered = sorted(matches, key=lambda row: (row["date"], row["home"].casefold(), row["away"].casefold()))
+    split = int(len(ordered) * 0.8)
+    if split < 10 or len(ordered) - split < 5:
+        raise ValueError("Not enough international results for a chronological Elo backtest")
+
+    training_ratings = defaultdict(lambda: INITIAL_RATING)
+    draw_counts = defaultdict(lambda: [0, 0])
+    outcome_counts = [0, 0, 0]
+    for match in ordered[:split]:
+        expected = _elo_expected_score(training_ratings, match)
+        outcome = _elo_update(training_ratings, match, expected)
+        outcome_counts[outcome] += 1
+        adjusted_gap = abs(training_ratings[match["home"]] - training_ratings[match["away"]])
+        # The draw-rate bins are keyed by venue and the pre-match rating gap.
+        venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
+        pre_match_gap = abs(
+            (training_ratings[match["home"]] - (K_FACTOR * 0.0)) -
+            (training_ratings[match["away"]] + (K_FACTOR * 0.0)) + venue_bonus
+        )
+        key = ("neutral" if match["neutral"] else "home") + ":" + _elo_gap_bucket(pre_match_gap)
+        draw_counts[key][0] += 1
+        if outcome == 1:
+            draw_counts[key][1] += 1
+
+    global_draw_rate = outcome_counts[1] / split
+    baseline = [(count + 1) / (split + 3) for count in outcome_counts]
+    calibrated_draw = {
+        key: (draws + 50.0 * global_draw_rate) / (count + 50.0)
+        for key, (count, draws) in draw_counts.items()
+    }
+
+    ratings = defaultdict(lambda: INITIAL_RATING)
+    model_brier = model_log_loss = model_correct = 0.0
+    baseline_brier = baseline_log_loss = baseline_correct = 0.0
+    test_rows = []
+    for index, match in enumerate(ordered):
+        expected = _elo_expected_score(ratings, match)
+        outcome = 0 if match["home_score"] > match["away_score"] else 1 if match["home_score"] == match["away_score"] else 2
+        if index >= split:
+            venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
+            pre_match_gap = abs(
+                ratings[match["home"]] + venue_bonus - ratings[match["away"]]
+            )
+            key = ("neutral" if match["neutral"] else "home") + ":" + _elo_gap_bucket(pre_match_gap)
+            draw_probability = calibrated_draw.get(key, global_draw_rate)
+            draw_probability = min(0.45, max(0.05, draw_probability))
+            conditional_home = (expected - 0.5 * draw_probability) / (1.0 - draw_probability)
+            conditional_home = min(0.999, max(0.001, conditional_home))
+            probabilities = [
+                (1.0 - draw_probability) * conditional_home,
+                draw_probability,
+                (1.0 - draw_probability) * (1.0 - conditional_home),
+            ]
+            for outcome_index in range(3):
+                target = 1.0 if outcome_index == outcome else 0.0
+                model_brier += (probabilities[outcome_index] - target) ** 2
+                baseline_brier += (baseline[outcome_index] - target) ** 2
+            model_log_loss -= math.log(max(1e-15, probabilities[outcome]))
+            baseline_log_loss -= math.log(max(1e-15, baseline[outcome]))
+            model_correct += int(max(range(3), key=lambda i: probabilities[i]) == outcome)
+            baseline_correct += int(max(range(3), key=lambda i: baseline[i]) == outcome)
+            test_rows.append(match["date"])
+        _elo_update(ratings, match, expected)
+
+    n = len(test_rows)
+    return {
+        "method": "chronological 80/20 Elo holdout with training-only draw calibration",
+        "training_matches": split,
+        "test_matches": n,
+        "holdout_start": test_rows[0],
+        "holdout_end": test_rows[-1],
+        "model": {
+            "accuracy": round(model_correct / n, 5),
+            "multiclass_brier": round(model_brier / n, 5),
+            "log_loss": round(model_log_loss / n, 5),
+        },
+        "training_frequency_baseline": {
+            "accuracy": round(baseline_correct / n, 5),
+            "multiclass_brier": round(baseline_brier / n, 5),
+            "log_loss": round(baseline_log_loss / n, 5),
+        },
+        "draw_calibration_bins": {
+            key: {"training_matches": count, "draws": draws}
+            for key, (count, draws) in sorted(draw_counts.items())
+        },
+        "note": "Holdout probabilities use only prior Elo ratings and draw-rate bins learned from the chronological training segment. Ratings update after each held-out result. Research diagnostic only; not a production forecast.",
+    }
+
+
 def build_snapshot(csv_text, fetched_at=None, today=None):
     today = today or date.today()
     matches, invalid = parse_results(csv_text, today=today)
@@ -134,7 +253,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
     data_through = matches[-1]["date"]
     latest = date.fromisoformat(data_through)
     return {
-        "version": 1,
+        "version": 2,
         "updated": fetched_at or datetime.now(timezone.utc).isoformat(),
         "data_through": data_through,
         "freshness_days": (today - latest).days,
@@ -157,6 +276,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
         "ready_for_forecasts": False,
         "readiness_note": "Do not publish predictions until a separate chronological out-of-sample model and calibration review is completed.",
         "teams": build_ratings(matches),
+        "backtest": backtest_elo(matches),
     }
 
 
@@ -172,7 +292,7 @@ def main():
             existing = json.load(existing_file)
     except (OSError, ValueError):
         existing = {}
-    if existing.get("source_checksum") == snapshot["source_checksum"]:
+    if existing.get("version") == snapshot["version"] and existing.get("source_checksum") == snapshot["source_checksum"]:
         print("International historical source is unchanged; preserving the existing snapshot.")
         return
     with open(OUTPUT, "w", encoding="utf-8") as output:
