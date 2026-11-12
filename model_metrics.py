@@ -653,7 +653,7 @@ def evaluate(predictions):
         probs = item.get("p") or {}
         try:
             p = [float(probs[k]) for k in ("ph", "pd", "pa")]
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             continue
         if not all(math.isfinite(x) for x in [home_goals, away_goals] + p):
             continue
