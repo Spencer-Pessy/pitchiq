@@ -56,12 +56,17 @@ def parse_kickoff(day, time_text):
     sign = -1 if match.group(3) == "-" else 1
     offset_hours = int(match.group(4) or 0)
     offset_minutes = int(match.group(5) or 0)
-    if offset_hours > 14 or offset_minutes > 59:
+    if offset_hours > 14 or offset_minutes > 59 or (offset_hours == 14 and offset_minutes != 0):
         return None
-    local = datetime.fromisoformat(day).replace(
-        hour=hour, minute=minute,
-        tzinfo=timezone(sign * timedelta(hours=offset_hours, minutes=offset_minutes)),
-    )
+    if not isinstance(day, str) or not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", day):
+        return None
+    try:
+        local = datetime.fromisoformat(day).replace(
+            hour=hour, minute=minute,
+            tzinfo=timezone(sign * timedelta(hours=offset_hours, minutes=offset_minutes)),
+        )
+    except ValueError:
+        return None
     return local.astimezone(timezone.utc).isoformat()
 
 
