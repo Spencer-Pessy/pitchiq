@@ -47,6 +47,7 @@ The enabled workflows in `.github/workflows/` run on their schedules or, where e
 - **Telegram picks** — daily at 07:43 UTC; posts only when eligible, unpublished fixtures are within the next 36 hours.
 - **Telegram football news** — every four hours at minute 43 UTC; publishes up to three recent, unseen BBC Sport football headlines to `@pitchiq_picks`, with direct source links. It uses a separate news destination and deduplication ledger from the picks bot.
 - **Published-pick results** — hourly at minute 17 UTC; checks only the saved picks ledger and does not call odds services or post new picks or news.
+- **Telegram workflow health monitor** — every 30 minutes at minutes 11 and 41 UTC; checks the latest scheduled GitHub Actions runs for picks, news and results, then records their age/status in `daily/telegram_health.json`. It uses the built-in GitHub Actions token, sends no Telegram messages and does not claim that a successful workflow proves message delivery.
 
 The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
 
