@@ -462,9 +462,11 @@ class InternationalFixtureFilterTests(unittest.TestCase):
 
     def test_international_feed_warns_when_snapshot_is_older_than_36_hours(self):
         source = Path("index.html").read_text(encoding="utf-8")
-        self.assertIn("const stale=age!==null&&age>36", source)
+        self.assertIn("const stale=age===null||age>36", source)
         self.assertIn("International feed may be stale", source)
         self.assertIn("last successful snapshot is '+age+' hours old", source)
+        self.assertIn("ageMs>=0?Math.round(ageMs/36e5):null", source)
+        self.assertIn("International feed freshness is unavailable", source)
 
     def test_international_tab_still_omits_league_table(self):
         source = Path("index.html").read_text(encoding="utf-8")
@@ -520,4 +522,12 @@ class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
         self.assertIn("stale=mins===null||ageMs>90*60000", source)
         self.assertIn("Freshness unavailable", source)
         self.assertIn("freshness unavailable", source)
+
+class InternationalFreshnessEdgeCaseTests(unittest.TestCase):
+    def test_missing_invalid_and_future_timestamps_trigger_warning(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const updatedAt=Date.parse(I.updated||''),ageMs=now-updatedAt", source)
+        self.assertIn("Number.isFinite(updatedAt)&&ageMs>=0", source)
+        self.assertIn("const stale=age===null||age>36", source)
+        self.assertIn("missing, invalid or in the future", source)
 
