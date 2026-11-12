@@ -330,3 +330,33 @@ class InternationalFixtureGroupingTests(unittest.TestCase):
         self.assertIn("No upcoming international fixtures are listed in the current snapshot.", source)
         self.assertIn("Showing the 12 most recent completed matches.", source)
         self.assertIn("I.scope||'Coverage may vary by competition and source.'", source)
+
+
+class InternationalFixtureFilterTests(unittest.TestCase):
+    def test_international_view_exposes_gender_competition_and_search_filters(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('id="intlGender"', source)
+        self.assertIn('id="intlCompetition"', source)
+        self.assertIn('id="intlSearch"', source)
+        self.assertIn("Team category", source)
+        self.assertIn("Search teams, competition or country", source)
+
+    def test_international_filter_state_is_applied_to_fixture_list(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("intlGender='all',intlCompetition='all',intlQuery=''", source)
+        self.assertIn("const allFixtures=(I.fixtures||[])", source)
+        self.assertIn("intlGender==='all'||gender===intlGender", source)
+        self.assertIn("intlCompetition==='all'||String(f.comp||'Unknown competition')===intlCompetition", source)
+        self.assertIn("searchable.includes(query)", source)
+        self.assertIn("Showing '+valid.length+' of '+allFixtures.length+' fixtures", source)
+
+    def test_international_search_keeps_focus_and_cursor_while_typing(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const start=e.target.selectionStart,end=e.target.selectionEnd", source)
+        self.assertIn("next.focus();next.setSelectionRange(start,end)", source)
+
+    def test_international_tab_still_omits_league_table(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("if(tab=='intl')return international()", source)
+        self.assertIn("tab==='intl'?'':(' · standings '", source)
+        self.assertNotIn("section('League table'", source)
