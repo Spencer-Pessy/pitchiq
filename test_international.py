@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
 from international import (
-    deduplicate, normalize_espn_event, normalize_matches, parse_kickoff, ESPN_LEAGUES,
+    deduplicate, fetch_espn_fixtures, normalize_espn_event, normalize_matches, parse_kickoff, ESPN_LEAGUES,
 )
 
 
@@ -118,6 +118,29 @@ class InternationalFeedTests(unittest.TestCase):
         row = {"utc": "2026-11-14T16:00:00+00:00", "h": "Japan", "a": "Brazil", "id": "a"}
         duplicate = dict(row, id="b")
         self.assertEqual([x["id"] for x in deduplicate([row, duplicate])], ["a"])
+
+    def test_request_pacing_applies_to_non_200_responses(self):
+        class UnavailableResponse:
+            status = 503
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+
+        calls = []
+        def unavailable_opener(request, timeout):
+            calls.append(request.full_url)
+            return UnavailableResponse()
+
+        with patch("international.time.sleep") as sleep:
+            fixtures, successful = fetch_espn_fixtures(
+                now=datetime(2026, 11, 12, tzinfo=timezone.utc),
+                opener=unavailable_opener,
+            )
+        self.assertEqual(fixtures, [])
+        self.assertEqual(successful, [])
+        self.assertEqual(len(calls), 7 * len(ESPN_LEAGUES))
+        self.assertEqual(sleep.call_count, len(calls) - 1)
 
     def test_rejects_malformed_or_empty_openfootball_source(self):
         with self.assertRaises(ValueError):
