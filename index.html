@@ -28,6 +28,15 @@ h1{font:700 34px/1 'Arial Narrow',Impact,sans-serif;margin:0}
 h1 span{color:var(--home)}
 h2{font:700 22px/1.1 'Arial Narrow',Impact,sans-serif;margin:0 0 10px}
 .tag{color:var(--mute);font-size:13px;text-align:right}
+.hero{background:linear-gradient(135deg,#190000 0%,#101010 58%,#171717 100%);border:1px solid #4a1717;border-radius:14px;padding:18px;margin:12px 0 14px;box-shadow:0 10px 28px #0008}
+.hero-kicker{font-size:11px;font-weight:800;letter-spacing:1.6px;color:#ff6b6b}
+.hero h2{font-size:26px;max-width:440px;margin:7px 0 8px}
+.hero-copy{color:#c5c5c5;font-size:14px;max-width:520px;margin:0 0 15px}
+.hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hero-stats div{background:#ffffff0b;border:1px solid #ffffff16;border-radius:9px;padding:9px}
+.hero-stats b{display:block;font:700 25px/1.1 Arial Narrow,Impact,sans-serif;color:#fff}
+.hero-stats span{display:block;font-size:11px;color:#aaa;margin-top:3px}
+.hero-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid #ffffff1a;padding-top:10px;margin-top:12px;font-size:11px;color:#aaa}
 .tabs{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:thin}
 .tabs button{flex:0 0 auto;min-width:76px;white-space:nowrap;font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 10px;cursor:pointer}
 .tabs button[aria-pressed="true"]{background:var(--home);border-color:var(--home);color:#fff}
@@ -275,6 +284,11 @@ function record(){
 function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000),h=D.data_health,stale=Number.isFinite(mins)&&mins>90;
  const health=h?`<p class="note" style="margin:6px 0 12px">Feed coverage: ${Number(h.fixture_competitions)||0} competitions · ${Number(h.fixture_total)||0} fixtures · international ${Number(h.international_fixture_total)||0} · standings ${Number(h.standings_competitions)||0}/${Number(h.fixture_competitions)||0}${Number(h.standings_failures)>0?` · ${Number(h.standings_failures)||0} standings feed(s) unavailable`:``}</p>`:'';
  return `<header><h1>Pitch<span>IQ</span></h1><span class="tag">${stale?'Data may be stale · ':''}Updated ${mins<60?mins+' min':Math.round(mins/60)+' h'} ago<br>Scores may be delayed</span></header>`+health}
+function overviewHtml(){
+ const now=Date.now(),future=D.matches.filter(m=>m.status!=='FINISHED'&&new Date(m.utc)>now),liveCount=future.filter(live).length,upcoming=future.length-liveCount,competitions=new Set(future.map(m=>m.code)).size;
+ const refreshed=D.updated?new Date(D.updated).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'not available';
+ return `<section class="hero" aria-label="PitchIQ overview"><div class="hero-kicker">FREE FOOTBALL INTELLIGENCE</div><h2>Read the game. Understand the numbers.</h2><p class="hero-copy">Independent match forecasts, probability breakdowns and transparent results tracking — built for football fans, not hype.</p><div class="hero-stats"><div><b>${upcoming}</b><span>Upcoming fixtures</span></div><div><b>${liveCount}</b><span>Live matches</span></div><div><b>${competitions}</b><span>Competitions covered</span></div></div><div class="hero-foot"><span>Data refreshed ${esc(refreshed)}</span><span>Model estimates · Not guarantees</span></div></section>`;
+}
 function tabsHtml(){return `<div class="tabs">${[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International']].map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
@@ -305,7 +319,7 @@ function tables(){
   if(av==null)return 1;if(bv==null)return -1;
   return Number(bv)-Number(av)||Number(b.g||0)-Number(a.g||0)||String(a.name||'').localeCompare(String(b.name||''));
  });
- $('#app').innerHTML=head()+tabsHtml()+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${esc(T[k].name)}</option>`).join('')}</select>
+ $('#app').innerHTML=head()+tabsHtml()+(tab==='up'?overviewHtml():'')+`<select id="cf" aria-label="Competition">${ks.map(k=>`<option value="${k}" ${k==comp?'selected':''}>${esc(T[k].name)}</option>`).join('')}</select>
  <div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>${t.rows.map(r=>`<tr class="${r.pos<=4?'top':''}"><td>${r.pos}</td><td>${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+':''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>${scorers.length?`<h2>Player comparison · top goal scorers</h2><label for="ps">Sort listed players by</label><select id="ps" aria-label="Sort player comparison"><option value="goals" ${playerSort==='goals'?'selected':''}>Goals scored</option><option value="assists" ${playerSort==='assists'?'selected':''}>Assists</option><option value="contributions" ${playerSort==='contributions'?'selected':''}>Goals + assists per appearance</option></select><div class="panel" style="padding:6px"><table class="lt"><tr><th>#</th><th>Player</th><th>Team</th><th>G</th><th>A</th><th>Apps</th><th>G/App</th><th>A/App</th><th>G+A/App</th></tr>${scorers.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td><b>${p.g??'–'}</b></td><td>${p.a??'–'}</td><td>${p.m??'–'}</td><td>${p.gpm!=null?Number(p.gpm).toFixed(2):'–'}</td><td>${p.apm!=null?Number(p.apm).toFixed(2):'–'}</td><td>${p.gapm!=null?Number(p.gapm).toFixed(2):'–'}</td></tr>`).join('')}</table></div><p class="note">The provider supplies a top-goalscorer list, not a complete league-wide assists ranking. Sorting by assists or contributions only compares these listed players. Missing statistics are shown as —, not zero. Rates are per appearance, not per 90 minutes.</p>`:''}`;
  bind();
 }
