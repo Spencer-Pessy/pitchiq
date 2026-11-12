@@ -164,7 +164,7 @@ def normalize_espn_event(event, league_slug, league_label):
             return None
 
     home_score, away_score = score_value(home), score_value(away)
-    score = [home_score, away_score] if state == "post" and home_score is not None and away_score is not None else None
+    # Only genuine completed football outcomes may carry a score. ESPN can retain a\n    # post-event state for cancelled/abandoned/suspended events; status takes precedence.\n    score = [home_score, away_score] if status in ("FT", "AET", "PEN") and home_score is not None and away_score is not None else None
     league_name = ((event.get("leagues") or [{}])[0]).get("name") or league_label
     venue = (competitions[0].get("venue") or {}).get("fullName") or ""
     return {
