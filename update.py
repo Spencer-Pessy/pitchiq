@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name, build_head_to_head
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -158,6 +158,7 @@ for m in matches:
         "id": m["id"], "comp": m["_cn"], "code": m["_c"], "utc": m["utcDate"],
         "status": m["status"], "h": tname(h), "a": tname(a),
         "score": [hg, ag] if hg is not None else None,
+        "h2h": build_head_to_head(matches, h.get("id"), a.get("id"), m["utcDate"]),
         "s": {
             "h": team_stats(h["id"], True, ah, aa),
             "a": team_stats(a["id"], False, aa, ah),
