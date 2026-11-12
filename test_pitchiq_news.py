@@ -71,10 +71,6 @@ class PitchIQNewsValidationTests(unittest.TestCase):
             main()
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class PitchIQNewsWorkflowTests(unittest.TestCase):
     def test_news_workflow_is_opt_in_and_uses_a_separate_channel_target(self):
         from pathlib import Path
@@ -92,6 +88,10 @@ class PitchIQNewsWorkflowTests(unittest.TestCase):
         history = json.loads(Path("daily/news_seen.json").read_text(encoding="utf-8"))
         self.assertIsInstance(history, list)
         self.assertTrue(all(isinstance(url, str) for url in history))
+
+
+if __name__ == "__main__":
+    unittest.main()
 
 
 if __name__ == "__main__":
