@@ -462,3 +462,20 @@ class InternationalFixtureFilterTests(unittest.TestCase):
         self.assertIn("if(tab=='intl')return international()", source)
         self.assertIn("tab==='intl'?'':(' · standings '", source)
         self.assertNotIn("section('League table'", source)
+
+class NewsTabRegressionTests(unittest.TestCase):
+    def test_news_tab_is_reachable_and_keeps_news_separate_from_forecasts(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("['news','News']", source)
+        self.assertIn("if(tab=='news')return news();", source)
+        self.assertIn("PITCH IQ NEWSROOM", source)
+        self.assertIn("Football stories, with sources attached.", source)
+        self.assertIn("https://t.me/pitchiq_picks", source)
+        self.assertIn("https://t.me/PitchIQPicks_bot", source)
+        self.assertIn("News is not a prediction", source)
+        self.assertIn("does not manufacture transfer rumours", source)
+
+    def test_news_tab_external_links_open_safely(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('href="https://t.me/pitchiq_picks" target="_blank" rel="noopener noreferrer"', source)
+        self.assertIn('href="https://t.me/PitchIQPicks_bot" target="_blank" rel="noopener noreferrer"', source)
