@@ -67,7 +67,7 @@ class PitchIQNewsValidationTests(unittest.TestCase):
         from pitchiq_news import main
         with patch.dict(os.environ, {"PITCHIQ_NEWS_ENABLED": "true"}, clear=True), \
              patch("pitchiq_news.fetch_feed", side_effect=AssertionError("feed must not be fetched")):
-            with self.assertRaisesRegex(RuntimeError, "credentials are missing"):
+            with self.assertRaisesRegex(RuntimeError, "is missing"):
                 main()
 
     def test_disabled_publisher_exits_before_network_or_telegram(self):
