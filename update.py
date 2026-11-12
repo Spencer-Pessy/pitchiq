@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -167,22 +167,9 @@ for m in matches:
 
 out.sort(key=lambda x: x["utc"])
 
-# Odds (from odds.json, refreshed by a separate workflow)
-STOP = {"fc", "cf", "afc", "ac", "as", "ssc", "sc", "sv", "vfb", "vfl", "fsv", "rb", "1", "de",
-        "the", "club", "calcio", "fk", "sk", "us", "ud", "cd", "rc", "rcd", "bsc", "tsg", "if"}
+# Odds matching uses conservative normalized exact names. Ambiguous aliases are skipped.
 
-
-def norm(s):
-    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
-    s = re.sub(r"[^a-z0-9 ]", " ", s)
-    return " ".join(w for w in s.split() if w not in STOP)
-
-
-def same(a, b):
-    a, b = norm(a), norm(b)
-    if not a or not b:
-        return False
-    return a == b or a in b or b in a or difflib.SequenceMatcher(None, a, b).ratio() >= 0.75
+same = same_team_name
 
 
 try:
