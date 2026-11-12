@@ -106,7 +106,7 @@ def input_diagnostics(predictions):
                     or min(home, away) < 0 or any(x < 0 or x > 1 for x in p)
                     or abs(sum(p) - 1.0) > 0.02):
                 continue
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             continue
         actual = 0 if home > away else 1 if home == away else 2
         valid.append((item, actual, p))
