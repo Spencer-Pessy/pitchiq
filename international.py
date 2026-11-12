@@ -169,11 +169,15 @@ def normalize_espn_event(event, league_slug, league_label):
 
     def score_value(team):
         raw = team.get("score")
-        try:
-            value = int(raw)
-            return value if value >= 0 else None
-        except (TypeError, ValueError):
+        # ESPN normally supplies scores as digit strings. Reject booleans and
+        # floats rather than letting int(True) or int(1.9) fabricate a score.
+        if isinstance(raw, bool):
             return None
+        if isinstance(raw, int):
+            return raw if raw >= 0 else None
+        if isinstance(raw, str) and re.fullmatch(r"\\d+", raw.strip()):
+            return int(raw.strip())
+        return None
 
     home_score, away_score = score_value(home), score_value(away)
     # Only genuine completed football outcomes may carry a score. ESPN can retain a
