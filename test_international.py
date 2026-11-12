@@ -165,7 +165,7 @@ class InternationalFeedTests(unittest.TestCase):
         row = normalize_matches(payload)[0]
         self.assertEqual(row["gender"], "men")
 
-    def test_espn_womens_slug_is_separated_from_mens_friendlies(self):
+    def test_all_configured_womens_espn_competitions_are_labeled_women(self):
         event = {
             "id": "women-1",
             "date": "2026-11-14T16:00:00Z",
@@ -175,10 +175,16 @@ class InternationalFeedTests(unittest.TestCase):
                 {"homeAway": "away", "team": {"name": "Uganda"}},
             ]}],
         }
-        women = normalize_espn_event(event, "fifa.friendly.w", "Women's International Friendlies")
-        men = normalize_espn_event(event, "fifa.friendly", "International Friendlies")
-        self.assertEqual(women["gender"], "women")
-        self.assertEqual(men["gender"], "men")
+        womens_slugs = {
+            "fifa.friendly.w", "fifa.wwc", "fifa.wworldq.uefa",
+            "uefa.w.nations", "uefa.weuro", "fifa.shebelieves",
+            "concacaf.w.gold", "conmebol.america.femenina",
+        }
+        for slug, label in ESPN_LEAGUES:
+            with self.subTest(slug=slug):
+                row = normalize_espn_event(event, slug, label)
+                expected = "women" if slug in womens_slugs else "men"
+                self.assertEqual(row["gender"], expected)
 
     def test_deduplication_keeps_distinct_mens_and_womens_fixture_streams(self):
         base = {"utc": "2026-11-14T16:00:00+00:00", "h": "Kenya", "a": "Uganda"}
