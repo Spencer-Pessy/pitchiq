@@ -306,6 +306,6 @@ class InternationalFixtureGroupingTests(unittest.TestCase):
         self.assertIn("section('Live now',liveSorted", source)
         self.assertIn("section('Upcoming fixtures',upcomingSorted", source)
         self.assertIn("section('Completed results',completedSorted.slice(0,12)", source)
-        self.assertIn("No upcoming World Cup fixtures are listed in the current snapshot.", source)
+        self.assertIn("No upcoming international fixtures are listed in the current snapshot.", source)
         self.assertIn("Showing the 12 most recent completed matches.", source)
-        self.assertIn("This dataset covers the tournament only, not the full international calendar.", source)
+        self.assertIn("I.scope||'Coverage may vary by competition and source.'", source)
