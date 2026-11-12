@@ -8,12 +8,10 @@ permissions:
   contents: write
 
 concurrency:
-  group: pitchiq-odds-paused
+  group: pitchiq-odds
   cancel-in-progress: false
 jobs:
-  # Paused until the user explicitly approves any Odds API credit usage.
   odds:
-    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,7 +19,20 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - name: Check for the free-tier API key
+        id: credentials
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ODDS_API_KEY:-}" ]; then
+            echo "::warning::ODDS_API_KEY is not configured; no odds request was made."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Fetch odds once
+        if: steps.credentials.outputs.available == 'true'
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
@@ -31,6 +42,7 @@ jobs:
           mkdir -p /tmp/pitchiq-odds
           cp odds.json /tmp/pitchiq-odds/odds.json
       - name: Publish odds snapshot with safe retry
+        if: steps.credentials.outputs.available == 'true'
         run: |
           set -euo pipefail
           git config user.name "pitchiq-bot"
