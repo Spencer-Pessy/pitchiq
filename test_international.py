@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 from international import (
     deduplicate, fetch_espn_fixtures, normalize_espn_event, normalize_matches, parse_kickoff, ESPN_LEAGUES,
+    merge_failed_league_fixtures,
 )
 
 
@@ -199,6 +200,54 @@ class InternationalFeedTests(unittest.TestCase):
             normalize_matches({"matches": []})
         with self.assertRaises(ValueError):
             normalize_matches({"response": []})
+
+
+class FailedLeagueRetentionTests(unittest.TestCase):
+    def test_partial_feed_failure_preserves_recent_fixtures_only_for_failed_leagues(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        previous = [
+            {"id": "espn-uefa.nations-old", "utc": "2026-11-13T18:00:00+00:00",
+             "h": "A", "a": "B", "gender": "men"},
+            {"id": "espn-fifa.friendly-old", "utc": "2026-11-13T19:00:00+00:00",
+             "h": "C", "a": "D", "gender": "men"},
+            {"id": "espn-uefa.nations-expired", "utc": "2026-11-01T18:00:00+00:00",
+             "h": "E", "a": "F", "gender": "men"},
+        ]
+        fetched = [
+            {"id": "espn-fifa.friendly-new", "utc": "2026-11-14T18:00:00+00:00",
+             "h": "G", "a": "H", "gender": "men"},
+        ]
+        result = merge_failed_league_fixtures(
+            fetched, ["fifa.friendly"], previous, now=now
+        )
+        ids = {item["id"] for item in result}
+        self.assertIn("espn-uefa.nations-old", ids)
+        self.assertIn("espn-fifa.friendly-new", ids)
+        self.assertNotIn("espn-fifa.friendly-old", ids)
+        self.assertNotIn("espn-uefa.nations-expired", ids)
+
+    def test_successful_empty_league_is_not_resurrected_from_old_snapshot(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        previous = [{
+            "id": "espn-fifa.friendly-old", "utc": "2026-11-13T18:00:00+00:00",
+            "h": "A", "a": "B", "gender": "men",
+        }]
+        result = merge_failed_league_fixtures([], ["fifa.friendly"], previous, now=now)
+        self.assertEqual(result, [])
+
+    def test_failed_league_fixtures_are_deduplicated_with_fetched_rows(self):
+        now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        previous = [{
+            "id": "espn-uefa.nations-old", "utc": "2026-11-13T18:00:00+00:00",
+            "h": "A", "a": "B", "gender": "men",
+        }]
+        fetched = [{
+            "id": "espn-uefa.nations-new", "utc": "2026-11-13T18:00:00+00:00",
+            "h": "A", "a": "B", "gender": "men",
+        }]
+        result = merge_failed_league_fixtures(fetched, [], previous, now=now)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "espn-uefa.nations-new")
 
 
 if __name__ == "__main__":
