@@ -368,7 +368,7 @@ function record(){
 }
 function head(){const mins=Math.round((Date.now()-new Date(D.updated))/60000),h=D.data_health,stale=Number.isFinite(mins)&&mins>90;
  const standings=tab==='intl'?'':(' · standings '+(Number(h?.standings_competitions)||0)+'/'+(Number(h?.fixture_competitions)||0)+(Number(h?.standings_failures)>0?' · '+(Number(h.standings_failures)||0)+' standings feed(s) unavailable':''));
- const health=h?('<p class="note" style="margin:6px 0 12px">Feed coverage: '+(Number(h.fixture_competitions)||0)+' competitions · '+(Number(h.fixture_total)||0)+' fixtures · international '+(Number(h.international_fixture_total)||0)+standings+'</p>'):'';
+ const health=h?('<p class="note" style="margin:6px 0 12px">Feed coverage: '+(Number(h.fixture_competitions)||0)+' competitions · '+(Number(h.fixture_total)||0)+' fixtures · World Cup/EURO archive '+(Number(h.international_fixture_total)||0)+standings+'</p>'):'';
  return '<header><h1>Pitch<span>IQ</span></h1><span class="tag">'+(stale?'Data may be stale · ':'')+'Updated '+(mins<60?mins+' min':Math.round(mins/60)+' h')+' ago<br>Scores may be delayed</span></header>'+health}
 function overviewHtml(){
  const now=Date.now(),future=D.matches.filter(m=>m.status!=='FINISHED'&&new Date(m.utc)>now),liveCount=future.filter(live).length,upcoming=future.length-liveCount,competitions=new Set(future.map(m=>m.code)).size;
