@@ -28,6 +28,21 @@ def _final_score(item):
     return int(values[0]), int(values[1])
 
 
+
+def _nonnegative_integer(value):
+    """Parse a non-negative integer count without truncating or accepting booleans."""
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(number) or number < 0 or not number.is_integer():
+        return None
+    return int(number)
+
+
+
 def wilson_interval(successes, total, z=1.96):
     """Return a two-sided Wilson score interval for a binomial proportion."""
     if total <= 0 or successes < 0 or successes > total:
@@ -59,7 +74,7 @@ def _diagnostic_group(rows, label):
             home_error += abs(float(prediction["lh"]) - float(final[0]))
             away_error += abs(float(prediction["la"]) - float(final[1]))
             goal_count += 1
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             pass
     return {
         "band": label,
@@ -135,7 +150,7 @@ def input_diagnostics(predictions):
         for item, actual, probs in valid:
             team = item["inputs"].get(side) or {}
             try:
-                value = int(team["venue_matches"]) if is_venue else form_points(team.get("form"))
+                value = _nonnegative_integer(team.get("venue_matches")) if is_venue else form_points(team.get("form"))
             except (KeyError, TypeError, ValueError):
                 continue
             if value is None or (is_venue and value < 0):
@@ -152,8 +167,9 @@ def input_diagnostics(predictions):
         home = item["inputs"].get("home") or {}
         away = item["inputs"].get("away") or {}
         try:
-            home_n, away_n = int(home["venue_matches"]), int(away["venue_matches"])
-            if home_n >= 0 and away_n >= 0:
+            home_n = _nonnegative_integer(home.get("venue_matches"))
+            away_n = _nonnegative_integer(away.get("venue_matches"))
+            if home_n is not None and away_n is not None:
                 venue_rows.append((min(home_n, away_n), (item, actual, probs)))
         except (KeyError, TypeError, ValueError):
             pass
@@ -546,21 +562,20 @@ def scoreline_baseline_comparison(predictions):
     independent_losses = []
     excluded = 0
     for item in predictions:
-        final = item.get("final")
-        if not isinstance(final, list) or len(final) != 2:
+        score = _final_score(item)
+        if score is None:
+            if isinstance(item, dict) and isinstance(item.get("final"), (list, tuple)) and len(item["final"]) == 2:
+                excluded += 1
             continue
+        home_goals, away_goals = score
         try:
-            home_goals, away_goals = float(final[0]), float(final[1])
             probs = item.get("p") or {}
             home_rate, away_rate = float(probs["lh"]), float(probs["la"])
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             excluded += 1
             continue
-        if (not all(math.isfinite(value) for value in
-                    (home_goals, away_goals, home_rate, away_rate))
-                or not home_goals.is_integer() or not away_goals.is_integer()
-                or min(home_goals, away_goals) < 0
-                or home_goals >= 8 or away_goals >= 8
+        if (home_goals >= 8 or away_goals >= 8
+                or not math.isfinite(home_rate) or not math.isfinite(away_rate)
                 or not 0 < home_rate <= 10 or not 0 < away_rate <= 10):
             excluded += 1
             continue
