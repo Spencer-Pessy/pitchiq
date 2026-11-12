@@ -286,6 +286,8 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(ppg(""), 1.5)
         self.assertEqual(ppg("LLLLL"), 0.0)
         self.assertEqual(ppg("WWWWWW"), 3.0)
+        self.assertEqual(ppg("W W D L W"), 2.0)
+        self.assertEqual(ppg("abcWWDL"), 1.75)
 
     def test_poisson_distribution_value(self):
         self.assertAlmostEqual(pois(1.0, 0), math.exp(-1), places=12)
