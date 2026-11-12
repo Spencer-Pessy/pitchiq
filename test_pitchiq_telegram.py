@@ -241,3 +241,34 @@ class PickIndexValidationTests(unittest.TestCase):
         self.assertEqual(state["pending"], [])
         self.assertEqual(state["results"], [])
 
+class CurrentFixtureEligibilityTests(unittest.TestCase):
+    def setUp(self):
+        from datetime import datetime, timezone, timedelta
+        self.now = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+        self.limit = self.now + timedelta(hours=36)
+        self.pick = {"id": "fixture-1", "h": "Home", "a": "Away", "comp": "League",
+                     "utc": "2026-11-12T18:00:00Z",
+                     "p": {"ph": 0.5, "pd": 0.3, "pa": 0.2}}
+
+    def test_only_currently_scheduled_or_timed_fixtures_are_eligible(self):
+        from pitchiq_telegram import eligible_forecast
+        for status in ("SCHEDULED", "TIMED"):
+            self.assertTrue(eligible_forecast(self.pick, {"fixture-1": status}, self.now, self.limit))
+        for status in ("CANCELLED", "POSTPONED", "SUSPENDED", "IN_PLAY", "FINISHED", "ABD"):
+            with self.subTest(status=status):
+                self.assertFalse(eligible_forecast(self.pick, {"fixture-1": status}, self.now, self.limit))
+
+    def test_missing_status_or_invalid_current_feed_fails_closed(self):
+        from pitchiq_telegram import eligible_forecast
+        self.assertFalse(eligible_forecast(self.pick, {}, self.now, self.limit))
+        self.assertFalse(eligible_forecast(self.pick, None, self.now, self.limit))
+        self.assertFalse(eligible_forecast(self.pick, {"other": "SCHEDULED"}, self.now, self.limit))
+
+    def test_invalid_final_or_out_of_window_forecast_is_not_eligible(self):
+        from datetime import timedelta
+        from pitchiq_telegram import eligible_forecast
+        self.assertFalse(eligible_forecast(dict(self.pick, final=[1, 0]),
+                                           {"fixture-1": "SCHEDULED"}, self.now, self.limit))
+        late = dict(self.pick, utc=(self.limit + timedelta(minutes=1)).isoformat())
+        self.assertFalse(eligible_forecast(late, {"fixture-1": "SCHEDULED"}, self.now, self.limit))
+
