@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -225,7 +225,7 @@ def predict(s):
 # Results tracker: save each prediction before kickoff, score it after full time
 try:
     with open("predictions.json") as f:
-        preds = json.load(f)
+        preds = clean_prediction_ledger(json.load(f))
 except Exception:
     preds = {}
 
@@ -252,7 +252,7 @@ for x in out:
 
 byid = {m["id"]: m for m in fin}
 for p in preds.values():
-    if p["final"] is None and p["id"] in byid:
+    if p.get("final") is None and p.get("id") in byid:
         hg, ag = goals(byid[p["id"]])
         p["final"] = [hg, ag]
 
@@ -264,7 +264,7 @@ print("predictions stored:", len(preds))
 # remain immutable; this ledger captures current inputs for already-listed fixtures.
 try:
     with open("model_evaluation.json") as f:
-        evaluation = json.load(f)
+        evaluation = clean_prediction_ledger(json.load(f))
 except Exception:
     evaluation = {}
 finished_scores = {str(match_id): goals(match) for match_id, match in byid.items()}
