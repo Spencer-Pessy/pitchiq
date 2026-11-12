@@ -238,7 +238,8 @@
     "Saint Vincent and the Grenadines": "St Vincent and the Grenadines",
     "United States Virgin Islands": "US Virgin Islands",
     "United States": "USA",
-    "Vietnam Republic": "Vietnam"
+    "Vietnam Republic": "Vietnam",
+    "Hong Kong": "Hong Kong, China"
   },
   "forecast_policy": "Research classification only. No team is forecast-eligible until competition scope, team identity, senior men's status, source consistency, and out-of-sample validation are separately approved."
 }
