@@ -7,6 +7,11 @@ import unicodedata
 
 INTERNATIONAL_COMPETITIONS = frozenset({"WC", "EC"})
 
+
+def is_club_competition(code):
+    """Return whether a competition belongs in the club forecast pipeline."""
+    return code not in INTERNATIONAL_COMPETITIONS
+
 _TEAM_NAME_STOPWORDS = {
     "fc", "cf", "afc", "ac", "as", "ssc", "sc", "sv", "vfb", "vfl", "fsv",
     "rb", "1", "de", "the", "club", "calcio", "fk", "sk", "us", "ud",

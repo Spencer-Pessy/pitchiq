@@ -2,6 +2,8 @@ import ast
 import unittest
 from pathlib import Path
 
+from pitchiq_data import is_club_competition
+
 
 class UpdateRequestPacingTests(unittest.TestCase):
     @classmethod
@@ -78,6 +80,14 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertIn("goal_rate_calibration", self.source)
         self.assertIn('p.get("code") not in INTERNATIONAL_COMPETITIONS', self.source)
         self.assertIn('"valid results"', self.source)
+
+    def test_international_competitions_stay_out_of_club_forecast_pipeline(self):
+        self.assertFalse(is_club_competition("WC"))
+        self.assertFalse(is_club_competition("EC"))
+        self.assertTrue(is_club_competition("PL"))
+        self.assertTrue(is_club_competition("CL"))
+        self.assertIn('if not is_club_competition(m.get("_c")):', self.source)
+        self.assertIn('is_club_competition(p.get("code"))', self.source)
 
     def test_scheduled_jobs_are_staggered_away_from_hour_boundaries(self):
         update_workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")

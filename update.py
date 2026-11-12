@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name, build_head_to_head
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name, build_head_to_head
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -145,6 +145,10 @@ def team_stats(tid, home, prior_for, prior_against):
 now = datetime.now(timezone.utc)
 out = []
 for m in matches:
+    # Keep World Cup/EURO source coverage and isolated history, but never
+    # publish national-team fixtures through the club forecast feed.
+    if not is_club_competition(m.get("_c")):
+        continue
     when = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00"))
     if m["status"] == "FINISHED":
         if when < now - timedelta(hours=48):
@@ -199,7 +203,7 @@ for x in out:
 try:
     with open("predictions.json") as f:
         _prediction_data = json.load(f)
-    _pp = [p for p in _prediction_data.values() if isinstance(p, dict) and p.get("code") not in INTERNATIONAL_COMPETITIONS] if isinstance(_prediction_data, dict) else []
+    _pp = [p for p in _prediction_data.values() if isinstance(p, dict) and is_club_competition(p.get("code"))] if isinstance(_prediction_data, dict) else []
 except Exception:
     _pp = []
 CAL, _calibration_count = goal_rate_calibration(_pp)
