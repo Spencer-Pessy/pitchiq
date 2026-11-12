@@ -26,6 +26,28 @@ class BrowserForecastInputTests(unittest.TestCase):
         self.assertIn("(1-.04*(Number(A.out)||0))", source)
 
 
+class FinishedMatchForecastIntegrityTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.html = Path("index.html").read_text(encoding="utf-8")
+
+    def test_finished_fixture_cards_use_only_archived_pre_match_forecasts(self):
+        self.assertIn("const saved=tab==='done'?P[String(m.id)]:null;", self.html)
+        self.assertIn("tab==='done'?(saved&&saved.p?savedForecast(saved.p):null):model(m.s)", self.html)
+        self.assertIn("No archived pre-match forecast", self.html)
+
+    def test_finished_match_detail_never_reconstructs_a_forecast(self):
+        self.assertIn("f.status==='FINISHED'?P[String(f.id)]:null", self.html)
+        self.assertIn("No forecast was archived before kickoff for this fixture", self.html)
+        self.assertIn("const r=archived?savedForecast(archived.p):model(s)", self.html)
+        self.assertIn("if(f.status==='FINISHED'){const editor=$('#res').nextElementSibling;if(editor)editor.remove();res();return}", self.html)
+
+    def test_saved_scoreline_grid_uses_archived_expected_goal_rates(self):
+        self.assertIn("function savedForecast(p)", self.html)
+        self.assertIn("const lh=Number(p&&p.lh),la=Number(p&&p.la)", self.html)
+        self.assertIn("top:all.slice(0,5).map(([h,a,value])=>[h,a,value/total])", self.html)
+
+
 class WebsiteOutputSafetyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
