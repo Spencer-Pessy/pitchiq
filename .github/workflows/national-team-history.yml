@@ -1,0 +1,58 @@
+name: Update national-team historical ratings
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - international_history.py
+      - test_international_history.py
+      - .github/workflows/national-team-history.yml
+  schedule:
+    - cron: "30 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pitchiq-publish
+  cancel-in-progress: false
+
+jobs:
+  history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate historical source parser
+        run: |
+          python -m py_compile international_history.py test_international_history.py
+          python -m unittest -v test_international_history
+      - name: Build and publish historical Elo research snapshot
+        run: |
+          set -euo pipefail
+          git config user.name "pitchiq-bot"
+          git config user.email "bot@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            echo "History refresh attempt $attempt of 3"
+            git fetch origin main
+            git reset --hard origin/main
+            python international_history.py
+            git add international_ratings.json
+            if git diff --cached --quiet; then
+              echo "Historical ratings snapshot is unchanged."
+              exit 0
+            fi
+            git commit -m "Update national-team historical Elo snapshot"
+            if git push; then
+              echo "Historical ratings snapshot published."
+              exit 0
+            fi
+            echo "Push rejected; retrying from latest main."
+            sleep 5
+          done
+          echo "Unable to publish historical ratings after 3 fresh attempts."
+          exit 1
