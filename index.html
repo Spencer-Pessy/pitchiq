@@ -474,7 +474,7 @@ function detail(){
  const f=sel,s=f.s;
  if(!s){
   const status=({NS:'Scheduled',TBD:'Time to be confirmed','1H':'Live',HT:'Half time','2H':'Live',ET:'Extra time',P:'Penalties',FT:'Full time',AET:'After extra time',PEN:'Penalties',PST:'Postponed',CANC:'Cancelled',SUSP:'Suspended'}[f.status]||f.status||'Scheduled');
-  $('#app').innerHTML='<button class="back" id="bk">← International</button><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><h2>'+esc(f.h)+' vs '+esc(f.a)+'</h2><div class="panel"><h2>'+esc(status)+'</h2><p class="note">Kick-off: '+new Date(f.utc).toLocaleString()+'</p>'+(f.score?'<p><b>Score: '+esc(f.score[0])+' – '+esc(f.score[1])+'</b></p>':'')+(f.venue?'<p class="note">Venue: '+esc(f.venue)+'</p>':'')+'</div><p class="note">This fixture is listed from the OpenFootball public-domain World Cup dataset. PitchIQ does not provide a model forecast for it yet; national-team performance history is not sufficiently integrated.</p>';
+  $('#app').innerHTML='<button class="back" id="bk">← International</button><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><h2>'+esc(f.h)+' vs '+esc(f.a)+'</h2><div class="panel"><h2>'+esc(status)+'</h2><p class="note">Kick-off: '+new Date(f.utc).toLocaleString()+'</p>'+(f.score?'<p><b>Score: '+esc(f.score[0])+' – '+esc(f.score[1])+'</b></p>':'')+(f.venue?'<p class="note">Venue: '+esc(f.venue)+'</p>':'')+'</div><p class="note">This fixture is listed from '+esc(f.source||'public fixture feed')+'. PitchIQ does not provide a model forecast for it yet; national-team performance history is not sufficiently integrated.</p>';
   $('#bk').onclick=()=>{sel=null;tab='intl';list()};
   return;
  }
