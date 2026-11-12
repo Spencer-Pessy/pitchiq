@@ -70,6 +70,14 @@ class InternationalHistoryTests(unittest.TestCase):
         self.assertEqual(result["test_matches"], 12)
         self.assertEqual(result["holdout_start"], (start + timedelta(days=48)).isoformat())
         self.assertIn("same date share the same pre-date ratings", result["note"])
+        self.assertEqual(
+            sum(item["matches"] for item in result["holdout_slices"]["era"].values()),
+            result["test_matches"],
+        )
+        self.assertEqual(
+            sum(item["matches"] for item in result["holdout_slices"]["competition_type"].values()),
+            result["test_matches"],
+        )
         for section in ("model", "training_frequency_baseline"):
             self.assertGreaterEqual(result[section]["multiclass_brier"], 0)
             self.assertGreater(result[section]["log_loss"], 0)
