@@ -279,7 +279,8 @@ def backfill_market_odds(predictions, odds_events, snapshot_updated, now, same_t
             try:
                 event_time = datetime.fromisoformat(event["commence"].replace("Z", "+00:00"))
                 prices = [float(value) for value in event["odds"]]
-                if (abs((event_time - kickoff).total_seconds()) > max_time_difference_hours * 3600
+                if (len(prices) != 3
+                        or abs((event_time - kickoff).total_seconds()) > max_time_difference_hours * 3600
                         or not all(value > 1.0 and value < 1000 for value in prices)):
                     continue
             except (KeyError, TypeError, ValueError):
