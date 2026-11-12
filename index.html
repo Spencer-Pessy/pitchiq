@@ -395,15 +395,31 @@ function tables(){
  bind();
 }
 function international(){
- const rank=f=>['NS','TBD'].includes(f.status)?0:['1H','HT','2H','ET','P'].includes(f.status)?1:2;
- const fixtures=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a).sort((a,b)=>rank(a)-rank(b)||new Date(a.utc)-new Date(b.utc));
- const age=I.updated?Math.max(0,Math.round((Date.now()-new Date(I.updated))/36e5)):null;
+ const liveStatuses=new Set(['1H','HT','2H','ET','P']);
+ const finalStatuses=new Set(['FT','AET','PEN']);
+ const valid=(I.fixtures||[]).filter(f=>f&&f.utc&&f.h&&f.a);
+ const now=Date.now();
+ const live=valid.filter(f=>liveStatuses.has(f.status));
+ const upcoming=valid.filter(f=>!liveStatuses.has(f.status)&&!finalStatuses.has(f.status)&&!['PST','CANC','SUSP'].includes(f.status)&&new Date(f.utc).getTime()>now);
+ const completed=valid.filter(f=>finalStatuses.has(f.status)||(!liveStatuses.has(f.status)&&Array.isArray(f.score)&&new Date(f.utc).getTime()<=now));
+ const other=valid.filter(f=>!live.includes(f)&&!upcoming.includes(f)&&!completed.includes(f));
+ const age=I.updated?Math.max(0,Math.round((now-new Date(I.updated))/36e5)):null;
  const label=f=>({NS:'UPCOMING',TBD:'TIME TO BE CONFIRMED','1H':'LIVE',HT:'HALF TIME','2H':'LIVE',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED'}[f.status]||f.status||'SCHEDULED');
- const cards=fixtures.map(f=>{
+ const card=f=>{
   const score=Array.isArray(f.score)?esc(f.score[0])+' – '+esc(f.score[1]):tm(f);
   return '<button class="card" data-id="'+esc(f.id)+'"><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><span class="pill">'+esc(label(f))+'</span></button>';
- }).join('');
- $('#app').innerHTML=head()+tabsHtml()+'<p class="note">2026 FIFA World Cup · OpenFootball (CC0) · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. Fixtures only for now; no model forecasts without reliable international form data.</p>'+(cards||'<p class="note">No World Cup fixtures are available in this dataset. This free source covers the 2026 tournament, not the full calendar of international friendlies and qualifiers.</p>');
+ };
+ const section=(title,items,empty)=>'<h2 class="day">'+title+' · '+items.length+'</h2>'+(items.length?items.map(card).join(''):'<p class="note">'+empty+'</p>');
+ const upcomingSorted=[...upcoming].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
+ const liveSorted=[...live].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
+ const completedSorted=[...completed].sort((a,b)=>new Date(b.utc)-new Date(a.utc));
+ const otherSorted=[...other].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
+ $('#app').innerHTML=head()+tabsHtml()+'<p class="note">2026 FIFA World Cup · OpenFootball (CC0) · '+(age===null?'last refresh unavailable':'refreshed '+age+'h ago')+'. This dataset covers the tournament only, not the full international calendar. No model forecasts are shown without reliable national-team form data.</p>'+
+ section('Live now',liveSorted,'No live World Cup matches in this snapshot.')+
+ section('Upcoming fixtures',upcomingSorted,'No upcoming World Cup fixtures are listed in the current snapshot.')+
+ section('Completed results',completedSorted.slice(0,12),'No completed World Cup results are available.')+
+ (completedSorted.length>12?'<p class="note">Showing the 12 most recent completed matches.</p>':'')+
+ (otherSorted.length?section('Other / unconfirmed status',otherSorted,''):'');
  bind();
 }
 
