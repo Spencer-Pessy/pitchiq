@@ -77,6 +77,12 @@ class NestedFixtureSearchTests(unittest.TestCase):
         self.assertNotIn("[...$('#app').children].forEach(el=>", source)
 
 
+class MobileTouchTargetTests(unittest.TestCase):
+    def test_mobile_interactive_controls_have_minimum_44px_touch_targets(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("@media(max-width:600px){button,input,select,textarea{min-height:44px}}", source)
+
+
 class PublishedResultsPresentationTests(unittest.TestCase):
     def test_results_view_has_published_pick_summary_and_empty_state(self):
         source = Path("index.html").read_text(encoding="utf-8")
