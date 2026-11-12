@@ -115,6 +115,29 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
 
 
 
+class NewsAndSocialContactTests(unittest.TestCase):
+    def test_news_tab_exposes_all_confirmed_pitchiq_social_contacts(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        for value in (
+            "FOLLOW PITCH IQ", "Join the conversation",
+            "https://www.tiktok.com/@pitch.iq04",
+            "https://www.instagram.com/pitch.iq04/",
+            "https://x.com/PitchIQ04",
+            "https://t.me/pitchiq_picks",
+            "https://t.me/PitchIQPicks_bot",
+            "Facebook", "Ray Spencer", "profile link to be confirmed",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, source)
+
+    def test_social_contact_links_open_safely_in_new_tabs(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('class="social-grid" aria-label="PitchIQ social media contacts"', source)
+        self.assertIn('target="_blank" rel="noopener noreferrer"><b>TikTok</b>', source)
+        self.assertIn('target="_blank" rel="noopener noreferrer"><b>Instagram</b>', source)
+        self.assertIn('target="_blank" rel="noopener noreferrer"><b>X</b>', source)
+
+
 class NestedFixtureSearchTests(unittest.TestCase):
     def test_team_search_filters_nested_fixture_grid_cards_and_day_headings(self):
         source = Path("index.html").read_text(encoding="utf-8")
