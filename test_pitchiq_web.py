@@ -512,3 +512,12 @@ class InternationalFixtureDetailTests(unittest.TestCase):
         self.assertIn("Pitch IQ does not currently publish model forecasts for international fixtures", source)
         self.assertIn("$('#bk').onclick=()=>{tab='intl';list()}", source)
 
+class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
+    def test_missing_invalid_and_future_timestamps_are_not_shown_as_fresh(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const updatedAt=Date.parse(D.updated||'')", source)
+        self.assertIn("ageMs>=0?Math.floor(ageMs/60000):null", source)
+        self.assertIn("stale=mins===null||ageMs>90*60000", source)
+        self.assertIn("Freshness unavailable", source)
+        self.assertIn("freshness unavailable", source)
+
