@@ -298,3 +298,14 @@ class ForwardResearchPendingStateTests(unittest.TestCase):
         self.assertIn("No completed research sample has been scored yet.", source)
         self.assertIn("These forward-only forecasts are waiting for full-time results", source)
         self.assertIn("Research scores update as saved forecasts reach full time.", source)
+
+
+class InternationalFixtureGroupingTests(unittest.TestCase):
+    def test_international_view_separates_upcoming_live_and_completed_matches(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Live now · ", source)
+        self.assertIn("Upcoming fixtures · ", source)
+        self.assertIn("Completed results · ", source)
+        self.assertIn("No upcoming World Cup fixtures are listed in the current snapshot.", source)
+        self.assertIn("Showing the 12 most recent completed matches.", source)
+        self.assertIn("This dataset covers the tournament only, not the full international calendar.", source)
