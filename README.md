@@ -11,7 +11,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 ## Current features
 
 - Fixtures, scores, standings and scorers from football-data.org, including free-tier FIFA World Cup and UEFA European Championship tournament coverage (where fixtures are available). The main match list publishes upcoming fixtures up to 30 days ahead so international breaks do not leave the schedule looking empty.
-- A separate no-key OpenFootball World Cup 2026 fixtures/results feed (CC0). It is tournament-only, not a complete international calendar; football-data.org separately supplies its free World Cup and EURO coverage. International fixtures are listed without model forecasts until a reliable national-team history dataset is integrated.
+- A separate international fixture feed combining OpenFootball's CC0 World Cup archive with ESPN's public, no-key scoreboard for international friendlies and selected confederation competitions. ESPN's endpoint is unofficial and coverage may be incomplete, so source and coverage metadata are retained and fixtures remain separate from the club prediction engine. International fixtures are listed without model forecasts until a reliable national-team history dataset is integrated.
 - Competition top-goalscorer comparison with goals, assists, appearances, goals per appearance, assists per appearance and combined goal contributions per appearance (not per 90; minutes played are not supplied). The provider returns a top-goalscorer list rather than a complete assists leaderboard, so alternate sorts compare only those listed players and unavailable stats remain blank.
 - Home/draw/away, over 2.5 goals and both-teams-to-score probabilities.
 - Likeliest scorelines and expected goals.
@@ -25,7 +25,7 @@ PitchIQ combines recent team performance, home/away scoring rates, Elo ratings a
 
 1. `update.py` retrieves competition fixtures/results and standings, calculates team statistics and forecasts, and updates `data.json` and `predictions.json`.
 2. `odds.py` refreshes the optional odds snapshot in `odds.json`.
-3. `international.py` refreshes a separate World Cup 2026 fixture/results snapshot from OpenFootball's public-domain JSON dataset; it validates the response and preserves the last good file if the source fails.
+3. `international.py` refreshes a separate national-team fixture snapshot from OpenFootball's CC0 World Cup archive and ESPN's public scoreboard for selected international competitions; individual ESPN league failures are isolated, and the previous snapshot is preserved if every ESPN scoreboard request fails.
 4. `telegram.py` posts the top three upcoming forecasts only when new eligible picks exist; otherwise it sends nothing. It also supports a results-only mode that checks `daily/published_picks.json` and posts full-time results for those same saved picks, preserving their original probabilities and selection.
 5. `index.html` reads the published JSON files and renders the website.
 
@@ -39,7 +39,7 @@ The enabled workflows in `.github/workflows/` run on their schedules or, where e
 
 - **Update data** — every 30 minutes.
 - **Update odds** — paused by default pending explicit approval to use Odds API credits. The scheduled job is disabled and makes no requests; the existing odds snapshot remains available to the site.
-- **Update international fixtures** — daily; one public JSON download, no API key.
+- **Update international fixtures** — daily; public no-key scoreboard requests plus the OpenFootball CC0 archive. ESPN's scoreboard is unofficial and may change without notice.
 - **Telegram picks** — daily.
 - **Published-pick results** — hourly; checks only the saved picks ledger and does not call odds services or post new picks.
 
@@ -77,7 +77,7 @@ The published `data_health` object reports fixture counts by competition, total 
 
 ### International fixtures and free API quota
 
-The international feed downloads the 2026 FIFA World Cup dataset from OpenFootball's public-domain (CC0) repository once daily. It requires no API key, account, or subscription. Its scope is the World Cup tournament only; it does not provide a live calendar of friendlies or qualifiers. football-data.org's free tier separately includes World Cup and European Championship coverage. Automated injury reports are paused because no sufficiently reliable, unrestricted free replacement has been validated; users can still adjust key-player absences manually. No API-Football secret is required by PitchIQ.
+The international feed combines the 2026 FIFA World Cup archive from OpenFootball's public-domain (CC0) repository with ESPN's unauthenticated scoreboard for international friendlies and selected confederation competitions. Neither source requires a paid subscription or private API key. ESPN's site API is unofficial/undocumented, may change without notice, and its competition coverage is not guaranteed; the snapshot records which scoreboard leagues responded. Fixtures remain separate from club forecasts until a validated national-team historical dataset is integrated. Automated injury reports are paused because no sufficiently reliable, unrestricted free replacement has been validated; users can still adjust key-player absences manually. No API-Football secret is required by PitchIQ.
 
 
 ### Exact-scoreline diagnostics
