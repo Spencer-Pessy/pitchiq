@@ -128,3 +128,14 @@ class OddsMarketValidationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class OddsWorkflowActivationTests(unittest.TestCase):
+    def test_odds_workflow_is_enabled_and_skips_safely_without_api_key(self):
+        from pathlib import Path
+        workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
+        self.assertNotIn("if: ${{ false }}", workflow)
+        self.assertIn('cron: "23 7 * * *"', workflow)
+        self.assertIn("ODDS_API_KEY is not configured; no odds request was made.", workflow)
+        self.assertIn("steps.credentials.outputs.available == 'true'", workflow)
+        self.assertIn("group: pitchiq-odds", workflow)
+
