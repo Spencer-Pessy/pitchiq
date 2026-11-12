@@ -66,6 +66,18 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
 
 
 
+class MatchPreviewTests(unittest.TestCase):
+    def test_match_detail_has_dynamic_preview_and_discloses_missing_context(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const outcomeNames=[f.h+' win','Draw',f.a+' win']", source)
+        self.assertIn("<h2>Match preview</h2>", source)
+        self.assertIn("Form comparison", source)
+        self.assertIn("Team strength", source)
+        self.assertIn("Expected goal balance", source)
+        self.assertIn("confirmed lineups, tactics, weather or late team news", source)
+        self.assertIn("${preview}<div class=\"stats\">", source)
+
+
 class HomepageOverviewTests(unittest.TestCase):
     def test_upcoming_tab_has_live_dataset_overview_panel(self):
         source = Path("index.html").read_text(encoding="utf-8")
