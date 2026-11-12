@@ -23,16 +23,19 @@ jobs:
         id: credentials
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-          ODDS_FREE_TIER_CONFIRMED: ${{ vars.ODDS_FREE_TIER_CONFIRMED }}
+          # Accept either repository Actions variable or secret. The value is
+          # only a non-sensitive confirmation flag; no API key is exposed.
+          ODDS_FREE_TIER_CONFIRMED: ${{ vars.ODDS_FREE_TIER_CONFIRMED || secrets.ODDS_FREE_TIER_CONFIRMED }}
         run: |
           set -euo pipefail
           if [ "${ODDS_FREE_TIER_CONFIRMED:-}" != "true" ]; then
-            echo "::warning::Free-tier use has not been confirmed; no odds request was made."
+            echo "::warning::Free-tier use has not been confirmed in repository Variables or Secrets; no odds request was made."
             echo "available=false" >> "$GITHUB_OUTPUT"
           elif [ -z "${ODDS_API_KEY:-}" ]; then
             echo "::warning::ODDS_API_KEY is not configured; no odds request was made."
             echo "available=false" >> "$GITHUB_OUTPUT"
           else
+            echo "Free-tier confirmation and odds key are present; one daily refresh is permitted."
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Fetch odds once
