@@ -373,3 +373,19 @@ class MarketOddsBackfillTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TeamNameMatchingTests(unittest.TestCase):
+    def test_normalization_accepts_accents_punctuation_and_club_suffixes(self):
+        from pitchiq_data import same_team_name
+        self.assertTrue(same_team_name("Bodø/Glimt", "Bodo Glimt"))
+        self.assertTrue(same_team_name("Arsenal FC", "Arsenal"))
+        self.assertTrue(same_team_name("Paris Saint-Germain", "Paris Saint Germain"))
+
+    def test_ambiguous_substrings_and_similar_names_are_not_matched(self):
+        from pitchiq_data import same_team_name
+        self.assertFalse(same_team_name("City", "Manchester City"))
+        self.assertFalse(same_team_name("United", "Manchester United"))
+        self.assertFalse(same_team_name("Arsenal", "Arsenal Women"))
+        self.assertFalse(same_team_name("Inter", "Inter Miami"))
+        self.assertFalse(same_team_name("", "Arsenal"))
+
