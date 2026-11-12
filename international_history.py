@@ -404,6 +404,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
         "source": "Mart Jürisoo international_results.csv",
         "source_url": SOURCE_URL,
         "source_checksum": hashlib.sha256(csv_text.encode("utf-8")).hexdigest(),
+        "team_registry_checksum": hashlib.sha256(json.dumps(registry, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest(),
         "license": SOURCE_LICENSE,
         "scope": "Men's full internationals; source also contains some non-FIFA representative teams",
         "matches_processed": len(matches),
@@ -445,7 +446,9 @@ def main():
             existing = json.load(existing_file)
     except (OSError, ValueError):
         existing = {}
-    if existing.get("version") == snapshot["version"] and existing.get("source_checksum") == snapshot["source_checksum"]:
+    if (existing.get("version") == snapshot["version"]
+            and existing.get("source_checksum") == snapshot["source_checksum"]
+            and existing.get("team_registry_checksum") == snapshot["team_registry_checksum"]):
         print("International historical source is unchanged; preserving the existing snapshot.")
         return
     with open(OUTPUT, "w", encoding="utf-8") as output:
