@@ -77,6 +77,36 @@ class InternationalFeedTests(unittest.TestCase):
         self.assertEqual(row["status"], "FT")
         self.assertEqual(row["score"], [2, 1])
 
+    def test_live_periods_are_not_mislabeled(self):
+        base = {
+            "id": "live-1",
+            "date": "2026-11-14T16:00:00Z",
+            "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"name": "Kenya"}, "score": "0"},
+                {"homeAway": "away", "team": {"name": "Uganda"}, "score": "0"},
+            ]}],
+        }
+        first_half = dict(base, status={"type": {"state": "in", "period": 1, "name": "STATUS_FIRST_HALF"}})
+        half_time = dict(base, status={"type": {"state": "in", "name": "STATUS_HALFTIME"}})
+        second_half = dict(base, status={"type": {"state": "in", "period": 2, "name": "STATUS_SECOND_HALF"}})
+        self.assertEqual(normalize_espn_event(first_half, "fifa.friendly", "Friendlies")["status"], "1H")
+        self.assertEqual(normalize_espn_event(half_time, "fifa.friendly", "Friendlies")["status"], "HT")
+        self.assertEqual(normalize_espn_event(second_half, "fifa.friendly", "Friendlies")["status"], "2H")
+
+    def test_postponed_match_is_not_marked_final(self):
+        event = {
+            "id": "postponed-1",
+            "date": "2026-11-14T16:00:00Z",
+            "status": {"type": {"state": "pre", "name": "STATUS_POSTPONED", "description": "Postponed"}},
+            "competitions": [{"competitors": [
+                {"homeAway": "home", "team": {"name": "Kenya"}},
+                {"homeAway": "away", "team": {"name": "Uganda"}},
+            ]}],
+        }
+        row = normalize_espn_event(event, "fifa.friendly", "Friendlies")
+        self.assertEqual(row["status"], "PST")
+        self.assertIsNone(row["score"])
+
     def test_rejects_malformed_espn_event(self):
         self.assertIsNone(normalize_espn_event({}, "fifa.friendly", "Friendlies"))
         self.assertIsNone(normalize_espn_event({
