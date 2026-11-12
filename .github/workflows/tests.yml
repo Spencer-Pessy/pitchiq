@@ -1,0 +1,24 @@
+name: Offline tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: pitchiq-offline-tests-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate Python syntax
+        run: python -m py_compile update.py test_update.py international.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py
+      - name: Run offline test suite
+        run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_pitchiq_odds test_pitchiq_telegram test_update
