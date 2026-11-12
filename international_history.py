@@ -91,29 +91,41 @@ def tournament_weight(tournament):
 
 
 def build_ratings(matches):
-    """Replay results chronologically; return end-of-sample Elo and team counts."""
+    """Replay results by date; all fixtures on one date share the same prior ratings."""
     ratings = defaultdict(lambda: INITIAL_RATING)
     counts = defaultdict(int)
     last_played = {}
-
-    for match in sorted(matches, key=lambda row: (row["date"], row["home"].casefold(), row["away"].casefold())):
-        home, away = match["home"], match["away"]
-        home_rating, away_rating = ratings[home], ratings[away]
-        venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
-        expected_home = 1.0 / (1.0 + 10.0 ** (-((home_rating + venue_bonus - away_rating) / 400.0)))
-        if match["home_score"] > match["away_score"]:
-            actual_home = 1.0
-        elif match["home_score"] == match["away_score"]:
-            actual_home = 0.5
+    ordered = sorted(matches, key=lambda row: (row["date"], row["home"].casefold(), row["away"].casefold()))
+    days = []
+    for match in ordered:
+        if not days or days[-1][0]["date"] != match["date"]:
+            days.append([match])
         else:
-            actual_home = 0.0
-        change = K_FACTOR * tournament_weight(match["tournament"]) * (actual_home - expected_home)
-        ratings[home] = home_rating + change
-        ratings[away] = away_rating - change
-        counts[home] += 1
-        counts[away] += 1
-        last_played[home] = match["date"]
-        last_played[away] = match["date"]
+            days[-1].append(match)
+
+    for day_matches in days:
+        prepared = []
+        for match in day_matches:
+            home, away = match["home"], match["away"]
+            home_rating, away_rating = ratings[home], ratings[away]
+            venue_bonus = 0.0 if match["neutral"] else HOME_ADVANTAGE
+            expected_home = 1.0 / (1.0 + 10.0 ** (-((home_rating + venue_bonus - away_rating) / 400.0)))
+            if match["home_score"] > match["away_score"]:
+                actual_home = 1.0
+            elif match["home_score"] == match["away_score"]:
+                actual_home = 0.5
+            else:
+                actual_home = 0.0
+            change = K_FACTOR * tournament_weight(match["tournament"]) * (actual_home - expected_home)
+            prepared.append((match, change))
+        for match, change in prepared:
+            home, away = match["home"], match["away"]
+            ratings[home] += change
+            ratings[away] -= change
+            counts[home] += 1
+            counts[away] += 1
+            last_played[home] = match["date"]
+            last_played[away] = match["date"]
 
     teams = [
         {
@@ -125,7 +137,6 @@ def build_ratings(matches):
         for team in sorted(ratings, key=str.casefold)
     ]
     return teams
-
 
 
 def _elo_expected_score(ratings, match):
@@ -279,7 +290,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
     data_through = matches[-1]["date"]
     latest = date.fromisoformat(data_through)
     return {
-        "version": 3,
+        "version": 4,
         "updated": fetched_at or datetime.now(timezone.utc).isoformat(),
         "data_through": data_through,
         "freshness_days": (today - latest).days,
