@@ -66,6 +66,24 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
 
 
 
+class PublishedResultsPresentationTests(unittest.TestCase):
+    def test_results_view_has_published_pick_summary_and_empty_state(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("PITCH IQ PUBLISHED PICK TRACKER", source)
+        self.assertIn("Results that match our picks.", source)
+        self.assertIn("Settled picks", source)
+        self.assertIn("Awaiting full time", source)
+        self.assertIn("No published picks to score yet", source)
+        self.assertIn("No forecasts are invented to fill the record", source)
+
+    def test_results_accuracy_uses_only_valid_settled_published_picks(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("typeof r.correct==='boolean'", source)
+        self.assertIn("const hits=sorted.filter(r=>r.correct===true).length,misses=sorted.length-hits", source)
+        self.assertIn("Accuracy uses settled published picks only; pending picks are excluded", source)
+        self.assertIn("saved pre-match pick and probability are never replaced", source)
+
+
 class PicksPresentationTests(unittest.TestCase):
     def test_picks_screen_explains_shortlist_and_market_freshness(self):
         source = Path("index.html").read_text(encoding="utf-8")
