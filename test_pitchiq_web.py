@@ -19,6 +19,13 @@ class DynamicInputAccessibilityTests(unittest.TestCase):
         self.assertIn('#splash{display:none!important}', source)
 
 
+class BrowserForecastInputTests(unittest.TestCase):
+    def test_missing_absence_counts_default_to_zero_in_browser_model(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("(1-.04*(Number(H.out)||0))", source)
+        self.assertIn("(1-.04*(Number(A.out)||0))", source)
+
+
 class WebsiteOutputSafetyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
