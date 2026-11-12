@@ -144,6 +144,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .pick-card .pick-meter{height:6px;background:#333;border-radius:9px;overflow:hidden;margin-top:11px}
 .pick-card .pick-meter i{display:block;height:100%;background:linear-gradient(90deg,#8e0805,#ff342d);border-radius:9px}
 @media(max-width:480px){.pick-intro{padding:15px}.pick-count{min-width:76px}.pick-count b{font-size:25px}.pick-head h2{font-size:24px}}
+.results-intro{border:1px solid #542020;border-radius:15px;padding:18px 20px;margin:0 0 14px;background:linear-gradient(115deg,#260707,#171111 58%,#121212)}
+.results-intro h2{font-size:clamp(24px,3vw,32px);margin:5px 0}
+.results-intro p{font-size:13px;color:#c4baba;margin:0;max-width:650px}
+.results-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+.results-stats>div{padding:12px;border:1px solid #ffffff20;border-radius:11px;background:#08080866}
+.results-stats b{display:block;font:800 27px/1.1 Impact,Arial,sans-serif}
+.results-stats span{font-size:10px;color:#c9baba;text-transform:uppercase;letter-spacing:.6px}
+.results-section{margin-top:17px}
+.results-card{border-left-width:4px}
+.results-card.is-hit{border-left-color:var(--ok)}
+.results-card.is-miss{border-left-color:var(--no)}
+.results-card .result-status{display:inline-flex;align-items:center;gap:6px;margin-top:9px}
+.results-empty{border:1px dashed #6b3434;background:#160d0d}
+@media(max-width:480px){.results-intro{padding:15px}.results-stats{gap:6px}.results-stats>div{padding:10px 8px}.results-stats b{font-size:23px}.results-stats span{font-size:9px}}
+
 
 </style>
 </head>
@@ -394,19 +409,21 @@ function international(){
 
 function publishedResultsHtml(){
  const pending=(Array.isArray(Q?.pending)?Q.pending:[]).filter(r=>r&&r.id!=null&&r.h&&r.a&&r.comp&&r.p&&[0,1,2].includes(r.pick_index));
- const entries=(Array.isArray(Q?.results)?Q.results:[]).filter(r=>r&&Array.isArray(r.final)&&r.final.length===2&&Number.isInteger(r.final[0])&&Number.isInteger(r.final[1])&&r.final[0]>=0&&r.final[1]>=0&&r.p&&[0,1,2].includes(r.pick_index));
- if(!pending.length&&!entries.length)return '<div class="panel"><h2>Published picks · results</h2><p class="note" style="margin:0">No published top picks have been settled yet. Once a match from a PitchIQ picks post reaches full time, its original pick and result will appear here.</p></div>';
+ const entries=(Array.isArray(Q?.results)?Q.results:[]).filter(r=>r&&Array.isArray(r.final)&&r.final.length===2&&Number.isInteger(r.final[0])&&Number.isInteger(r.final[1])&&r.final[0]>=0&&r.final[1]>=0&&r.p&&[0,1,2].includes(r.pick_index)&&typeof r.correct==='boolean');
+ const sorted=[...entries].sort((a,b)=>new Date(b.utc)-new Date(a.utc));
+ const hits=sorted.filter(r=>r.correct===true).length,misses=sorted.length-hits,accuracy=sorted.length?Math.round(hits/sorted.length*100):null;
  const labels=r=>['Home win: '+esc(r.h),'Draw','Away win: '+esc(r.a)];
  const pendingCards=[...pending].sort((a,b)=>new Date(a.utc)-new Date(b.utc)).map(r=>{
   const key=['ph','pd','pa'][r.pick_index],prob=Number(r.p&&r.p[key]),validProb=Number.isFinite(prob)&&prob>=0&&prob<=1;
-  return '<div class="card"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">–</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill">⏳ Awaiting full time · '+labels(r)[r.pick_index]+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
+  return '<div class="card results-card"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">–</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill result-status">⏳ Awaiting full time · '+labels(r)[r.pick_index]+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
  }).join('');
- const sorted=[...entries].sort((a,b)=>new Date(b.utc)-new Date(a.utc)),hits=sorted.filter(r=>r.correct===true).length;
  const cards=sorted.map(r=>{
   const key=['ph','pd','pa'][r.pick_index],prob=Number(r.p&&r.p[key]),validProb=Number.isFinite(prob)&&prob>=0&&prob<=1;
-  return '<div class="card"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">'+r.final[0]+' – '+r.final[1]+'</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill" style="color:var('+(r.correct===true?'--ok':'--no')+')">'+(r.correct===true?'✓ Correct':'✗ Missed')+' · '+labels(r)[r.pick_index]+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
+  return '<div class="card results-card '+(r.correct?'is-hit':'is-miss')+'"><div class="comp">'+esc(r.comp)+' · '+new Date(r.utc).toLocaleDateString([],{day:'numeric',month:'short'})+'</div><div class="row"><span class="tm">'+esc(r.h)+'</span><span class="ko">'+r.final[0]+' – '+r.final[1]+'</span><span class="tm r">'+esc(r.a)+'</span></div><span class="pill result-status" style="color:var('+(r.correct?'--ok':'--no')+')">'+(r.correct?'✓ Correct':'✗ Missed')+' · '+labels(r)[r.pick_index]+(validProb?' ('+Math.round(prob*100)+'%)':'')+'</span></div>';
  }).join('');
- return '<div class="panel"><h2>Published picks · results</h2>'+(entries.length?'<div class="stat"><span>Correct picks</span><b>'+hits+' / '+sorted.length+' ('+Math.round(hits/sorted.length*100)+'%)</b></div>':'')+(pending.length?'<h3>Awaiting full time · '+pending.length+'</h3>'+pendingCards:'')+(entries.length?'<h3>Settled published picks</h3>':'')+cards+'<p class="note">Only matches previously selected and published by PitchIQ are included. Each result is matched by its original fixture ID; the pre-match pick and probabilities are preserved. Pending picks are not counted in the accuracy rate.</p></div>';
+ const summary='<section class="results-intro"><div class="hero-kicker">PITCH IQ PUBLISHED PICK TRACKER</div><h2>Results that match our picks.</h2><p>Only forecasts actually published by PitchIQ are tracked here. Original selections and pre-match probabilities stay attached to their fixture through full time.</p><div class="results-stats"><div><b>'+sorted.length+'</b><span>Settled picks</span></div><div><b>'+pending.length+'</b><span>Awaiting full time</span></div><div><b>'+(accuracy===null?'—':accuracy+'%')+'</b><span>Settled accuracy</span></div></div></section>';
+ if(!pending.length&&!entries.length)return summary+'<div class="panel results-empty"><h3>No published picks to score yet</h3><p class="note" style="margin:0">When a top-picks post is successfully delivered, its exact fixtures are saved here. After those matches finish, this page will show the original selections, final scores and hit-or-miss results. No forecasts are invented to fill the record.</p></div>';
+ return summary+'<div class="panel">'+(pending.length?'<h3 class="results-section">Awaiting full time · '+pending.length+'</h3><div class="fixture-grid">'+pendingCards+'</div>':'')+(entries.length?'<h3 class="results-section">Settled published picks</h3><div class="stat"><span>Correct · missed</span><b>'+hits+' · '+misses+'</b></div><div class="fixture-grid">'+cards+'</div>':'')+'<p class="note">Accuracy uses settled published picks only; pending picks are excluded. Each result is matched by its original fixture ID. The saved pre-match pick and probability are never replaced by a later forecast.</p></div>';
 }
 
 function list(){
