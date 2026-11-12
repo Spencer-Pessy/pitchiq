@@ -73,3 +73,26 @@ class PitchIQNewsValidationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PitchIQNewsWorkflowTests(unittest.TestCase):
+    def test_news_workflow_is_opt_in_and_uses_a_separate_channel_target(self):
+        from pathlib import Path
+        workflow = Path(".github/workflows/telegram-news.yml").read_text(encoding="utf-8")
+        self.assertIn("cron: '43 */4 * * *'", workflow)
+        self.assertIn("PITCHIQ_NEWS_ENABLED: ${{ vars.PITCHIQ_NEWS_ENABLED }}", workflow)
+        self.assertIn("TELEGRAM_NEWS_CHAT_ID: ${{ secrets.TELEGRAM_NEWS_CHAT_ID }}", workflow)
+        self.assertIn("group: pitchiq-telegram-news", workflow)
+        self.assertNotIn("TELEGRAM_CHAT_ID:", workflow)
+        self.assertIn("never rerun the Telegram send step", workflow)
+
+    def test_existing_news_history_is_preserved_as_a_list(self):
+        import json
+        from pathlib import Path
+        history = json.loads(Path("daily/news_seen.json").read_text(encoding="utf-8"))
+        self.assertIsInstance(history, list)
+        self.assertTrue(all(isinstance(url, str) for url in history))
+
+
+if __name__ == "__main__":
+    unittest.main()
