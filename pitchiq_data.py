@@ -150,6 +150,8 @@ def goal_rate_calibration(predictions, minimum_results=10, prior_strength=120,
         forecast = item.get("p")
         if not isinstance(final, (list, tuple)) or len(final) != 2 or not isinstance(forecast, dict):
             continue
+        if any(isinstance(value, bool) for value in final):
+            continue
         try:
             actual_home, actual_away = (float(value) for value in final)
             predicted_home = float(forecast.get("rlh", forecast.get("lh")))
