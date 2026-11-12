@@ -239,7 +239,12 @@
     "United States Virgin Islands": "US Virgin Islands",
     "United States": "USA",
     "Vietnam Republic": "Vietnam",
-    "Hong Kong": "Hong Kong, China"
+    "Hong Kong": "Hong Kong, China",
+    "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+    "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+    "St. Kitts and Nevis": "St Kitts and Nevis",
+    "St. Lucia": "St Lucia",
+    "St. Vincent and the Grenadines": "St Vincent and the Grenadines"
   },
   "forecast_policy": "Research classification only. No team is forecast-eligible until competition scope, team identity, senior men's status, source consistency, and out-of-sample validation are separately approved."
 }
