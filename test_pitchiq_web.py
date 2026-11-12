@@ -408,6 +408,16 @@ class ServiceWorkerLiveDataTests(unittest.TestCase):
         self.assertIn("fetch(request)", source)
         self.assertIn("{version: 1, pending: [], results: [], sent_ids: []}", source)
 
+    def test_service_worker_precaches_every_manifest_install_icon(self):
+        import json
+        manifest = json.loads(Path("manifest.json").read_text(encoding="utf-8"))
+        source = Path("sw.js").read_text(encoding="utf-8")
+        core_line = next(line for line in source.splitlines() if line.startswith("const CORE = "))
+        for icon in manifest["icons"]:
+            with self.subTest(icon=icon["src"]):
+                self.assertIn("'./" + icon["src"] + "'", core_line)
+                self.assertTrue(Path(icon["src"]).is_file())
+
 
 class InternationalFixtureFilterTests(unittest.TestCase):
     def test_international_view_exposes_gender_competition_and_search_filters(self):
