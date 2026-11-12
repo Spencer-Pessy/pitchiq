@@ -66,6 +66,18 @@ class WebsiteOutputSafetyTests(unittest.TestCase):
 
 
 
+class HomepageOverviewTests(unittest.TestCase):
+    def test_upcoming_tab_has_live_dataset_overview_panel(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("function overviewHtml()", source)
+        self.assertIn("FREE FOOTBALL INTELLIGENCE", source)
+        self.assertIn("Upcoming fixtures", source)
+        self.assertIn("Live matches", source)
+        self.assertIn("Competitions covered", source)
+        self.assertIn("Data refreshed", source)
+        self.assertIn("(tab==='up'?overviewHtml():'')", source)
+
+
 class OddsFreshnessWebTests(unittest.TestCase):
     def test_market_value_comparison_requires_fresh_snapshot(self):
         source = Path("index.html").read_text(encoding="utf-8")
