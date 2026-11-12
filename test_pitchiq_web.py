@@ -456,7 +456,9 @@ class InternationalFixtureFilterTests(unittest.TestCase):
         self.assertIn("genderCounts.women", source)
         self.assertIn("feed.espn_leagues_checked", source)
         self.assertIn("successful response can contain zero fixtures", source)
-        self.assertIn("request health, not a guarantee of competition coverage", source)
+        self.assertIn("ESPN scoreboard requests:", source)
+        self.assertIn("leagues responded at least once", source)
+        self.assertIn("not a guarantee of competition coverage", source)
 
     def test_international_feed_warns_when_snapshot_is_older_than_36_hours(self):
         source = Path("index.html").read_text(encoding="utf-8")
