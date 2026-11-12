@@ -44,8 +44,9 @@ The enabled workflows in `.github/workflows/` run on their schedules or, where e
 - **Update odds** — enabled once daily at 07:23 UTC on the free tier only. The workflow requires `ODDS_API_KEY` and an explicit `ODDS_FREE_TIER_CONFIRMED=true` confirmation in repository Variables or Secrets; otherwise it logs a warning and skips every request. It never upgrades a plan. Daily picks run later at 07:43 UTC.
 - **Update international fixtures** — daily; public no-key scoreboard requests plus the OpenFootball CC0 archive. ESPN's scoreboard is unofficial and may change without notice.
 - **Update national-team historical ratings** — weekly; refreshes a CC0 men's international results snapshot and rebuilds a separate chronological Elo research artifact. No paid API or prediction publication.
-- **Telegram picks** — daily.
-- **Published-pick results** — hourly; checks only the saved picks ledger and does not call odds services or post new picks.
+- **Telegram picks** — daily at 07:43 UTC; posts only when eligible, unpublished fixtures are within the next 36 hours.
+- **Telegram football news** — every four hours at minute 43 UTC; publishes up to three recent, unseen BBC Sport football headlines to `@pitchiq_picks`, with direct source links. It uses a separate news destination and deduplication ledger from the picks bot.
+- **Published-pick results** — hourly at minute 17 UTC; checks only the saved picks ledger and does not call odds services or post new picks or news.
 
 The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
 
