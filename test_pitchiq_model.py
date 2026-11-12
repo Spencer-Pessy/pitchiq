@@ -417,6 +417,25 @@ class FinalScoreValidationTests(unittest.TestCase):
         self.assertTrue(all(row["matches"] == 0
                             for rows in goal_metrics.values() for row in rows))
 
+    def test_numeric_overflow_is_excluded_without_crashing_metrics(self):
+        huge = 10 ** 10000
+        row = {"final": [1, 0], "p": {"ph": huge, "pd": 0, "pa": 0,
+                                       "lh": huge, "la": 1, "o25": huge,
+                                       "bt": 0}}
+        self.assertEqual(evaluate([row])["matches"], 0)
+        self.assertEqual(sum(x["matches"] for x in outcome_class_metrics([row]).values()), 0)
+        self.assertEqual(baseline_comparison([row])["rolling_prior"]["matches"], 0)
+        self.assertEqual(binary_market_metrics([row], "o25")["matches"], 0)
+        self.assertTrue(all(x["matches"] == 0 for rows in
+                            expected_goals_calibration([row]).values() for x in rows))
+        snapshot_row = {
+            "final": [1, 0], "p": {"ph": .6, "pd": .2, "pa": .2},
+            "inputs": {"schema": 2, "home": {"venue_matches": 2, "form": "WW"},
+                       "away": {"venue_matches": 2, "form": "LL"},
+                       "league_home": huge, "league_away": 1, "calibration": {}},
+        }
+        self.assertEqual(ablation_comparison([snapshot_row])["matches"], 0)
+
     def test_valid_integer_scores_remain_in_metrics(self):
         rows = [{"final": [2, 1], "p": {"ph": .6, "pd": .2, "pa": .2,
                                         "lh": 1.8, "la": 1.1,
