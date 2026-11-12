@@ -1,5 +1,9 @@
 name: Update odds
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/odds.yml
   schedule:
     # One refresh per day to conserve the free API allowance.
     - cron: "23 7 * * *"
