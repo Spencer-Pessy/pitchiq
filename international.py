@@ -73,6 +73,7 @@ def normalize_matches(payload):
             "score": score,
             "venue": match.get("ground") or "",
             "source": SOURCE_LABEL,
+            "gender": "men",
         })
     if not output:
         raise ValueError("OpenFootball dataset contained no valid fixtures")
@@ -159,6 +160,7 @@ def normalize_espn_event(event, league_slug, league_label):
         "score": score,
         "venue": venue,
         "source": "ESPN public scoreboard (unofficial)",
+        "gender": "women" if str(league_slug).casefold().endswith(".w") else "men",
     }
 
 
@@ -203,7 +205,7 @@ def deduplicate(fixtures):
     """Prefer the first source row for identical kickoff/team pairs."""
     seen, output = set(), []
     for item in sorted(fixtures, key=lambda row: row["utc"]):
-        key = (item["utc"], item["h"].casefold(), item["a"].casefold())
+        key = (item["utc"], item.get("gender", "men"), item["h"].casefold(), item["a"].casefold())
         if key in seen:
             continue
         seen.add(key)
