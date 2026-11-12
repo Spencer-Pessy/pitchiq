@@ -192,6 +192,18 @@ function model(s){
  all.sort((x,y)=>y[2]-x[2]);
  return{lh,la,ph,pd,pa,o25,bt,cs0:m[0][0],top:all.slice(0,5)};
 }
+function savedForecast(p){
+ const lh=Number(p&&p.lh),la=Number(p&&p.la);
+ if(!Number.isFinite(lh)||!Number.isFinite(la)||lh<=0||la<=0)return null;
+ const all=[];let total=0,cs0=0;
+ for(let i=0;i<8;i++)for(let j=0;j<8;j++){
+  const value=pois(lh,i)*pois(la,j)*tau(i,j,lh,la,-.1);
+  total+=value;all.push([i,j,value]);if(i===0&&j===0)cs0=value;
+ }
+ if(!Number.isFinite(total)||total<=0)return null;
+ all.sort((x,y)=>y[2]-x[2]);
+ return{...p,cs0:cs0/total,top:all.slice(0,5).map(([h,a,value])=>[h,a,value/total])};
+}
 const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
 const tm=m=>new Date(m.utc).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 const dy=m=>new Date(m.utc).toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'});
@@ -480,12 +492,12 @@ function list(){
  if(tab=='up'&&ms.length)html+='<div class="fixture-grid">';
  for(const m of ms){
   const d=dy(m);if(d!=last){html+=`<div class="day">${d}</div>`;last=d}
-  const r=model(m.s);
+  const saved=tab==='done'?P[String(m.id)]:null;
+  const r=tab==='done'?(saved&&saved.p?savedForecast(saved.p):null):model(m.s);
   const mid=m.score?`${m.score[0]} – ${m.score[1]}`:tm(m);
   html+=`<button class="card" data-id="${m.id}"><div class="comp">${esc(m.comp)}${live(m)?' · <b style="color:var(--live)">LIVE</b>':''}</div>
   <div class="row"><span class="tm">${esc(m.h)}</span><span class="ko">${mid}</span><span class="tm r">${esc(m.a)}</span></div>
-  <div class="mini"><i style="width:${r.ph*100}%;background:var(--home)"></i><i style="width:${r.pd*100}%;background:var(--draw)"></i><i style="width:${r.pa*100}%;background:var(--away)"></i></div>
-  <span class="pill">${Math.round(r.ph*100)} / ${Math.round(r.pd*100)} / ${Math.round(r.pa*100)}</span></button>`;
+  ${r?'<div class="mini"><i style="width:'+r.ph*100+'%;background:var(--home)"></i><i style="width:'+r.pd*100+'%;background:var(--draw)"></i><i style="width:'+r.pa*100+'%;background:var(--away)"></i></div><span class="pill">'+(tab==='done'?'Pre-match snapshot · ':'')+Math.round(r.ph*100)+' / '+Math.round(r.pd*100)+' / '+Math.round(r.pa*100)+'</span>':'<span class="pill">No archived pre-match forecast</span>'}</button>`;
  }
  if(tab=='up'&&ms.length)html+='</div>';
  $('#app').innerHTML=head()+tabsHtml()+(tab=='up'?overviewHtml():'')+`<select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${esc(n)}</option>`).join('')}</select>
@@ -510,6 +522,7 @@ function detail(){
  <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
  <label>Decimal odds: home / draw / away (filled in automatically when available)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input aria-label="Home decimal odds" data-k="o0" value="${f.odds?f.odds[0]:''}" inputmode="decimal"><input aria-label="Draw decimal odds" data-k="o1" value="${f.odds?f.odds[1]:''}" inputmode="decimal"><input aria-label="Away decimal odds" data-k="o2" value="${f.odds?f.odds[2]:''}" inputmode="decimal"></div></div>`;
  $('#bk').onclick=()=>{sel=null;list()};
+ if(f.status==='FINISHED'){const editor=$('#res').nextElementSibling;if(editor)editor.remove();res();return}
  document.querySelectorAll('input').forEach(i=>i.oninput=()=>{
   const k=i.dataset.k,v=i.value;
   if(k[0]=='o'){s.odds=s.odds||[0,0,0];f.odds=f.odds||[0,0,0];f.odds[+k[1]]=parseFloat(v)||0}
@@ -518,10 +531,12 @@ function detail(){
  res();
 }
 function res(){
- const f=sel,s=f.s,r=model(s);let v='';
- if(f.odds&&f.odds.every(x=>x>1)){
-  const inv=f.odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],mp=[r.ph,r.pd,r.pa],nm=[f.h,'Draw',f.a];
-  v=`<div class="panel"><h2>Value check</h2><table><tr><th>Pick</th><th>Model</th><th>Market</th><th>Edge</th></tr>${f.odds.map((x,i)=>{const e=mp[i]*x-1;return`<tr><td>${esc(nm[i])}</td><td>${pct(mp[i])}</td><td>${pct(inv[i]/sum)}</td><td class="${e>=.05?'ok':'no'}">${(e*100).toFixed(1)}%</td></tr>`}).join('')}</table>
+ const f=sel,s=f.s,archived=f.status==='FINISHED'?P[String(f.id)]:null;
+ if(f.status==='FINISHED'&&(!archived||!archived.p)){$('#res').innerHTML='<div class="panel"><h2>Pre-match forecast unavailable</h2><p class="note">No forecast was archived before kickoff for this fixture. PitchIQ will not reconstruct one from statistics that include the final result.</p></div>';return}
+ const r=archived?savedForecast(archived.p):model(s);if(!r){$('#res').innerHTML='<div class="panel"><h2>Forecast unavailable</h2><p class="note">The saved forecast snapshot is incomplete or invalid.</p></div>';return}const odds=archived?archived.odds:f.odds;let v='';
+ if(odds&&odds.every(x=>x>1)){
+  const inv=odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],mp=[r.ph,r.pd,r.pa],nm=[f.h,'Draw',f.a];
+  v=`<div class="panel"><h2>Value check</h2><table><tr><th>Pick</th><th>Model</th><th>Market</th><th>Edge</th></tr>${odds.map((x,i)=>{const e=mp[i]*x-1;return`<tr><td>${esc(nm[i])}</td><td>${pct(mp[i])}</td><td>${pct(inv[i]/sum)}</td><td class="${e>=.05?'ok':'no'}">${(e*100).toFixed(1)}%</td></tr>`}).join('')}</table>
   <p class="note">If the model and the market differ a lot, trust the market more. It knows lineups and news this model doesn’t.</p></div>`;
  }
  const st=(k,x)=>`<div class="stat"><span>${k}</span><b>${x}</b></div>`;
@@ -530,7 +545,8 @@ function res(){
  const eloGap=Number(s.h.elo||0)-Number(s.a.elo||0),formGap=ppg(s.h.form)-ppg(s.a.form);
  const formRead=Math.abs(formGap)<.15?'Recent form ratings are close.':(formGap>0?f.h:f.a)+' has the stronger recent form rating.';
  const eloRead=Math.abs(eloGap)<20?'Elo ratings are close.':`${esc(eloGap>0?f.h:f.a)} has a ${Math.abs(Math.round(eloGap))}-point Elo advantage.`;
- const preview=`<div class="panel"><h2>Match preview</h2><p class="note">${lean}</p><div class="stats">${st('Form comparison',formRead)}${st('Team strength',eloRead)}${st('Expected goal balance',`${r.lh.toFixed(2)} – ${r.la.toFixed(2)}`)}${st('Goal outlook',`${pct(r.o25)} over 2.5 · ${pct(r.bt)} both teams score`)}</div><p class="note">Form samples: ${Number(s.h.form_matches??0)} for ${esc(f.h)} and ${Number(s.a.form_matches??0)} for ${esc(f.a)}. Venue scoring samples: ${Number(s.h.venue_matches??0)} home matches and ${Number(s.a.venue_matches??0)} away matches. This preview summarises the model inputs; it does not include confirmed lineups, tactics, weather or late team news.</p></div>`;
+ const currentPreview=`<div class="panel"><h2>Match preview</h2><p class="note">${lean}</p><div class="stats">${st('Form comparison',formRead)}${st('Team strength',eloRead)}${st('Expected goal balance',`${r.lh.toFixed(2)} – ${r.la.toFixed(2)}`)}${st('Goal outlook',`${pct(r.o25)} over 2.5 · ${pct(r.bt)} both teams score`)}</div><p class="note">Form samples: ${Number(s.h.form_matches??0)} for ${esc(f.h)} and ${Number(s.a.form_matches??0)} for ${esc(f.a)}. Venue scoring samples: ${Number(s.h.venue_matches??0)} home matches and ${Number(s.a.venue_matches??0)} away matches. This preview summarises the model inputs; it does not include confirmed lineups, tactics, weather or late team news.</p></div>`;
+ const preview=archived?'<div class="panel"><h2>Original pre-match snapshot</h2><p class="note">These probabilities and expected-goal rates were saved before kickoff and are shown unchanged. They are not recalculated from the finished match.</p></div>':currentPreview;
  $('#res').innerHTML=`<div class="panel"><h2>Forecast</h2>
  <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
  <div class="legend"><span>${esc(f.h)}</span><span>Draw</span><span>${esc(f.a)}</span></div>
