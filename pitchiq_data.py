@@ -8,8 +8,8 @@ INTERNATIONAL_COMPETITIONS = frozenset({"WC", "EC"})
 def goal_average_keys(code):
     """Return aggregation buckets without mixing international and club goals."""
     if code in INTERNATIONAL_COMPETITIONS:
-        return code, "INTL", "ALL"
-    return code, "ALL"
+        return code, "INTL"
+    return code, "CLUB"
 
 
 def average_bucket(code, counts):
@@ -18,7 +18,7 @@ def average_bucket(code, counts):
     if code in INTERNATIONAL_COMPETITIONS and count < 20:
         return "INTL"
     if code == "CL" or count < 20:
-        return "ALL"
+        return "CLUB"
     return code
 
 
