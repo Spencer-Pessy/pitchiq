@@ -40,6 +40,9 @@ for sk in WANT:
     except ValueError as error:
         raise SystemExit(f"Aborting odds update: invalid {sk} odds response ({error}); previous odds.json will be kept.")
 
+# Never replace the last known-good snapshot with an empty or inactive feed.
+events = require_nonempty_snapshot(active, WANT, events)
+
 snapshot = {"updated": datetime.now(timezone.utc).isoformat(), "events": events}
 with open("odds.json", "w", encoding="utf-8") as f:
     json.dump(snapshot, f, ensure_ascii=False)
