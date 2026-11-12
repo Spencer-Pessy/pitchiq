@@ -536,7 +536,9 @@ class OddsDisplayDisclosureTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("saved market snapshot, editable", source)
         self.assertIn("Market snapshot captured", source)
-        self.assertIn("This is a stored pre-match comparison, not live odds.", source)
+        self.assertIn("Stored pre-match prices, not live odds.", source)
+        self.assertIn("f.odds_updated||D.odds_updated", source)
+        self.assertIn("Snapshot is stale; automatic value comparisons are paused.", source)
         self.assertIn("No verified bookmaker snapshot is available for this fixture.", source)
 
 class OddsFreshnessSafetyTests(unittest.TestCase):
