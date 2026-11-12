@@ -211,7 +211,7 @@ for x in out:
 try:
     with open("predictions.json") as f:
         _prediction_data = json.load(f)
-    _pp = list(_prediction_data.values()) if isinstance(_prediction_data, dict) else []
+    _pp = [p for p in _prediction_data.values() if isinstance(p, dict) and p.get("code") not in INTERNATIONAL_COMPETITIONS] if isinstance(_prediction_data, dict) else []
 except Exception:
     _pp = []
 CAL, _calibration_count = goal_rate_calibration(_pp)
