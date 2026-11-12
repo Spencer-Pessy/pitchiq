@@ -6,6 +6,7 @@ on:
     paths:
       - international_history.py
       - test_international_history.py
+      - international_team_registry.json
       - .github/workflows/national-team-history.yml
   schedule:
     - cron: "30 6 * * 1"
