@@ -11,6 +11,7 @@ from pitchiq_data import (
     forecast_input_snapshot,
     record_forward_evaluations,
     backfill_market_odds,
+    goal_rate_calibration,
 )
 
 
@@ -256,6 +257,41 @@ class ForwardEvaluationLedgerTests(unittest.TestCase):
         ledger = record_forward_evaluations(
             existing, [], {123: [2, 2]}, now, lambda _: {}, lambda _: {})
         self.assertEqual(ledger["123"]["final"], [1, 0])
+
+
+class GoalRateCalibrationTests(unittest.TestCase):
+    def test_valid_records_preserve_existing_calibration_formula(self):
+        rows = []
+        for _ in range(10):
+            rows.append({"final": [2, 1], "p": {"rlh": 1.5, "rla": 1.0}})
+        calibration, count = goal_rate_calibration(rows)
+        weight = 10 / 130
+        self.assertEqual(count, 10)
+        self.assertEqual(calibration["kh"], round(1 + (2 / 1.5 - 1) * weight, 4))
+        self.assertEqual(calibration["ka"], round(1 + (1 / 1.0 - 1) * weight, 4))
+
+    def test_malformed_or_nonfinite_history_is_excluded_safely(self):
+        valid = {"final": [1, 0], "p": {"lh": 1.2, "la": 0.8}}
+        invalid = [
+            None,
+            {"final": [1], "p": {"lh": 1.0, "la": 1.0}},
+            {"final": [True, 0], "p": {"lh": 1.0, "la": 1.0}},
+            {"final": [1.5, 0], "p": {"lh": 1.0, "la": 1.0}},
+            {"final": [1, 0], "p": {"lh": 0, "la": 1.0}},
+            {"final": [1, 0], "p": {"lh": float("nan"), "la": 1.0}},
+            {"final": [1, 0], "p": None},
+        ]
+        calibration, count = goal_rate_calibration([valid] * 9 + invalid)
+        self.assertEqual(count, 9)
+        self.assertEqual(calibration, {"kh": 1.0, "ka": 1.0})
+
+    def test_calibration_is_bounded_and_handles_non_list_input(self):
+        rows = [{"final": [20, 0], "p": {"lh": 0.1, "la": 2.0}}] * 10
+        calibration, count = goal_rate_calibration(rows)
+        self.assertEqual(count, 10)
+        self.assertEqual(calibration["kh"], 1.15)
+        self.assertEqual(calibration["ka"], 0.85)
+        self.assertEqual(goal_rate_calibration(None), ({"kh": 1.0, "ka": 1.0}, 0))
 
 
 class MarketOddsBackfillTests(unittest.TestCase):
