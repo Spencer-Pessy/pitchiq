@@ -201,7 +201,8 @@ class HomepageOverviewTests(unittest.TestCase):
 class OddsFreshnessWebTests(unittest.TestCase):
     def test_market_value_comparison_requires_fresh_snapshot(self):
         source = Path("index.html").read_text(encoding="utf-8")
-        self.assertIn("const oddsFresh=Number.isFinite(oh)&&oh>=0&&oh<=36", source)
+        self.assertIn("oddsFresh=marketSnapshotFresh(D.odds_updated)", source)
+        self.assertEqual(source.count("oddsFresh=marketSnapshotFresh(D.odds_updated)"), 2)
         self.assertIn("if(oddsFresh&&Array.isArray(m.odds)", source)
         self.assertIn("Market snapshot is stale", source)
 
