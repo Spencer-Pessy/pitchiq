@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pitchiq-publish
+  group: pitchiq-odds-paused
   cancel-in-progress: false
 jobs:
   # Paused until the user explicitly approves any Odds API credit usage.
