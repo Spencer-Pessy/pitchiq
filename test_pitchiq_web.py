@@ -88,6 +88,11 @@ class HomepageOverviewTests(unittest.TestCase):
         self.assertIn("Competitions covered", source)
         self.assertIn("Data refreshed", source)
         self.assertIn("(tab==='up'?overviewHtml():'')", source)
+        self.assertIn("$('#app').innerHTML=head()+tabsHtml()+(tab=='up'?overviewHtml():'')+", source)
+        self.assertIn("if(tab=='up'&&ms.length)html+='<div class=\"fixture-grid\">';", source)
+        self.assertIn(".fixture-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))", source)
+        self.assertIn(".fixture-grid{grid-template-columns:1fr", source)
+
 
 
 class OddsFreshnessWebTests(unittest.TestCase):
