@@ -524,6 +524,7 @@ function list(){
  bind();
 }
 const fld=[['gf','Goals scored / game'],['ga','Goals conceded / game'],['elo','Rating (Elo)'],['form','Last 5 (W D L)'],['out','Key players out']];
+function marketSnapshotFresh(value){const t=Date.parse(value||''),age=Date.now()-t;return Number.isFinite(t)&&age>=0&&age<=36*3600e3}
 function detail(){
  const f=sel,s=f.s;
  if(!s){
@@ -539,12 +540,12 @@ function detail(){
  <div id="res"></div>
  <div class="panel"><p class="note" style="margin-top:0">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust anything you know better, such as injuries.</p>
  <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
- <label>Decimal odds: home / draw / away (saved market snapshot, editable)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input aria-label="Home decimal odds" data-k="o0" value="${f.odds?f.odds[0]:''}" inputmode="decimal"><input aria-label="Draw decimal odds" data-k="o1" value="${f.odds?f.odds[1]:''}" inputmode="decimal"><input aria-label="Away decimal odds" data-k="o2" value="${f.odds?f.odds[2]:''}" inputmode="decimal"></div><p class="note">${f.odds?(f.odds_updated?'Market snapshot captured '+new Date(f.odds_updated).toLocaleString()+'. ':'Saved market snapshot; capture time unavailable. ')+'This is a stored pre-match comparison, not live odds.':'No verified bookmaker snapshot is available for this fixture. You can enter prices manually.'}</p></div>`;
+ <label>Decimal odds: home / draw / away (saved market snapshot, editable)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input aria-label="Home decimal odds" data-k="o0" value="${f.odds?f.odds[0]:''}" inputmode="decimal"><input aria-label="Draw decimal odds" data-k="o1" value="${f.odds?f.odds[1]:''}" inputmode="decimal"><input aria-label="Away decimal odds" data-k="o2" value="${f.odds?f.odds[2]:''}" inputmode="decimal"></div><p class="note">${f.odds?((f.odds_updated||D.odds_updated)?'Market snapshot captured '+new Date(f.odds_updated||D.odds_updated).toLocaleString()+'. ':'Saved market snapshot; capture time unavailable. ')+(f.odds_manual?'Manually edited prices.':(marketSnapshotFresh(f.odds_updated||D.odds_updated)?'Snapshot is within the 36-hour freshness window.':'Snapshot is stale; automatic value comparisons are paused.'))+' Stored pre-match prices, not live odds.':'No verified bookmaker snapshot is available for this fixture. You can enter prices manually.'}</p></div>`;
  $('#bk').onclick=()=>{sel=null;list()};
  if(f.status==='FINISHED'){const editor=$('#res').nextElementSibling;if(editor)editor.remove();res();return}
  document.querySelectorAll('input').forEach(i=>i.oninput=()=>{
   const k=i.dataset.k,v=i.value;
-  if(k[0]=='o'){s.odds=s.odds||[0,0,0];f.odds=f.odds||[0,0,0];f.odds[+k[1]]=parseFloat(v)||0}
+  if(k[0]=='o'){s.odds=s.odds||[0,0,0];f.odds=f.odds||[0,0,0];f.odds[+k[1]]=parseFloat(v)||0;f.odds_manual=true}
   else{const[t,x]=k.split('.');s[t][x]=x=='form'?v:(parseFloat(v)||0)}
   res()});
  res();
@@ -552,8 +553,8 @@ function detail(){
 function res(){
  const f=sel,s=f.s,archived=f.status==='FINISHED'?P[String(f.id)]:null;
  if(f.status==='FINISHED'&&(!archived||!archived.p)){$('#res').innerHTML='<div class="panel"><h2>Pre-match forecast unavailable</h2><p class="note">No forecast was archived before kickoff for this fixture. PitchIQ will not reconstruct one from statistics that include the final result.</p></div>';return}
- const r=archived?savedForecast(archived.p):model(s);if(!r){$('#res').innerHTML='<div class="panel"><h2>Forecast unavailable</h2><p class="note">The saved forecast snapshot is incomplete or invalid.</p></div>';return}const odds=archived?archived.odds:f.odds;let v='';
- if(odds&&odds.every(x=>x>1)){
+ const r=archived?savedForecast(archived.p):model(s);if(!r){$('#res').innerHTML='<div class="panel"><h2>Forecast unavailable</h2><p class="note">The saved forecast snapshot is incomplete or invalid.</p></div>';return}const odds=archived?archived.odds:f.odds,oddsAt=archived?archived.odds_updated:(f.odds_updated||D.odds_updated),oddsUsable=!!(f.odds_manual||marketSnapshotFresh(oddsAt));let v='';
+ if(oddsUsable&&odds&&odds.every(x=>x>1)){
   const inv=odds.map(x=>1/x),sum=inv[0]+inv[1]+inv[2],mp=[r.ph,r.pd,r.pa],nm=[f.h,'Draw',f.a];
   v=`<div class="panel"><h2>Value check</h2><table><tr><th>Pick</th><th>Model</th><th>Market</th><th>Edge</th></tr>${odds.map((x,i)=>{const e=mp[i]*x-1;return`<tr><td>${esc(nm[i])}</td><td>${pct(mp[i])}</td><td>${pct(inv[i]/sum)}</td><td class="${e>=.05?'ok':'no'}">${(e*100).toFixed(1)}%</td></tr>`}).join('')}</table>
   <p class="note">If the model and the market differ a lot, trust the market more. It knows lineups and news this model doesn’t.</p></div>`;
@@ -582,11 +583,12 @@ function res(){
  };
 })();
 async function shareTop3(){
+ const oh=D.odds_updated?Math.round((Date.now()-new Date(D.odds_updated))/36e5):null,oddsFresh=Number.isFinite(oh)&&oh>=0&&oh<=36;
  const nm=m=>['Home win: '+m.h,'Draw','Away win: '+m.a];
  const lim=Date.now()+36*3600e3;
  const L=D.matches.filter(m=>m.status!='FINISHED'&&!live(m)&&new Date(m.utc)<lim&&new Date(m.utc)>Date.now()).map(m=>{
   const r=model(m.s),v=[r.ph,r.pd,r.pa],i=v.indexOf(Math.max(...v));let g=null,gi=-1;
-  if(m.odds&&m.odds.every(o=>o>1)){const inv=m.odds.map(o=>1/o),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*m.odds[k]-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
+  if(oddsFresh&&m.odds&&m.odds.every(o=>o>1)){const inv=m.odds.map(o=>1/o),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*m.odds[k]-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
   return{m,i,c:v[i],g,gi}}).sort((a,b)=>pk=='gap'?((b.g?b.g.e:-9)-(a.g?a.g.e:-9)):b.c-a.c).slice(0,3);
  if(!L.length){alert('No matches in the next 36 hours.');return}
  const W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),FONT="'Arial Narrow',Impact,Arial,sans-serif";
@@ -741,7 +743,7 @@ async function shareRecord(){
  x.textAlign='left';x.fillText('HOME WIN',bx,by+bh+52);x.textAlign='center';x.fillText('DRAW',W/2,by+bh+52);x.textAlign='right';x.fillText('AWAY WIN',bx+bw,by+bh+52);x.textAlign='center';
  const top=r.top[0],cells=[['EXPECTED GOALS',r.lh.toFixed(1)+' – '+r.la.toFixed(1)],['LIKELIEST SCORE',top[0]+' – '+top[1]],['OVER 2.5 GOALS',Math.round(r.o25*100)+'%'],['BOTH TEAMS SCORE',Math.round(r.bt*100)+'%']];
  cells.forEach((cl,i)=>{const cx=bx+(i%2)*470,cy=1210+Math.floor(i/2)*220;x.fillStyle='#121212';x.fillRect(cx,cy,450,190);x.fillStyle='#E10600';x.fillRect(cx,cy,8,190);x.fillStyle='#9C9C9C';x.font=`400 32px ${FONT}`;x.fillText(cl[0],cx+225,cy+60);x.fillStyle='#F4F4F4';x.font=`700 80px ${FONT}`;x.fillText(cl[1],cx+225,cy+145)});
- if(f.odds&&f.odds.every(o=>o>1)){const inv=f.odds.map(o=>1/o),sm=inv[0]+inv[1]+inv[2];x.fillStyle='#9C9C9C';x.font=`400 34px ${FONT}`;x.fillText('MARKET: '+inv.map(i=>Math.round(i/sm*100)+'%').join('  ·  '),W/2,1690)}
+ if((f.odds_manual||marketSnapshotFresh(f.odds_updated||D.odds_updated))&&f.odds&&f.odds.every(o=>o>1)){const inv=f.odds.map(o=>1/o),sm=inv[0]+inv[1]+inv[2];x.fillStyle='#9C9C9C';x.font=`400 34px ${FONT}`;x.fillText('MARKET: '+inv.map(i=>Math.round(i/sm*100)+'%').join('  ·  '),W/2,1690)}
  x.fillStyle='#F4F4F4';x.font=`700 42px ${FONT}`;x.fillText('spencer-pessy.github.io/pitchiq',W/2,1768);
  x.fillStyle='#6f6f6f';x.font=`400 28px ${FONT}`;x.fillText('Model estimate, not a guarantee. 18+ only.',W/2,1830);
  const blob=await new Promise(a=>c.toBlob(a,'image/png'));
