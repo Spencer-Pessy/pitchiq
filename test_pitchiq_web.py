@@ -308,6 +308,13 @@ class ForwardResearchPendingStateTests(unittest.TestCase):
         self.assertIn("Research scores update as saved forecasts reach full time.", source)
 
 
+class InternationalGenderPresentationTests(unittest.TestCase):
+    def test_international_cards_label_mens_and_womens_streams(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("f.gender==='women'?'Women':f.gender==='men'?'Men':''", source)
+        self.assertIn("const meta=[gender,f.comp,f.country,kickoff]", source)
+
+
 class InternationalFixtureGroupingTests(unittest.TestCase):
     def test_international_cards_show_local_kickoff_and_source(self):
         source = Path("index.html").read_text(encoding="utf-8")
