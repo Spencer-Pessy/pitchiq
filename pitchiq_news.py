@@ -168,8 +168,9 @@ def main():
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_NEWS_CHAT_ID")
     if not token or not chat_id:
-        print("News publisher is enabled but TELEGRAM_BOT_TOKEN or TELEGRAM_NEWS_CHAT_ID is missing.")
-        return
+        raise RuntimeError(
+            "News publisher is enabled but TELEGRAM_BOT_TOKEN or TELEGRAM_NEWS_CHAT_ID is missing."
+        )
 
     now = datetime.now(timezone.utc)
     stories = parse_feed(fetch_feed(), now=now)
