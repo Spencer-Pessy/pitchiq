@@ -20,7 +20,11 @@ jobs:
         with:
           python-version: '3.12'
       - name: Validate news publisher syntax
-        run: python -m py_compile pitchiq_news.py pitchiq_telegram.py
+        run: python -m py_compile pitchiq_news.py pitchiq_telegram.py telegram_preflight.py
+      - name: Verify bot and news channel (read-only)
+        run: python telegram_preflight.py --chat-id "@pitchiq_picks"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       - name: Publish enabled BBC football news digest
         run: python pitchiq_news.py
         env:
