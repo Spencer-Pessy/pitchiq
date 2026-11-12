@@ -145,7 +145,7 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertIn("python telegram.py", workflow)
         self.assertNotIn("pip install", workflow)
         self.assertNotIn("odds.py", workflow)
-        self.assertIn("group: pitchiq-telegram-results", workflow)
+        self.assertIn("group: pitchiq-telegram-published-picks", workflow)
 
     def test_publisher_workflows_use_independent_concurrency_groups(self):
         paths = (
