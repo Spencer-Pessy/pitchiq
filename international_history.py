@@ -12,6 +12,7 @@ import math
 import urllib.request
 from collections import defaultdict
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 SOURCE_URL = "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
 SOURCE_LICENSE = "CC0 1.0"
@@ -20,6 +21,47 @@ MINIMUM_MATCHES = 10000
 INITIAL_RATING = 1500.0
 K_FACTOR = 20.0
 HOME_ADVANTAGE = 65.0
+TEAM_REGISTRY_PATH = Path(__file__).with_name("international_team_registry.json")
+
+
+def load_team_registry(path=TEAM_REGISTRY_PATH):
+    """Load the explicitly sourced FIFA member-association names and source aliases."""
+    with open(path, "r", encoding="utf-8") as registry_file:
+        registry = json.load(registry_file)
+    names = registry.get("fifa_member_associations")
+    aliases = registry.get("source_aliases", {})
+    if not isinstance(names, list) or len(names) != 211 or len(set(names)) != 211:
+        raise ValueError("FIFA team registry must contain 211 unique member associations")
+    if not isinstance(aliases, dict):
+        raise ValueError("FIFA team registry aliases must be an object")
+    official = {name.casefold(): name for name in names}
+    alias_map = {alias.casefold(): target for alias, target in aliases.items()}
+    if any(target not in names for target in aliases.values()):
+        raise ValueError("FIFA team registry alias points to an unknown member association")
+    return registry, official, alias_map
+
+
+def classify_team(team, registry_data=None):
+    """Classify source labels without assuming every historical side is a FIFA team."""
+    if registry_data is None:
+        registry_data = load_team_registry()
+    registry, official, aliases = registry_data
+    label = (team or "").strip()
+    canonical = official.get(label.casefold())
+    if canonical is None:
+        target = aliases.get(label.casefold())
+        canonical = official.get(target.casefold()) if target else None
+    if canonical:
+        return {
+            "canonical_team": canonical,
+            "association_status": "fifa_member_association",
+            "forecast_eligible": False,
+        }
+    return {
+        "canonical_team": None,
+        "association_status": "non_fifa_or_unverified",
+        "forecast_eligible": False,
+    }
 
 
 def parse_results(csv_text, today=None):
@@ -348,8 +390,13 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
         raise ValueError(f"Only {len(matches)} valid matches; refusing an incomplete history snapshot")
     data_through = matches[-1]["date"]
     latest = date.fromisoformat(data_through)
+    registry, official, aliases = load_team_registry()
+    team_registry = (registry, official, aliases)
+    rated_teams = build_ratings(matches)
+    for team in rated_teams:
+        team.update(classify_team(team["team"], team_registry))
     return {
-        "version": 5,
+        "version": 6,
         "updated": fetched_at or datetime.now(timezone.utc).isoformat(),
         "data_through": data_through,
         "freshness_days": (today - latest).days,
@@ -370,8 +417,18 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
             "note": "Ratings are strength priors only, not calibrated 1X2 probabilities",
         },
         "ready_for_forecasts": False,
+        "team_registry": {
+            "source": registry["source"],
+            "source_url": registry["source_url"],
+            "source_checked": registry["source_checked"],
+            "member_associations": len(registry["fifa_member_associations"]),
+            "fifa_member_association_teams": sum(team["association_status"] == "fifa_member_association" for team in rated_teams),
+            "non_fifa_or_unverified_teams": sum(team["association_status"] == "non_fifa_or_unverified" for team in rated_teams),
+            "note": registry["source_note"],
+            "forecast_policy": registry["forecast_policy"],
+        },
         "readiness_note": "Do not publish predictions until a separate chronological out-of-sample model and calibration review is completed.",
-        "teams": build_ratings(matches),
+        "teams": rated_teams,
         "backtest": backtest_elo(matches),
     }
 
