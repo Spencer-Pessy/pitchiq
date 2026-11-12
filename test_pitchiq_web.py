@@ -488,3 +488,18 @@ class NewsTabRegressionTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn('href="https://t.me/pitchiq_picks" target="_blank" rel="noopener noreferrer"', source)
         self.assertIn('href="https://t.me/PitchIQPicks_bot" target="_blank" rel="noopener noreferrer"', source)
+
+class ServiceWorkerDataFallbackTests(unittest.TestCase):
+    def test_http_errors_fall_back_to_last_known_good_data_snapshot(self):
+        source = Path("sw.js").read_text(encoding="utf-8")
+        self.assertIn("const cached = await caches.match(key);", source)
+        self.assertIn("return cached || response;", source)
+        self.assertIn("if (response.ok)", source)
+        self.assertIn("await cache.put(key, response.clone());", source)
+
+    def test_offline_data_cache_ignores_cache_busting_query_parameters(self):
+        source = Path("sw.js").read_text(encoding="utf-8")
+        self.assertIn("const key = new Request(url.origin + url.pathname);", source)
+        self.assertIn("fetch(request)", source)
+        self.assertIn("The page reads the snapshot's own updated timestamp", source)
+
