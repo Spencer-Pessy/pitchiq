@@ -500,9 +500,9 @@ class InternationalFixtureFilterTests(unittest.TestCase):
         self.assertIn("leagues responded at least once", source)
         self.assertIn("not a guarantee of competition coverage", source)
 
-    def test_international_feed_warns_when_snapshot_is_older_than_36_hours(self):
+    def test_international_feed_warns_when_snapshot_is_older_than_12_hours(self):
         source = Path("index.html").read_text(encoding="utf-8")
-        self.assertIn("const stale=age===null||age>36", source)
+        self.assertIn("const stale=age===null||age>12", source)
         self.assertIn("International feed may be stale", source)
         self.assertIn("last successful snapshot is '+age+' hours old", source)
         self.assertIn("ageMs>=0?Math.round(ageMs/36e5):null", source)
@@ -568,7 +568,7 @@ class InternationalFreshnessEdgeCaseTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("const updatedAt=Date.parse(I.updated||''),ageMs=now-updatedAt", source)
         self.assertIn("Number.isFinite(updatedAt)&&ageMs>=0", source)
-        self.assertIn("const stale=age===null||age>36", source)
+        self.assertIn("const stale=age===null||age>12", source)
         self.assertIn("missing, invalid or in the future", source)
 
 class OddsDisplayDisclosureTests(unittest.TestCase):
