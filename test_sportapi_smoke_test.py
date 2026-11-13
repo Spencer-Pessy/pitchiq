@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from sportapi_smoke_test import (
     select_upcoming_fixtures,
+    validate_h2h_payload,
     validate_success_payload,
 )
 
@@ -19,6 +20,45 @@ class SportAPIPayloadTests(unittest.TestCase):
     def test_rejects_non_object(self):
         with self.assertRaises(ValueError):
             validate_success_payload([], "/leagues")
+
+
+class HeadToHeadPayloadTests(unittest.TestCase):
+    def test_accepts_valid_history(self):
+        payload = {
+            "success": True,
+            "data": [{
+                "home_id": 10, "away_id": 20, "date": "2026-10-01",
+                "home_score": 2, "away_score": 1, "status": "FT",
+            }],
+        }
+        self.assertEqual(len(validate_h2h_payload(payload, 10, 20)), 1)
+
+    def test_accepts_empty_history_without_fabricating_zero_record(self):
+        self.assertEqual(
+            validate_h2h_payload({"success": True, "data": []}, 10, 20), []
+        )
+
+    def test_rejects_wrong_pair(self):
+        payload = {
+            "success": True,
+            "data": [{
+                "home_id": 10, "away_id": 30, "date": "2026-10-01",
+                "home_score": 2, "away_score": 1, "status": "FT",
+            }],
+        }
+        with self.assertRaisesRegex(ValueError, "different team pairing"):
+            validate_h2h_payload(payload, 10, 20)
+
+    def test_rejects_non_finished_or_incomplete_record(self):
+        payload = {
+            "success": True,
+            "data": [{
+                "home_id": 10, "away_id": 20, "date": "2026-10-01",
+                "home_score": 2, "away_score": 1, "status": "LIVE",
+            }],
+        }
+        with self.assertRaisesRegex(ValueError, "not marked FT"):
+            validate_h2h_payload(payload, 10, 20)
 
 
 class UpcomingFixtureSelectionTests(unittest.TestCase):

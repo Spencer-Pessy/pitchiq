@@ -73,6 +73,30 @@ def select_upcoming_fixtures(fixtures, now=None, limit=3):
     return selected
 
 
+def validate_h2h_payload(payload, team1, team2):
+    """Validate H2H history without treating an empty history as an API failure."""
+    if not isinstance(payload, dict) or payload.get("success") is not True:
+        raise ValueError("H2H: response was not a successful JSON object")
+    records = payload.get("data")
+    if not isinstance(records, list):
+        raise ValueError("H2H: expected a data list")
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("H2H: record was not an object")
+        home_id, away_id = record.get("home_id"), record.get("away_id")
+        if not isinstance(home_id, int) or not isinstance(away_id, int):
+            raise ValueError("H2H: record missing numeric team IDs")
+        if {home_id, away_id} != {team1, team2}:
+            raise ValueError("H2H: record contains a different team pairing")
+        if not isinstance(record.get("date"), str):
+            raise ValueError("H2H: record missing match date")
+        if not isinstance(record.get("home_score"), int) or not isinstance(record.get("away_score"), int):
+            raise ValueError("H2H: record missing integer full-time scores")
+        if record.get("status") != "FT":
+            raise ValueError("H2H: historical record was not marked FT")
+    return records
+
+
 def run_probe(api_key, today=None, now=None):
     if not isinstance(api_key, str) or not api_key.strip():
         raise RuntimeError("SPORTAPI_KEY is missing. Add it as a repository Actions secret.")
@@ -139,6 +163,37 @@ def run_probe(api_key, today=None, now=None):
         summary["stats_available"] = stats.get("available") is True
     else:
         summary["stats_endpoint_note"] = "No fixture was returned for the dates checked."
+
+    # Probe one H2H pair only; this is validation, not production enrichment.
+    h2h_fixture = next(
+        (
+            fixture for _, fixture in upcoming
+            if isinstance(fixture.get("home_id"), int)
+            and isinstance(fixture.get("away_id"), int)
+            and fixture["home_id"] != fixture["away_id"]
+        ),
+        None,
+    )
+    if h2h_fixture is not None:
+        h2h_payload, latest_headers = request_json(
+            f"/fixtures/h2h/{h2h_fixture['home_id']}/{h2h_fixture['away_id']}",
+            api_key,
+        )
+        summary["requests"] += 1
+        h2h_records = validate_h2h_payload(
+            h2h_payload, h2h_fixture["home_id"], h2h_fixture["away_id"]
+        )
+        summary["h2h_endpoint_ok"] = True
+        summary["h2h_fixture_id"] = h2h_fixture["id"]
+        summary["h2h_team_pair"] = [
+            h2h_fixture.get("home_team"), h2h_fixture.get("away_team")
+        ]
+        summary["h2h_meetings_returned"] = len(h2h_records)
+        summary["h2h_history_available"] = bool(h2h_records)
+    else:
+        summary["h2h_endpoint_note"] = (
+            "No upcoming fixture with two valid provider team IDs was available."
+        )
 
     for header, output in (
         ("X-RateLimit-Remaining", "daily_requests_remaining"),
