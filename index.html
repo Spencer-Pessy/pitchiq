@@ -162,6 +162,31 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 @media(max-width:600px){button,input,select,textarea{min-height:44px}}
 
+
+/* PITCH IQ Match Centre — brand-led, mobile-first match detail */
+.match-hero{position:relative;overflow:hidden;margin:4px 0 12px;padding:clamp(16px,3vw,26px);border:1px solid #542020;border-radius:20px;background:radial-gradient(ellipse at 50% 0%,#3a1111 0%,#1a1010 43%,#101010 100%);box-shadow:0 16px 42px #0009}
+.match-hero:after{content:"PITCH IQ";position:absolute;right:12px;bottom:8px;font:900 clamp(28px,8vw,76px)/.9 Impact,Arial,sans-serif;letter-spacing:2px;color:#ffffff07;pointer-events:none}
+.match-hero-top,.match-hero-foot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.match-comp,.section-eyebrow{font-size:10px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase;color:#ff9292}
+.match-status{display:inline-flex;align-items:center;gap:6px;border:1px solid #454545;border-radius:999px;padding:5px 10px;background:#08080880;color:#ddd;font-size:10px;font-weight:800;letter-spacing:.8px}
+.match-status.is-live{color:#55e69a;border-color:#27794d}.match-status.is-done{color:#c9c9c9}
+.match-status i{width:7px;height:7px;border-radius:50%;background:#45d483;box-shadow:0 0 10px #45d483;animation:pqPulse 1.4s infinite}
+.match-scoreboard{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(92px,.8fr) minmax(0,1fr);align-items:center;gap:8px;padding:28px 0 22px}
+.match-side{min-width:0;text-align:center}.team-monogram{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 10px;border-radius:50%;font-size:23px;font-weight:900;color:#fff;border:2px solid #ffffff35;box-shadow:0 8px 22px #0006}
+.home-monogram{background:linear-gradient(145deg,#e10600,#720500)}.away-monogram{background:linear-gradient(145deg,#555,#171717)}
+.match-side h2{margin:0;font-size:clamp(15px,3.5vw,22px);overflow-wrap:anywhere}.side-label{display:block;margin-top:4px;color:#999;font-size:9px;letter-spacing:1.5px;font-weight:800}
+.match-centre-score{text-align:center}.match-centre-score strong{display:block;font-size:clamp(25px,6vw,38px);letter-spacing:1px;white-space:nowrap}.match-centre-score strong span{color:#45d483;padding:0 3px}.match-centre-score>span{display:block;margin-top:7px;color:#c1c1c1;font-size:10px;line-height:1.4}.match-centre-score small{display:inline-block;margin-top:5px;color:#45d483;font-weight:800}
+.match-hero-foot{padding-top:12px;border-top:1px solid #ffffff18;color:#aaa;font-size:10px}
+.form-strip{display:flex;justify-content:center;gap:4px;margin-top:9px}.form-dot{display:grid;place-items:center;width:19px;height:19px;border-radius:5px;font-size:10px;font-weight:900;color:#fff}.form-dot.win{background:#18864c}.form-dot.draw{background:#777}.form-dot.loss{background:#9c2929}
+.match-jump{position:sticky;top:0;z-index:15;display:flex;gap:8px;overflow-x:auto;padding:9px 0;margin-bottom:12px;background:#080808ed;backdrop-filter:blur(12px);border-bottom:1px solid #ffffff18}
+.match-jump a{flex:0 0 auto;padding:8px 12px;border:1px solid #383838;border-radius:9px;background:#171717;color:#eee;text-decoration:none;font-size:11px;font-weight:700}.match-jump a:first-child{border-color:#a52b2b;color:#ffaaaa}
+.team-context-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.team-context-grid>div{min-width:0;padding:12px;border:1px solid #303030;border-radius:12px;background:#ffffff05}.team-context-grid .form-strip{justify-content:flex-start;margin:8px 0 12px}.form-caption{margin-top:4px;color:#999;font-size:10px}
+.match-adjustments summary{cursor:pointer;color:#f2f2f2;font-weight:800;min-height:28px}.match-adjustments[open] summary{color:#ff9999}
+.goal-panel .gl{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #303030;font-size:13px}
+@keyframes pqPulse{50%{opacity:.35;transform:scale(.8)}}
+@media(max-width:520px){.match-scoreboard{grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr);gap:3px;padding:22px 0 18px}.team-monogram{width:48px;height:48px}.match-centre-score>span{font-size:9px}.match-hero{padding:15px}.team-context-grid{gap:7px}.team-context-grid>div{padding:9px}.match-jump a{padding:8px 10px}}
+@media(prefers-reduced-motion:reduce){.match-status i{animation:none}}
+
 </style>
 </head>
 <body>
@@ -557,14 +582,24 @@ function detail(){
   return;
  }
  const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3><p class="note">${Number(s[k].venue_matches??0)} ${k=='h'?'home':'away'} matches support scoring rates · form uses ${Number(s[k].form_matches??0)} recent matches across venues</p>${fld.map(([x,l])=>`<label for="${k}-${x}">${l}</label><input id="${k}-${x}" aria-label="${esc(n)} ${l}" data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
- $('#app').innerHTML=`<button class="back" id="bk">← Matches</button>
- <div class="comp">${esc(f.comp)} · ${dy(f)} ${tm(f)}</div><h2>${esc(f.h)} vs ${esc(f.a)}${f.score?` (${f.score[0]}–${f.score[1]})`:''}</h2>
- ${f.goals&&f.goals.length?`<div class="panel"><h2>Goals</h2>${f.goals.map(g=>`<div class="gl"><span>⚽ ${g.min?g.min+(g.extra?'+'+g.extra:'')+"′ ":''}${esc(g.scorer||'Goal')}</span><span>${g.assist?'Assist: '+esc(g.assist)+' · ':''}${esc(g.team)}</span></div>`).join('')}</div>`:''}
- ${h2hPanel(f.h,f.a,f.h2h)}
- <div id="res"></div>
- <div class="panel"><p class="note" style="margin-top:0">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust anything you know better, such as injuries.</p>
- <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
- <label>Decimal odds: home / draw / away (saved market snapshot, editable)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input aria-label="Home decimal odds" data-k="o0" value="${f.odds?f.odds[0]:''}" inputmode="decimal"><input aria-label="Draw decimal odds" data-k="o1" value="${f.odds?f.odds[1]:''}" inputmode="decimal"><input aria-label="Away decimal odds" data-k="o2" value="${f.odds?f.odds[2]:''}" inputmode="decimal"></div><p class="note">${f.odds?((f.odds_updated||D.odds_updated)?'Market snapshot captured '+new Date(f.odds_updated||D.odds_updated).toLocaleString()+'. ':'Saved market snapshot; capture time unavailable. ')+(f.odds_manual?'Manually edited prices.':(marketSnapshotFresh(f.odds_updated||D.odds_updated)?'Snapshot is within the 36-hour freshness window.':'Snapshot is stale; automatic value comparisons are paused.'))+' Stored pre-match prices, not live odds.':'No verified bookmaker snapshot is available for this fixture. You can enter prices manually.'}</p></div>`;
+ const matchStatus=({NS:'UPCOMING',TBD:'KICKOFF TBC','1H':'LIVE · FIRST HALF',HT:'HALF TIME','2H':'LIVE · SECOND HALF',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED',ABD:'ABANDONED'}[f.status]||String(f.status||'SCHEDULED').replace(/_/g,' '));
+ const isLive=['1H','HT','2H','ET','P','LIVE'].includes(f.status),isDone=['FT','AET','PEN','FINISHED'].includes(f.status);
+ const formMarkup=team=>{const form=String(team.form||'').slice(-5);return form?'<div class="form-strip" aria-label="Recent form">'+[...form].map(x=>'<span class="form-dot '+(x==='W'?'win':x==='D'?'draw':'loss')+'">'+esc(x)+'</span>').join('')+'</div>':'<span class="note">Form unavailable</span>'};
+ const kickDate=new Date(f.utc),kickLabel=Number.isNaN(kickDate.getTime())?'Kickoff unavailable':kickDate.toLocaleString([],{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+ const scoreMarkup=Array.isArray(f.score)&&f.score.length===2?esc(f.score[0])+' <span>–</span> '+esc(f.score[1]):'VS';
+ $('#app').innerHTML=\`<button class="back" id="bk">← All matches</button>
+ <section class="match-hero"><div class="match-hero-top"><span class="match-comp">\${esc(f.comp||'Competition')}</span><span class="match-status \${isLive?'is-live':isDone?'is-done':''}">\${isLive?'<i></i>':''}\${esc(matchStatus)}</span></div>
+ <div class="match-scoreboard"><div class="match-side"><div class="team-monogram home-monogram">\${esc(String(f.h||'?').trim().slice(0,1).toUpperCase())}</div><h2>\${esc(f.h)}</h2><span class="side-label">HOME</span>\${formMarkup(s.h)}</div>
+ <div class="match-centre-score"><strong>\${scoreMarkup}</strong><span>\${isLive?'LIVE':isDone?'RESULT':esc(kickLabel)}</span>\${isLive&&f.minute?'<small>'+esc(f.minute)+'′</small>':''}</div>
+ <div class="match-side"><div class="team-monogram away-monogram">\${esc(String(f.a||'?').trim().slice(0,1).toUpperCase())}</div><h2>\${esc(f.a)}</h2><span class="side-label">AWAY</span>\${formMarkup(s.a)}</div></div>
+ <div class="match-hero-foot"><span>\${isLive?'Match in progress':isDone?'Final score':'Kick-off · '+esc(kickLabel)}</span><span>POWERED BY PITCH IQ</span></div></section>
+ <nav class="match-jump" aria-label="Match sections"><a href="#res">Match preview</a><a href="#h2h">Head to head</a><a href="#team-context">Team context</a></nav>
+ \${f.goals&&f.goals.length?\`<div class="panel goal-panel"><h2>⚽ Match events</h2>\${f.goals.map(g=>\`<div class="gl"><span>\${g.min?esc(g.min+(g.extra?'+'+g.extra:'')+"′ "):''}\${esc(g.scorer||'Goal')}</span><span>\${g.assist?'Assist: '+esc(g.assist)+' · ':''}\${esc(g.team)}</span></div>\`).join('')}</div>\`:''}
+ <div id="res"></div><div id="h2h">\${h2hPanel(f.h,f.a,f.h2h)}</div>
+ <section class="panel team-context" id="team-context"><div class="section-eyebrow">TEAM CONTEXT</div><h2>Form & team strength</h2><div class="team-context-grid"><div><b>\${esc(f.h)}</b><div class="form-caption">Recent results</div>\${formMarkup(s.h)}<div class="stat"><span>Team rating</span><b>\${Number(s.h.elo||0).toFixed(0)}</b></div><div class="stat"><span>Recent form sample</span><b>\${Number(s.h.form_matches||0)} matches</b></div></div><div><b>\${esc(f.a)}</b><div class="form-caption">Recent results</div>\${formMarkup(s.a)}<div class="stat"><span>Team rating</span><b>\${Number(s.a.elo||0).toFixed(0)}</b></div><div class="stat"><span>Recent form sample</span><b>\${Number(s.a.form_matches||0)} matches</b></div></div></div><p class="note">Team ratings and form are model inputs, not official league rankings. Confirmed lineups and live match statistics are not supplied by this view yet; they will appear only when verified data is available.</p></section>
+ <details class="panel match-adjustments"><summary>Advanced adjustments & market snapshot</summary><p class="note" style="margin-top:12px">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust inputs for scenario analysis.</p>
+ <div class="cols">\${col('h',f.h,'var(--home)')}\${col('a',f.a,'var(--away)')}</div>
+ <label>Decimal odds: home / draw / away (saved market snapshot, editable)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input aria-label="Home decimal odds" data-k="o0" value="\${f.odds?f.odds[0]:''}" inputmode="decimal"><input aria-label="Draw decimal odds" data-k="o1" value="\${f.odds?f.odds[1]:''}" inputmode="decimal"><input aria-label="Away decimal odds" data-k="o2" value="\${f.odds?f.odds[2]:''}" inputmode="decimal"></div><p class="note">\${f.odds?((f.odds_updated||D.odds_updated)?'Market snapshot captured '+new Date(f.odds_updated||D.odds_updated).toLocaleString()+'. ':'Saved market snapshot; capture time unavailable. ')+(f.odds_manual?'Manually edited prices.':(marketSnapshotFresh(f.odds_updated||D.odds_updated)?'Snapshot is within the 36-hour freshness window.':'Snapshot is stale; automatic value comparisons are paused.'))+' Stored pre-match prices, not live odds.':'No verified bookmaker snapshot is available for this fixture. You can enter prices manually.'}</p></details>\`;
  $('#bk').onclick=()=>{sel=null;list()};
  if(f.status==='FINISHED'){const editor=$('#res').nextElementSibling;if(editor)editor.remove();res();return}
  document.querySelectorAll('input').forEach(i=>i.oninput=()=>{
