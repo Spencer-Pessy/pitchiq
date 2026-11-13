@@ -1,0 +1,23 @@
+name: SportAPI integration smoke test
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pitchiq-sportapi-smoke-test
+  cancel-in-progress: false
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run offline validation tests
+        run: python -m unittest -v test_sportapi_smoke_test
+      - name: Probe SportAPI using the repository secret
+        env:
+          SPORTAPI_KEY: ${{ secrets.SPORTAPI_KEY }}
+        run: python sportapi_smoke_test.py

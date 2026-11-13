@@ -48,6 +48,7 @@ The enabled workflows in `.github/workflows/` run on their schedules or, where e
 - **Telegram football news** — every four hours at minute 43 UTC; publishes up to three recent, unseen BBC Sport football headlines to `@pitchiq_picks`, with direct source links. It uses a separate news destination and deduplication ledger from the picks bot.
 - **Published-pick results** — hourly at minute 17 UTC; checks only the saved picks ledger and does not call odds services or post new picks or news.
 - **Telegram workflow health monitor** — every 30 minutes at minutes 11 and 41 UTC; checks the latest scheduled GitHub Actions runs for picks, news and results, then records their age/status in `daily/telegram_health.json`. It uses the built-in GitHub Actions token, sends no Telegram messages and does not claim that a successful workflow proves message delivery.
+- **SportAPI integration smoke test** — manual only. Uses `SPORTAPI_KEY` from GitHub Actions Secrets to verify authentication and probe a small sample of fixtures, lineups and match statistics. It does not publish or modify production data or forecasts.
 
 The data updater now stops if a competition fixture request fails, rather than publishing a partial fixture feed. A successful response containing zero eligible fixtures is valid. Each successful refresh also writes a `data_health` summary into `data.json`, including fixture counts by competition, international fixture totals, standings coverage and the number of matches published. This makes feed coverage easier to audit without exposing API credentials.
 
@@ -57,6 +58,7 @@ Configure secrets under **Settings → Secrets and variables → Actions**. Neve
 
 - `FOOTBALL_DATA_KEY` — football-data.org.
 - `ODDS_API_KEY` — The Odds API.
+- `SPORTAPI_KEY` — SportAPI; used only by the manual smoke-test workflow for now.
 - `TELEGRAM_BOT_TOKEN` — Telegram bot token.
 - `TELEGRAM_CHAT_ID` — destination chat/channel ID.
 
@@ -66,7 +68,7 @@ Third-party API quotas and free-plan limits can change. PitchIQ's scheduled inte
 
 Python automation scripts use the Python standard library except `telegram.py`, which uses Pillow to create the forecast image. Telegram publication uses side-effect-free validation helpers in `pitchiq_telegram.py` to skip malformed fixture/score records and validate its persistent published-pick ledger instead of letting one bad row break a scheduled post. The GitHub Actions Telegram workflow installs Pillow at runtime.
 
-- Check Python syntax: `python -m py_compile update.py test_update.py international.py international_history.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_news.py test_pitchiq_news.py test_international.py pitchiq_model.py pitchiq_data.py model_metrics.py test_model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international_history.py`
+- Check Python syntax: `python -m py_compile update.py test_update.py international.py international_history.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_news.py test_pitchiq_news.py test_international.py pitchiq_model.py pitchiq_data.py model_metrics.py test_model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international_history.py sportapi_smoke_test.py test_sportapi_smoke_test.py`
 - Run the website by serving the repository root over HTTP; opening `index.html` directly may prevent JSON fetches from working.
 - The service worker caches the app shell and last successful JSON snapshots for offline viewing; the next connection refreshes them.
 - To test scheduled integrations, use the corresponding GitHub Actions workflow and inspect its logs.
@@ -96,19 +98,4 @@ The exact-scoreline Record panel also compares the average probability assigned 
 
 ### Dixon–Coles scoreline baseline
 
-The Record diagnostics compare the saved Dixon–Coles scoreline distribution with an independent Poisson model using the same saved pre-match expected-goal rates, the same 8×8 (0–7 goals) grid, and separate normalisation. It reports paired exact-score negative log likelihood, the mean Dixon–Coles-minus-independent difference, a deterministic paired-bootstrap 95% interval, and match-level wins/ties. A negative difference favours Dixon–Coles; an interval crossing zero does not establish a clear improvement. Invalid rates and scores outside the grid are excluded and counted. This is a retrospective diagnostic, not an automatic model switch.
-
-The fixture updater no longer reads a stale injury cache: automated injury feeds remain disabled until a reliable free source is validated. Manual key-player absence adjustments remain available in the website.
-
-
-### Telegram football news channel (enabled)
-
-The separate `.github/workflows/telegram-news.yml` workflow is enabled to publish a compact digest of up to three recent, unseen BBC Sport football headlines every four hours to `@pitchiq_picks`. It uses the public BBC Sport football RSS feed, links each story to BBC, and stores canonical article URLs in `daily/news_seen.json` to avoid ordinary repeat posts. It does not invent stories, scrape article bodies, or use a paid news API.
-
-The workflow uses the existing `TELEGRAM_BOT_TOKEN` repository secret shared with the picks publisher. The bot must have permission to post in `@pitchiq_picks`. Its destination is configured separately from the picks workflow's `TELEGRAM_CHAT_ID`, so news cannot silently redirect forecast posts. A confirmed Telegram send is followed by saving the deduplication ledger; Git publication retries do not rerun the send step. As with any remote messaging API, a process crash after Telegram accepts a message but before the ledger is saved can still leave a narrow duplicate-delivery risk.
-
-Run `python -m unittest -v test_pitchiq_news` to test feed parsing, BBC-link allowlisting, recency filtering, deduplication, attribution, and the publisher guard. The website's News tab provides a clearly labeled entry point to the Telegram news channel and picks bot; it links readers to the channel rather than republishing full article text.
-
-### Telegram scheduled-workflow health
-
-The separate `.github/workflows/telegram-monitor.yml` workflow records the scheduled-run health of the daily picks, four-hour news and hourly results publishers. It refreshes after those publisher workflows complete and also checks on a 30-minute schedule. The read-only monitor publishes `daily/telegram_health.json` with each workflow's latest scheduled run, age and GitHub Actions conclusion. Manual runs do not hide a missed schedule. This is operational evidence about GitHub Actions only: `telegram_delivery_verified` remains false because a green workflow or successful preflight does not, by itself, prove that a Telegram message was delivered. The monitor never sends Telegram messages.
+The Record diagnostics compare the saved Dixon–Coles scoreline distribution with an independent Poisson model using the same saved pre-match expected-goal rates, the same 8×8 (0–7 goals) grid, and the same completed forecast sample. This is a diagnostic comparison, not a second production model.
