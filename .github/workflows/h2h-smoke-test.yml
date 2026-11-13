@@ -1,6 +1,10 @@
 name: H2H API access check
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/h2h-smoke-test.yml
   workflow_dispatch:
 
 permissions:
@@ -82,7 +86,35 @@ jobs:
                       if key_name in h2h:
                           print(f"{key_name}: {json.dumps(h2h[key_name], sort_keys=True)}")
               if isinstance(payload.get("matches"), list):
-                  print("Historical match rows:", len(payload["matches"]))
+                  historical = payload["matches"]
+                  print("Historical match rows:", len(historical))
+                  if historical:
+                      sample = historical[0]
+                      print("Historical row fields:", ", ".join(sorted(sample.keys())))
+                      safe_sample = {
+                          "id": sample.get("id"),
+                          "utcDate": sample.get("utcDate"),
+                          "status": sample.get("status"),
+                          "competition": (sample.get("competition") or {}).get("name"),
+                          "homeTeam": {
+                              "id": (sample.get("homeTeam") or {}).get("id"),
+                              "name": (sample.get("homeTeam") or {}).get("name"),
+                              "shortName": (sample.get("homeTeam") or {}).get("shortName"),
+                          },
+                          "awayTeam": {
+                              "id": (sample.get("awayTeam") or {}).get("id"),
+                              "name": (sample.get("awayTeam") or {}).get("name"),
+                              "shortName": (sample.get("awayTeam") or {}).get("shortName"),
+                          },
+                          "score": sample.get("score"),
+                      }
+                      print("Sample historical row:", json.dumps(safe_sample, sort_keys=True))
+                  for section in ("aggregates", "filters", "resultSet"):
+                      value = payload.get(section)
+                      if isinstance(value, dict):
+                          print(f"{section} fields:", ", ".join(sorted(value.keys())))
+                      elif value is not None:
+                          print(f"{section} type:", type(value).__name__)
           elif status == 403:
               print("RESULT: ACCESS_RESTRICTED — this H2H resource is not available to this account/plan.")
           elif status == 429:
