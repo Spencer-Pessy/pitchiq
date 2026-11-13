@@ -97,12 +97,31 @@ def inspect_h2h_payload(payload, team1, team2):
         statuses[status] = statuses.get(status, 0) + 1
         hs, aws = record.get("home_score"), record.get("away_score")
         score_types.add(type(hs).__name__ + "/" + type(aws).__name__)
-        if status in ("FT", "AET", "PENS") and isinstance(hs, int) and isinstance(aws, int):
+        if status.upper() in ("FT", "AET", "PENS") and type(hs) is int and type(aws) is int:
             scored.append(record)
         else:
             unscored += 1
     return {"records": records, "scored_records": scored, "unscored_records": unscored,
             "score_field_types": sorted(score_types), "status_counts": statuses}
+
+
+def select_h2h_fixtures(upcoming, limit=3):
+    """Choose a small set of unique, valid team pairs for H2H coverage sampling."""
+    selected, seen_pairs = [], set()
+    for _, fixture in upcoming:
+        if not isinstance(fixture, dict):
+            continue
+        home_id, away_id = fixture.get("home_id"), fixture.get("away_id")
+        if not isinstance(home_id, int) or not isinstance(away_id, int) or home_id == away_id:
+            continue
+        pair = tuple(sorted((home_id, away_id)))
+        if pair in seen_pairs:
+            continue
+        seen_pairs.add(pair)
+        selected.append(fixture)
+        if len(selected) >= limit:
+            break
+    return selected
 
 def run_probe(api_key, today=None, now=None):
     if not isinstance(api_key, str) or not api_key.strip():
@@ -171,39 +190,41 @@ def run_probe(api_key, today=None, now=None):
     else:
         summary["stats_endpoint_note"] = "No fixture was returned for the dates checked."
 
-    # Probe one H2H pair only; this is validation, not production enrichment.
-    h2h_fixture = next(
-        (
-            fixture for _, fixture in upcoming
-            if isinstance(fixture.get("home_id"), int)
-            and isinstance(fixture.get("away_id"), int)
-            and fixture["home_id"] != fixture["away_id"]
-        ),
-        None,
-    )
-    if h2h_fixture is not None:
+    # Sample up to three unique H2H pairs; this is validation, not production enrichment.
+    h2h_fixtures = select_h2h_fixtures(upcoming, limit=3)
+    h2h_checks = []
+    for h2h_fixture in h2h_fixtures:
+        home_id, away_id = h2h_fixture["home_id"], h2h_fixture["away_id"]
         h2h_payload, latest_headers = request_json(
-            f"/fixtures/h2h/{h2h_fixture['home_id']}/{h2h_fixture['away_id']}",
-            api_key,
+            f"/fixtures/h2h/{home_id}/{away_id}", api_key
         )
         summary["requests"] += 1
-        h2h_report = inspect_h2h_payload(
-            h2h_payload, h2h_fixture["home_id"], h2h_fixture["away_id"]
-        )
-        summary["h2h_endpoint_ok"] = True
-        summary["h2h_fixture_id"] = h2h_fixture["id"]
-        summary["h2h_team_pair"] = [
-            h2h_fixture.get("home_team"), h2h_fixture.get("away_team")
-        ]
-        summary["h2h_meetings_returned"] = len(h2h_report["records"])
-        summary["h2h_scored_meetings"] = len(h2h_report["scored_records"])
-        summary["h2h_unscored_meetings"] = h2h_report["unscored_records"]
-        summary["h2h_score_field_types"] = h2h_report["score_field_types"]
-        summary["h2h_status_counts"] = h2h_report["status_counts"]
-        summary["h2h_history_available"] = bool(h2h_report["records"])
-    else:
+        h2h_report = inspect_h2h_payload(h2h_payload, home_id, away_id)
+        h2h_checks.append({
+            "fixture_id": h2h_fixture["id"],
+            "team_pair": [h2h_fixture.get("home_team"), h2h_fixture.get("away_team")],
+            "meetings_returned": len(h2h_report["records"]),
+            "scored_meetings": len(h2h_report["scored_records"]),
+            "unscored_meetings": h2h_report["unscored_records"],
+            "score_field_types": h2h_report["score_field_types"],
+            "status_counts": h2h_report["status_counts"],
+            "history_available": bool(h2h_report["records"]),
+        })
+    summary["h2h_endpoint_ok"] = bool(h2h_checks)
+    summary["h2h_pairs_checked"] = len(h2h_checks)
+    summary["h2h_pair_checks"] = h2h_checks
+    summary["h2h_meetings_returned"] = sum(
+        item["meetings_returned"] for item in h2h_checks
+    )
+    summary["h2h_scored_meetings"] = sum(
+        item["scored_meetings"] for item in h2h_checks
+    )
+    summary["h2h_unscored_meetings"] = sum(
+        item["unscored_meetings"] for item in h2h_checks
+    )
+    if not h2h_checks:
         summary["h2h_endpoint_note"] = (
-            "No upcoming fixture with two valid provider team IDs was available."
+            "No upcoming fixtures with valid provider team IDs were available."
         )
 
     for header, output in (

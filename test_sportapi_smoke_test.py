@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from sportapi_smoke_test import (
     select_upcoming_fixtures,
     inspect_h2h_payload,
+    select_h2h_fixtures,
     validate_success_payload,
 )
 
@@ -67,6 +68,27 @@ class HeadToHeadPayloadTests(unittest.TestCase):
         report = inspect_h2h_payload(payload, 10, 20)
         self.assertEqual(report["unscored_records"], 1)
         self.assertEqual(report["score_field_types"], ["NoneType/NoneType"])
+
+    def test_selects_unique_valid_pairs_up_to_limit(self):
+        upcoming = [
+            (None, {"id": 1, "home_id": 10, "away_id": 20}),
+            (None, {"id": 2, "home_id": 20, "away_id": 10}),
+            (None, {"id": 3, "home_id": 30, "away_id": 40}),
+            (None, {"id": 4, "home_id": 50, "away_id": 50}),
+            (None, {"id": 5, "home_id": "60", "away_id": 70}),
+            (None, {"id": 6, "home_id": 80, "away_id": 90}),
+        ]
+        selected = select_h2h_fixtures(upcoming, limit=3)
+        self.assertEqual([item["id"] for item in selected], [1, 3, 6])
+
+    def test_score_boolean_is_not_counted_as_a_valid_score(self):
+        payload = {"success": True, "data": [{
+            "home_id": 10, "away_id": 20, "date": "2026-10-01",
+            "home_score": True, "away_score": 1, "status": "FT",
+        }]}
+        report = inspect_h2h_payload(payload, 10, 20)
+        self.assertEqual(report["scored_records"], [])
+        self.assertEqual(report["unscored_records"], 1)
 
 
 class UpcomingFixtureSelectionTests(unittest.TestCase):
