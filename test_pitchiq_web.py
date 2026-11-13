@@ -48,6 +48,21 @@ class FinishedMatchForecastIntegrityTests(unittest.TestCase):
         self.assertIn("top:all.slice(0,5).map(([h,a,value])=>[h,a,value/total])", self.html)
 
 
+class MatchCentreTeamComparisonTests(unittest.TestCase):
+    def test_match_centre_compares_verified_model_input_metrics(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('metricCompare("Goals scored per match",s.h.gf,s.a.gf)', source)
+        self.assertIn('metricCompare("Goals conceded per match",s.h.ga,s.a.ga)', source)
+        self.assertIn('metricCompare("Team rating",s.h.elo,s.a.elo)', source)
+        self.assertIn('role="progressbar"', source)
+        self.assertIn("Bars compare the supplied figures only; they are not a ranking", source)
+
+    def test_comparison_bars_handle_missing_values_without_inventing_zero_data(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("validH=Number.isFinite(h),validA=Number.isFinite(a)", source)
+        self.assertIn("(valid?value.toFixed(2):'—')", source)
+
+
 class InternationalMatchCentreTests(unittest.TestCase):
     def test_international_tab_shows_filtered_live_upcoming_and_completed_counts(self):
         source = Path("index.html").read_text(encoding="utf-8")

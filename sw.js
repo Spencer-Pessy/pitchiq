@@ -1,4 +1,4 @@
-const CACHE = 'pitchiq-cache-v9';
+const CACHE = 'pitchiq-cache-v10';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo-banner-512.png'];
 
 self.addEventListener('install', event => {
