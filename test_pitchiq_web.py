@@ -250,19 +250,22 @@ class HomepageOverviewTests(unittest.TestCase):
 
 
 class HeadToHeadPresentationTests(unittest.TestCase):
-    def test_club_and_international_details_render_h2h_sections(self):
+    def test_club_details_render_h2h_but_international_details_remain_fixture_only(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("function h2hPanel(home,away,summary)", source)
-        self.assertIn("function internationalH2H(f)", source)
         self.assertIn("${h2hPanel(f.h,f.a,f.h2h)}", source)
-        self.assertIn("h2hPanel(f.h,f.a,internationalH2H(f))", source)
-        self.assertIn("Only completed meetings before this fixture’s kickoff are counted", source)
+        self.assertNotIn("function internationalH2H(f)", source)
+        self.assertNotIn("h2hPanel(f.h,f.a,internationalH2H(f))", source)
+        self.assertIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
 
-    def test_h2h_international_matches_are_gender_scoped_and_pre_kickoff(self):
+    def test_international_details_do_not_use_h2h_or_national_team_analysis(self):
         source = Path("index.html").read_text(encoding="utf-8")
-        self.assertIn("t<cutoff", source)
-        self.assertIn("m.gender===f.gender", source)
-        self.assertIn("['FT','AET','PEN'].includes(m.status)", source)
+        start = source.index("function internationalDetail()")
+        end = source.find("\nfunction ", start + 10)
+        detail = source[start:end if end >= 0 else len(source)]
+        self.assertNotIn("h2hPanel", detail)
+        self.assertNotIn("internationalH2H", detail)
+        self.assertIn("Fixture information only", detail)
 
 
 class OddsFreshnessWebTests(unittest.TestCase):
@@ -579,7 +582,7 @@ class InternationalFixtureDetailTests(unittest.TestCase):
         self.assertIn("function internationalDetail()", source)
         self.assertIn("if(tab==='intl'){internationalDetail();return}detail()", source)
         self.assertIn("INTERNATIONAL MATCH DETAIL", source)
-        self.assertIn("Pitch IQ does not currently publish model forecasts for international fixtures", source)
+        self.assertIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
         self.assertIn("$('#bk').onclick=()=>{tab='intl';list()}", source)
 
 class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
