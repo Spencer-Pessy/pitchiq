@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
 from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name, build_head_to_head
+from pitchiq_h2h import normalize_h2h_cache, refresh_h2h_cache, cached_h2h_matches
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
 COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
@@ -143,6 +144,30 @@ def team_stats(tid, home, prior_for, prior_against):
 
 
 now = datetime.now(timezone.utc)
+
+# Historical H2H is a display-only enrichment. Fetch at most three nearest
+# upcoming club fixtures per refresh and cache each response for 24 hours.
+try:
+    with open("h2h_cache.json", encoding="utf-8") as cache_file:
+        h2h_cache = normalize_h2h_cache(json.load(cache_file))
+except (OSError, ValueError, TypeError):
+    h2h_cache = normalize_h2h_cache({})
+h2h_candidates = [
+    match for match in matches
+    if is_club_competition(match.get("_c"))
+    and match.get("status") in ("SCHEDULED", "TIMED")
+    and (datetime.fromisoformat(match["utcDate"].replace("Z", "+00:00")) > now)
+    and (datetime.fromisoformat(match["utcDate"].replace("Z", "+00:00")) <= now + timedelta(days=30))
+]
+h2h_cache, h2h_requests = refresh_h2h_cache(
+    h2h_candidates, h2h_cache,
+    lambda fixture_id: get(f"/matches/{fixture_id}/head2head"),
+    now=now,
+)
+with open("h2h_cache.json", "w", encoding="utf-8") as cache_file:
+    json.dump(h2h_cache, cache_file, ensure_ascii=False)
+print("historical H2H requests this refresh:", h2h_requests)
+
 out = []
 for m in matches:
     # Keep World Cup/EURO source coverage and isolated history, but never
@@ -162,7 +187,7 @@ for m in matches:
         "id": m["id"], "comp": m["_cn"], "code": m["_c"], "utc": m["utcDate"],
         "status": m["status"], "h": tname(h), "a": tname(a),
         "score": [hg, ag] if hg is not None else None,
-        "h2h": build_head_to_head(matches, h.get("id"), a.get("id"), m["utcDate"]),
+        "h2h": build_head_to_head(cached_h2h_matches(h2h_cache, m["id"], h.get("id"), a.get("id")) or matches, h.get("id"), a.get("id"), m["utcDate"]),
         "s": {
             "h": team_stats(h["id"], True, ah, aa),
             "a": team_stats(a["id"], False, aa, ah),

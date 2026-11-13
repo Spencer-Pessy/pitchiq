@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - update.py
+      - pitchiq_h2h.py
+      - test_pitchiq_h2h.py
       - pitchiq_data.py
       - pitchiq_model.py
       - model_metrics.py
@@ -26,9 +28,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Validate Python syntax
-        run: python -m py_compile update.py test_update.py international.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py
+        run: python -m py_compile update.py pitchiq_h2h.py test_pitchiq_h2h.py test_update.py international.py odds.py pitchiq_odds.py test_pitchiq_odds.py telegram.py pitchiq_telegram.py test_pitchiq_telegram.py pitchiq_model.py pitchiq_data.py model_metrics.py test_pitchiq_model.py test_pitchiq_data.py test_pitchiq_web.py test_international.py
       - name: Run offline model and feed tests
-        run: python -m unittest -v test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_pitchiq_odds test_pitchiq_telegram test_update
+        run: python -m unittest -v test_pitchiq_h2h test_pitchiq_model test_pitchiq_data test_pitchiq_web test_international test_pitchiq_odds test_pitchiq_telegram test_update
       - name: Refresh and publish data with safe retry
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
@@ -41,7 +43,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             python update.py
-            git add data.json predictions.json model_evaluation.json details.json
+            git add data.json predictions.json model_evaluation.json details.json h2h_cache.json
             if git diff --cached --quiet; then
               echo "No changes to publish."
               exit 0
