@@ -48,6 +48,20 @@ class FinishedMatchForecastIntegrityTests(unittest.TestCase):
         self.assertIn("top:all.slice(0,5).map(([h,a,value])=>[h,a,value/total])", self.html)
 
 
+class MatchCentreGoalOutlookTests(unittest.TestCase):
+    def test_goal_outlook_uses_existing_model_probabilities(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('probabilityRow("Over 2.5 goals",r.o25,"var(--ok)")', source)
+        self.assertIn('probabilityRow("Both teams to score",r.bt,"var(--home)")', source)
+        self.assertIn('probabilityRow("Under 2.5 goals",1-r.o25', source)
+        self.assertIn('aria-label="'+ '"'+ '+esc(label)+'"' + '" probability"', source)
+
+    def test_goal_outlook_rejects_invalid_probabilities(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("Number.isFinite(n)&&n>=0&&n<=1", source)
+        self.assertIn("valid?percent+'%':'Unavailable'", source)
+
+
 class MatchCentreTeamComparisonTests(unittest.TestCase):
     def test_match_centre_compares_verified_model_input_metrics(self):
         source = Path("index.html").read_text(encoding="utf-8")
