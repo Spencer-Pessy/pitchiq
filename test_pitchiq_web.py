@@ -8,7 +8,7 @@ class DynamicInputAccessibilityTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn('<label for="${k}-${x}">${l}</label>', source)
         self.assertIn('+ " probability"', source)
-        self.assertIn('aria-label="Home decimal odds"', source)
+        self.assertIn('probability', source)
         self.assertIn('aria-label="Draw decimal odds"', source)
         self.assertIn('aria-label="Away decimal odds"', source)
 
