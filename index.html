@@ -187,6 +187,33 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:520px){.match-scoreboard{grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr);gap:3px;padding:22px 0 18px}.team-monogram{width:48px;height:48px}.match-centre-score>span{font-size:9px}.match-hero{padding:15px}.team-context-grid{gap:7px}.team-context-grid>div{padding:9px}.match-jump a{padding:8px 10px}}
 @media(prefers-reduced-motion:reduce){.match-status i{animation:none}}
 
+
+/* Compact match detail typography: keep long club names inside mobile cards. */
+.h2h-panel{min-width:0;overflow:hidden}
+.h2h-panel>h2{font-size:clamp(15px,3.6vw,19px);line-height:1.2;overflow-wrap:anywhere}
+.h2h-panel .results-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.h2h-panel .results-stats>div{min-width:0;padding:9px 6px}
+.h2h-panel .results-stats b{font-size:clamp(20px,5vw,25px)}
+.h2h-panel .results-stats span{font-size:clamp(9px,2.4vw,11px);line-height:1.2;overflow-wrap:anywhere}
+.h2h-list .stat{align-items:flex-start;flex-wrap:wrap;gap:3px 8px}
+.h2h-list .stat span{flex:1 1 100%;font-size:11px;line-height:1.25}
+.h2h-list .stat b{display:block;max-width:100%;font-size:clamp(12px,2.8vw,15px);line-height:1.3;text-align:left;overflow-wrap:anywhere;word-break:normal}
+.match-preview{min-width:0;overflow:hidden}
+.match-preview>h2{font-size:clamp(16px,3.8vw,20px);line-height:1.2}
+.match-preview>.note{font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+.match-preview .stats{grid-template-columns:1fr 1fr;gap:0 10px}
+.match-preview .stat{min-width:0;align-items:flex-start;gap:6px}
+.match-preview .stat span{font-size:10px;line-height:1.3}
+.match-preview .stat b{max-width:62%;font-size:12px;line-height:1.3;text-align:right;overflow-wrap:anywhere}
+@media(max-width:520px){
+ .h2h-panel{padding:11px}
+ .h2h-panel .results-stats>div{padding:8px 4px}
+ .h2h-list .stat b{font-size:12px}
+ .match-preview{padding:11px}
+ .match-preview .stats{grid-template-columns:1fr}
+ .match-preview .stat b{font-size:12px}
+}
+
 </style>
 </head>
 <body>
@@ -616,8 +643,8 @@ function res(){
  const eloGap=Number(s.h.elo||0)-Number(s.a.elo||0),formGap=ppg(s.h.form)-ppg(s.a.form);
  const formRead=Math.abs(formGap)<.15?'Recent form ratings are close.':(formGap>0?f.h:f.a)+' has the stronger recent form rating.';
  const eloRead=Math.abs(eloGap)<20?'Elo ratings are close.':`${esc(eloGap>0?f.h:f.a)} has a ${Math.abs(Math.round(eloGap))}-point Elo advantage.`;
- const currentPreview=`<div class="panel"><h2>Match preview</h2><p class="note">${lean}</p><div class="stats">${st('Form comparison',formRead)}${st('Team strength',eloRead)}${st('Expected goal balance',`${r.lh.toFixed(2)} – ${r.la.toFixed(2)}`)}${st('Goal outlook',`${pct(r.o25)} over 2.5 · ${pct(r.bt)} both teams score`)}</div><p class="note">Form samples: ${Number(s.h.form_matches??0)} for ${esc(f.h)} and ${Number(s.a.form_matches??0)} for ${esc(f.a)}. Venue scoring samples: ${Number(s.h.venue_matches??0)} home matches and ${Number(s.a.venue_matches??0)} away matches. This preview summarises the model inputs; it does not include confirmed lineups, tactics, weather or late team news.</p></div>`;
- const preview=archived?'<div class="panel"><h2>Original pre-match snapshot</h2><p class="note">These probabilities and expected-goal rates were saved before kickoff and are shown unchanged. They are not recalculated from the finished match.</p></div>':currentPreview;
+ const currentPreview=`<div class="panel match-preview"><h2>Match preview</h2><p class="note">${lean}</p><div class="stats">${st('Form comparison',formRead)}${st('Team strength',eloRead)}${st('Expected goal balance',`${r.lh.toFixed(2)} – ${r.la.toFixed(2)}`)}${st('Goal outlook',`${pct(r.o25)} over 2.5 · ${pct(r.bt)} both teams score`)}</div><p class="note">Form samples: ${Number(s.h.form_matches??0)} for ${esc(f.h)} and ${Number(s.a.form_matches??0)} for ${esc(f.a)}. Venue scoring samples: ${Number(s.h.venue_matches??0)} home matches and ${Number(s.a.venue_matches??0)} away matches. This preview summarises the model inputs; it does not include confirmed lineups, tactics, weather or late team news.</p></div>`;
+ const preview=archived?'<div class="panel match-preview"><h2>Original pre-match snapshot</h2><p class="note">These probabilities and expected-goal rates were saved before kickoff and are shown unchanged. They are not recalculated from the finished match.</p></div>':currentPreview;
  $('#res').innerHTML=`<div class="panel"><h2>Forecast</h2>
  <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
  <div class="legend"><span>${esc(f.h)}</span><span>Draw</span><span>${esc(f.a)}</span></div>
