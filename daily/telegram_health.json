@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-13T02:03:52.930663+00:00",
+  "checked_at": "2026-11-13T02:37:40.586591+00:00",
   "overall": "healthy",
   "telegram_delivery_verified": false,
   "note": "GitHub scheduled-run health only; this does not prove a Telegram message was delivered.",
@@ -14,7 +14,7 @@
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 2107,
+      "age_minutes": 2141,
       "expected_interval_hours": 24,
       "grace_hours": 12
     },
@@ -27,7 +27,7 @@
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 217,
+      "age_minutes": 251,
       "expected_interval_hours": 4,
       "grace_hours": 4
     },
@@ -40,7 +40,7 @@
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 98,
+      "age_minutes": 132,
       "expected_interval_hours": 1,
       "grace_hours": 3
     }
