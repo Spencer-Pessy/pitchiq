@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from sportapi_smoke_test import (
     select_upcoming_fixtures,
-    validate_h2h_payload,
+    inspect_h2h_payload,
     validate_success_payload,
 )
 
@@ -31,11 +31,11 @@ class HeadToHeadPayloadTests(unittest.TestCase):
                 "home_score": 2, "away_score": 1, "status": "FT",
             }],
         }
-        self.assertEqual(len(validate_h2h_payload(payload, 10, 20)), 1)
+        self.assertEqual(len(inspect_h2h_payload(payload, 10, 20)["scored_records"]), 1)
 
     def test_accepts_empty_history_without_fabricating_zero_record(self):
         self.assertEqual(
-            validate_h2h_payload({"success": True, "data": []}, 10, 20), []
+            inspect_h2h_payload({"success": True, "data": []}, 10, 20)["records"], []
         )
 
     def test_rejects_wrong_pair(self):
@@ -47,7 +47,7 @@ class HeadToHeadPayloadTests(unittest.TestCase):
             }],
         }
         with self.assertRaisesRegex(ValueError, "different team pairing"):
-            validate_h2h_payload(payload, 10, 20)
+            inspect_h2h_payload(payload, 10, 20)
 
     def test_rejects_non_finished_or_incomplete_record(self):
         payload = {
@@ -57,8 +57,16 @@ class HeadToHeadPayloadTests(unittest.TestCase):
                 "home_score": 2, "away_score": 1, "status": "LIVE",
             }],
         }
-        with self.assertRaisesRegex(ValueError, "not marked FT"):
-            validate_h2h_payload(payload, 10, 20)
+        report = inspect_h2h_payload(payload, 10, 20)
+        self.assertEqual(report["unscored_records"], 1)
+        self.assertEqual(report["scored_records"], [])
+
+
+    def test_reports_null_scores_without_treating_endpoint_as_broken(self):
+        payload = {"success": True, "data": [{"home_id": 10, "away_id": 20, "date": "2026-10-01", "home_score": None, "away_score": None, "status": "FT"}]}
+        report = inspect_h2h_payload(payload, 10, 20)
+        self.assertEqual(report["unscored_records"], 1)
+        self.assertEqual(report["score_field_types"], ["NoneType/NoneType"])
 
 
 class UpcomingFixtureSelectionTests(unittest.TestCase):

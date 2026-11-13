@@ -73,13 +73,14 @@ def select_upcoming_fixtures(fixtures, now=None, limit=3):
     return selected
 
 
-def validate_h2h_payload(payload, team1, team2):
-    """Validate H2H history without treating an empty history as an API failure."""
+def inspect_h2h_payload(payload, team1, team2):
+    """Validate team identity and report score coverage without assuming every row is scored."""
     if not isinstance(payload, dict) or payload.get("success") is not True:
         raise ValueError("H2H: response was not a successful JSON object")
     records = payload.get("data")
     if not isinstance(records, list):
         raise ValueError("H2H: expected a data list")
+    scored, unscored, score_types, statuses = [], 0, set(), {}
     for record in records:
         if not isinstance(record, dict):
             raise ValueError("H2H: record was not an object")
@@ -90,12 +91,18 @@ def validate_h2h_payload(payload, team1, team2):
             raise ValueError("H2H: record contains a different team pairing")
         if not isinstance(record.get("date"), str):
             raise ValueError("H2H: record missing match date")
-        if not isinstance(record.get("home_score"), int) or not isinstance(record.get("away_score"), int):
-            raise ValueError("H2H: record missing integer full-time scores")
-        if record.get("status") != "FT":
-            raise ValueError("H2H: historical record was not marked FT")
-    return records
-
+        status = record.get("status")
+        if not isinstance(status, str):
+            raise ValueError("H2H: record missing status")
+        statuses[status] = statuses.get(status, 0) + 1
+        hs, aws = record.get("home_score"), record.get("away_score")
+        score_types.add(type(hs).__name__ + "/" + type(aws).__name__)
+        if status in ("FT", "AET", "PENS") and isinstance(hs, int) and isinstance(aws, int):
+            scored.append(record)
+        else:
+            unscored += 1
+    return {"records": records, "scored_records": scored, "unscored_records": unscored,
+            "score_field_types": sorted(score_types), "status_counts": statuses}
 
 def run_probe(api_key, today=None, now=None):
     if not isinstance(api_key, str) or not api_key.strip():
@@ -180,7 +187,7 @@ def run_probe(api_key, today=None, now=None):
             api_key,
         )
         summary["requests"] += 1
-        h2h_records = validate_h2h_payload(
+        h2h_report = inspect_h2h_payload(
             h2h_payload, h2h_fixture["home_id"], h2h_fixture["away_id"]
         )
         summary["h2h_endpoint_ok"] = True
@@ -188,8 +195,12 @@ def run_probe(api_key, today=None, now=None):
         summary["h2h_team_pair"] = [
             h2h_fixture.get("home_team"), h2h_fixture.get("away_team")
         ]
-        summary["h2h_meetings_returned"] = len(h2h_records)
-        summary["h2h_history_available"] = bool(h2h_records)
+        summary["h2h_meetings_returned"] = len(h2h_report["records"])
+        summary["h2h_scored_meetings"] = len(h2h_report["scored_records"])
+        summary["h2h_unscored_meetings"] = h2h_report["unscored_records"]
+        summary["h2h_score_field_types"] = h2h_report["score_field_types"]
+        summary["h2h_status_counts"] = h2h_report["status_counts"]
+        summary["h2h_history_available"] = bool(h2h_report["records"])
     else:
         summary["h2h_endpoint_note"] = (
             "No upcoming fixture with two valid provider team IDs was available."
