@@ -472,7 +472,7 @@ function international(){
  const other=valid.filter(f=>!live.includes(f)&&!upcoming.includes(f)&&!completed.includes(f));
  const updatedAt=Date.parse(I.updated||''),ageMs=now-updatedAt;
  const age=Number.isFinite(updatedAt)&&ageMs>=0?Math.round(ageMs/36e5):null;
- const stale=age===null||age>36;
+ const stale=age===null||age>12;
  const staleMessage=age===null?'International feed freshness is unavailable; the last refresh time is missing, invalid or in the future.':'International feed may be stale: last successful snapshot is '+age+' hours old. The scheduled refresh has not published a newer snapshot yet.';
  const feed=I.sources||{},checked=Array.isArray(feed.espn_leagues_checked)?feed.espn_leagues_checked:[],successful=Array.isArray(feed.espn_leagues_successful)?feed.espn_leagues_successful:[];
  const genderCounts=allFixtures.reduce((counts,f)=>{const key=f.gender==='men'?'men':f.gender==='women'?'women':'other';counts[key]++;return counts;},{men:0,women:0,other:0});
