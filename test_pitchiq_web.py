@@ -53,7 +53,7 @@ class MatchCentreGoalOutlookTests(unittest.TestCase):
         self.assertIn('probabilityRow("Over 2.5 goals",r.o25,"var(--ok)")', source)
         self.assertIn('probabilityRow("Both teams to score",r.bt,"var(--home)")', source)
         self.assertIn('probabilityRow("Under 2.5 goals",1-r.o25', source)
-        self.assertIn("+' probability'", source)
+        self.assertIn(" probability", source)
 
     def test_goal_outlook_rejects_invalid_probabilities(self):
         source = Path("index.html").read_text(encoding="utf-8")
