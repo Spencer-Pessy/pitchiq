@@ -38,10 +38,46 @@ def request_json(path, api_key):
         raise RuntimeError(f"{path}: response was not valid JSON") from None
 
 
-def run_probe(api_key, today=None):
+def select_upcoming_fixtures(fixtures, now=None, limit=3):
+    """Choose a small, diverse set of genuinely upcoming scheduled fixtures."""
+    now = now or datetime.now(timezone.utc)
+    candidates = []
+    seen_leagues = set()
+    for fixture in fixtures:
+        if not isinstance(fixture, dict):
+            continue
+        if str(fixture.get("status", "")).upper() not in ("SCHEDULED", "TIMED"):
+            continue
+        fixture_id = fixture.get("id")
+        league_id = fixture.get("league_id")
+        kickoff = fixture.get("kickoff_utc") or fixture.get("utcDate")
+        if not isinstance(fixture_id, int) or league_id is None or not isinstance(kickoff, str):
+            continue
+        try:
+            kickoff_at = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if kickoff_at.tzinfo is None or kickoff_at <= now:
+            continue
+        candidates.append((kickoff_at, fixture))
+    candidates.sort(key=lambda item: item[0])
+    selected = []
+    for kickoff_at, fixture in candidates:
+        league_id = fixture.get("league_id")
+        if league_id in seen_leagues:
+            continue
+        seen_leagues.add(league_id)
+        selected.append((kickoff_at, fixture))
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def run_probe(api_key, today=None, now=None):
     if not isinstance(api_key, str) or not api_key.strip():
         raise RuntimeError("SPORTAPI_KEY is missing. Add it as a repository Actions secret.")
     today = today or datetime.now(timezone.utc).date()
+    now = now or datetime.now(timezone.utc)
     summary = {"provider": "SportAPI", "authenticated": False, "requests": 0}
     latest_headers = {}
 
@@ -65,30 +101,44 @@ def run_probe(api_key, today=None):
 
     summary["fixture_dates_checked"] = dates_checked
     summary["fixtures_returned"] = len(fixtures)
+
+    upcoming = select_upcoming_fixtures(fixtures, now=now, limit=3)
+    lineup_checks = []
+    for kickoff_at, fixture in upcoming:
+        lineups, latest_headers = request_json(
+            f"/fixtures/{fixture['id']}/lineups", api_key
+        )
+        summary["requests"] += 1
+        lineup_checks.append({
+            "fixture_id": fixture["id"],
+            "competition": fixture.get("league_name"),
+            "kickoff_utc": kickoff_at.isoformat(),
+            "lineups_available": lineups.get("available") is True,
+        })
+    summary["upcoming_lineup_checks"] = lineup_checks
+    summary["upcoming_lineups_available"] = sum(
+        item["lineups_available"] for item in lineup_checks
+    )
+
+    # Keep one small statistics endpoint check, separate from the pre-match XI checks.
     candidate = next(
         (
             fixture for fixture in fixtures
             if isinstance(fixture, dict)
             and isinstance(fixture.get("id"), int)
-            and isinstance(fixture.get("home_id"), int)
-            and isinstance(fixture.get("away_id"), int)
         ),
         None,
     )
-
     if candidate is not None:
-        fixture_id = candidate["id"]
-        lineups, latest_headers = request_json(f"/fixtures/{fixture_id}/lineups", api_key)
+        stats, latest_headers = request_json(
+            f"/fixtures/{candidate['id']}/stats", api_key
+        )
         summary["requests"] += 1
-        stats, latest_headers = request_json(f"/fixtures/{fixture_id}/stats", api_key)
-        summary["requests"] += 1
-        summary["sample_fixture_id"] = fixture_id
-        summary["lineups_endpoint_ok"] = True
-        summary["lineups_available"] = lineups.get("available") is True
+        summary["sample_stats_fixture_id"] = candidate["id"]
         summary["stats_endpoint_ok"] = True
         summary["stats_available"] = stats.get("available") is True
     else:
-        summary["sample_fixture_note"] = "No fixture with usable team IDs was returned for the two dates checked."
+        summary["stats_endpoint_note"] = "No fixture was returned for the dates checked."
 
     for header, output in (
         ("X-RateLimit-Remaining", "daily_requests_remaining"),
@@ -99,7 +149,6 @@ def run_probe(api_key, today=None):
             summary[output] = value
 
     return summary
-
 
 if __name__ == "__main__":
     try:
