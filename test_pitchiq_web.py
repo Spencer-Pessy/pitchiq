@@ -465,7 +465,7 @@ class FeedHealthLabelTests(unittest.TestCase):
 class ServiceWorkerLiveDataTests(unittest.TestCase):
     def test_published_pick_ledger_uses_network_first_live_data_cache(self):
         source = Path("sw.js").read_text(encoding="utf-8")
-        self.assertIn("pitchiq-cache-v9", source)
+        self.assertIn("pitchiq-cache-v10", source)
         self.assertIn("url.pathname.endsWith('/daily/published_picks.json')", source)
         self.assertIn("fetch(request)", source)
         self.assertIn("{version: 1, pending: [], results: [], sent_ids: []}", source)
