@@ -719,7 +719,7 @@ async function shareTop3(){
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PitchIQ top 3 picks'});return}}catch(e){if(e&&e.name=='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
 }
- const FEEDBACK_URL='';   // paste your Google Form link between the quotes
+ const FEEDBACK_URL='https://forms.gle/gJ19T2NeSWWbZmgy6';   // PITCH IQ independent feedback form
 const GOATCOUNTER='pitchiq';    // paste your GoatCounter code (like pitchiq) between the quotes
 if(GOATCOUNTER){const sc=document.createElement('script');sc.async=true;sc.dataset.goatcounter='https://'+GOATCOUNTER+'.goatcounter.com/count';sc.src='//gc.zgo.at/count.js';document.head.appendChild(sc)}
 function addFooter(){if(!FEEDBACK_URL||$('#fb'))return;$('#app').insertAdjacentHTML('beforeend','<p id="fb" style="text-align:center;margin-top:24px"><a href="'+FEEDBACK_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Send feedback</a></p>')}
