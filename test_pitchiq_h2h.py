@@ -16,22 +16,25 @@ class H2HCacheTests(unittest.TestCase):
             "homeTeam": {"id": home}, "awayTeam": {"id": away},
         }
 
-    def test_refreshes_nearest_three_upcoming_fixtures_only(self):
+    def test_refreshes_nearest_five_upcoming_fixtures_only(self):
         fixtures = [
             self.fixture(4, "2026-11-18T18:00:00Z"),
             self.fixture(3, "2026-11-15T18:00:00Z"),
             self.fixture(2, "2026-11-14T18:00:00Z"),
             self.fixture(1, "2026-11-16T18:00:00Z"),
             self.fixture(5, "2026-11-12T18:00:00Z"),
+            self.fixture(6, "2026-11-17T18:00:00Z"),
+            self.fixture(7, "2026-11-19T18:00:00Z"),
         ]
         called = []
         def fetch(fixture_id):
             called.append(fixture_id)
             return {"matches": [{"id": fixture_id}]}
         cache, count = refresh_h2h_cache(fixtures, {}, fetch, self.now)
-        self.assertEqual(count, 3)
-        self.assertEqual(called, [2, 3, 1])
+        self.assertEqual(count, 5)
+        self.assertEqual(called, [2, 3, 1, 6, 4])
         self.assertEqual(cached_h2h_matches(cache, 2), [{"id": 2}])
+        self.assertNotIn("7", cache["entries"])
 
     def test_successful_cache_is_not_refetched_within_24_hours(self):
         fixtures = [self.fixture(10, "2026-11-14T18:00:00Z")]

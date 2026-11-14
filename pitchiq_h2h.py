@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 CACHE_SCHEMA = 1
 H2H_REFRESH_HOURS = 24
-H2H_REQUESTS_PER_REFRESH = 3
+H2H_REQUESTS_PER_REFRESH = 5
 
 
 def _parse_time(value):

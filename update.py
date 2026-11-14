@@ -147,7 +147,7 @@ def team_stats(tid, home, prior_for, prior_against):
 
 now = datetime.now(timezone.utc)
 
-# Historical H2H is a display-only enrichment. Fetch at most three nearest
+# Historical H2H is a display-only enrichment. Fetch at most five nearest
 # upcoming club fixtures per refresh and cache each response for 24 hours.
 try:
     with open("h2h_cache.json", encoding="utf-8") as cache_file:
