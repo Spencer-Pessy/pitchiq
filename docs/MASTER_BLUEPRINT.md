@@ -157,19 +157,20 @@ The following is a point-in-time snapshot, not a promise that counts will remain
 - The newly deployed rolling 10-match line graph and competition comparison bars were confirmed visible in the live Record page. No chart rendering errors were observed.
 - Competition samples currently range from 11 to 18 completed forecasts; bars therefore meet the 10-match display threshold.
 - The Match Centre doughnut chart remains separate.
-- The current club fixture snapshot contains 238 published matches. Eighteen currently contain at least one cached H2H meeting; 220 have no H2H meeting data in that snapshot yet. The cache contains 20 fixture entries, including entries where the provider returned no meetings. Coverage is being expanded gradually under the free request limit.
+- The current club fixture snapshot contains 238 published matches. The H2H cache contains 25 fixture entries: 21 with at least one verified meeting and 4 where the provider returned no meetings. The live Match Centre was checked using Troyes vs Le Havre (zero meetings), Como 1907 vs Cagliari (four), and Napoli vs Torino (five). The empty state, actual counts, five-row display limit, dates, scores, and home/away orientation all matched the cached data. H2H remains display-only and coverage is being expanded gradually under the free request limit.
 - The public forecast ledger contains 323 records, including 86 completed records. The separate forward-only evaluation ledger contains 237 research forecasts; it must not be counted as public settled performance.
-- The international fixture feed is separate and does not publish predictions or analysis.
+- The international fixture feed is separate and does not publish predictions or analysis. The live International listing and two fixture detail pages (Japan vs Brazil and China vs Malaysia) were checked: only fixture information is shown, with no picks, probabilities, confidence, model analysis, form, H2H, or betting recommendations.
 - The latest chart change passed the model tests, offline tests, and Pages deployment; the portable backup workflow also completed successfully.
+- The News tab footer was checked live: “Send feedback” appears at the bottom after the social links, between “How it works” and “Telegram alerts”; Feedback is not a separate navigation tab.
 
 ## 11. Remaining work and completion criteria
 
 PITCH IQ is **not yet declared finished**. The blueprint is now documented, but implementation and monitoring continue.
 
-1. **H2H coverage:** Continue gradual cache enrichment; audit zero-meeting responses and show honest sample counts. Do not increase API usage beyond the free allowance.
+1. **H2H coverage:** The live Match Centre display audit passed for zero, fewer-than-five, and five-meeting examples, including correct score orientation. Continue gradual cache enrichment and show honest sample counts. Do not increase API usage beyond the free allowance.
 2. **Performance evidence:** Let more forecasts settle before interpreting rolling or competition charts. Keep the 10-match chart window and minimum competition sample visible in the interface.
-3. **International coverage:** Improve source coverage and reliability while preserving the strict fixture-only boundary.
-4. **User feedback:** Keep the feedback form at the bottom of News and review responses before prioritizing interface changes.
+3. **International coverage:** The live fixture-only boundary was verified on the listing and two match details. Improve source coverage and reliability without introducing national-team predictions or analysis.
+4. **User feedback:** The News-tab footer placement is live and verified; review responses before prioritizing interface changes.
 5. **Quality and backup:** Continue regression tests, Pages checks, and portable-backup verification after material changes.
 6. **Blueprint maintenance:** Update this document when a feature, source, workflow, data schema, or product rule changes; distinguish implemented, tested, and planned work.
 
