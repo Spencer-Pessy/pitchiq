@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name, build_head_to_head
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, validate_competition_fixtures, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name, build_head_to_head
 from pitchiq_h2h import normalize_h2h_cache, refresh_h2h_cache, cached_h2h_matches
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
@@ -52,15 +52,17 @@ matches = []
 fixture_counts = {}
 for i, c in enumerate(COMPS):
     d = get(f"/competitions/{c}/matches")
-    # Never publish a partial/empty fixture feed when an API request failed.
-    # A genuine empty list is valid; None means the request did not succeed.
-    if d is None or not isinstance(d.get("matches"), list):
+    # Validate the complete response before accepting any rows. Empty match
+    # lists are valid, but malformed payloads must preserve the last good feed.
+    try:
+        fixture_rows = validate_competition_fixtures(d, c)
+    except ValueError as error:
         raise SystemExit(
-            f"Aborting update: fixture request failed for {c}. "
+            f"Aborting update: invalid fixture response for {c}: {error}. "
             "The previous data.json will be kept."
         )
-    fixture_counts[c] = len(d.get("matches", []))
-    for m in d.get("matches", []):
+    fixture_counts[c] = len(fixture_rows)
+    for m in fixture_rows:
         m["_c"] = c
         m["_cn"] = d["competition"]["name"]
         matches.append(m)

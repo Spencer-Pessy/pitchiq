@@ -2,6 +2,7 @@ import unittest
 
 from pitchiq_data import (
     INTERNATIONAL_COMPETITIONS,
+    validate_competition_fixtures,
     build_head_to_head,
     average_bucket,
     goal_average_keys,
@@ -432,3 +433,54 @@ class TeamNameMatchingTests(unittest.TestCase):
         self.assertFalse(same_team_name("Inter", "Inter Miami"))
         self.assertFalse(same_team_name("", "Arsenal"))
 
+
+
+class FixtureResponseValidationTests(unittest.TestCase):
+    @staticmethod
+    def payload(status="SCHEDULED", score=None, home_id=10, away_id=20):
+        return {
+            "competition": {"name": "Premier League"},
+            "matches": [{
+                "id": 123,
+                "status": status,
+                "utcDate": "2026-11-20T12:00:00Z",
+                "homeTeam": {"id": home_id, "shortName": "Home"},
+                "awayTeam": {"id": away_id, "shortName": "Away"},
+                "score": {"fullTime": score if score is not None else {"home": None, "away": None}},
+            }],
+        }
+
+    def test_accepts_valid_and_genuinely_empty_fixture_lists(self):
+        payload = self.payload()
+        self.assertEqual(len(validate_competition_fixtures(payload, "PL")), 1)
+        payload["matches"] = []
+        self.assertEqual(validate_competition_fixtures(payload, "PL"), [])
+
+    def test_rejects_non_object_payload_and_missing_match_list(self):
+        with self.assertRaisesRegex(ValueError, "response must be an object"):
+            validate_competition_fixtures([], "PL")
+        with self.assertRaisesRegex(ValueError, "matches must be a list"):
+            validate_competition_fixtures({"competition": {"name": "Premier League"}}, "PL")
+
+    def test_rejects_malformed_rows_and_unzoned_kickoff_times(self):
+        payload = self.payload()
+        payload["matches"] = ["not a fixture"]
+        with self.assertRaisesRegex(ValueError, "must be an object"):
+            validate_competition_fixtures(payload, "PL")
+        payload = self.payload()
+        payload["matches"][0]["utcDate"] = "2026-11-20T12:00:00"
+        with self.assertRaisesRegex(ValueError, "must include a timezone"):
+            validate_competition_fixtures(payload, "PL")
+
+    def test_club_fixtures_require_team_ids_but_international_rows_may_be_unresolved(self):
+        payload = self.payload(home_id=None)
+        with self.assertRaisesRegex(ValueError, "no valid team ID"):
+            validate_competition_fixtures(payload, "PL")
+        self.assertEqual(len(validate_competition_fixtures(payload, "WC")), 1)
+
+    def test_finished_fixtures_require_two_nonnegative_integer_scores(self):
+        payload = self.payload(status="FINISHED", score={"home": 2, "away": 0})
+        self.assertEqual(len(validate_competition_fixtures(payload, "PL")), 1)
+        payload["matches"][0]["score"]["fullTime"]["home"] = True
+        with self.assertRaisesRegex(ValueError, "invalid finished home score"):
+            validate_competition_fixtures(payload, "PL")

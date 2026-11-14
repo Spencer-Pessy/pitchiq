@@ -6,6 +6,73 @@ import re
 import unicodedata
 
 INTERNATIONAL_COMPETITIONS = frozenset({"WC", "EC"})
+def validate_competition_fixtures(payload, competition_code):
+    """Validate a football-data.org fixture response before it enters the updater."""
+    if not isinstance(payload, dict):
+        raise ValueError("response must be an object")
+    competition = payload.get("competition")
+    if (not isinstance(competition, dict)
+            or not isinstance(competition.get("name"), str)
+            or not competition["name"].strip()):
+        raise ValueError("competition name is missing")
+    fixtures = payload.get("matches")
+    if not isinstance(fixtures, list):
+        raise ValueError("matches must be a list")
+
+    require_team_ids = is_club_competition(competition_code)
+    for index, fixture in enumerate(fixtures):
+        label = f"{competition_code} fixture #{index + 1}"
+        if not isinstance(fixture, dict):
+            raise ValueError(f"{label} must be an object")
+        fixture_id = fixture.get("id")
+        if not isinstance(fixture_id, int) or isinstance(fixture_id, bool):
+            raise ValueError(f"{label} has an invalid fixture ID")
+        status = fixture.get("status")
+        if not isinstance(status, str) or not status.strip():
+            raise ValueError(f"{label} has no valid status")
+        kickoff = fixture.get("utcDate")
+        if not isinstance(kickoff, str):
+            raise ValueError(f"{label} has no kickoff timestamp")
+        try:
+            parsed_kickoff = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError(f"{label} has an invalid kickoff timestamp") from error
+        if parsed_kickoff.tzinfo is None or parsed_kickoff.utcoffset() is None:
+            raise ValueError(f"{label} kickoff timestamp must include a timezone")
+
+        for side in ("homeTeam", "awayTeam"):
+            team = fixture.get(side)
+            if not isinstance(team, dict):
+                raise ValueError(f"{label} is missing {side}")
+            team_name = team.get("shortName") or team.get("name") or team.get("tla")
+            if not isinstance(team_name, str) or not team_name.strip():
+                raise ValueError(f"{label} has no display name for {side}")
+            team_id = team.get("id")
+            if require_team_ids and (not isinstance(team_id, int) or isinstance(team_id, bool)):
+                raise ValueError(f"{label} has no valid team ID for {side}")
+
+        score = fixture.get("score")
+        full_time = score.get("fullTime") if isinstance(score, dict) else None
+        if status == "FINISHED":
+            if not isinstance(full_time, dict):
+                raise ValueError(f"{label} is finished but has no full-time score")
+            for side in ("home", "away"):
+                value = full_time.get(side)
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    raise ValueError(f"{label} has an invalid finished {side} score")
+        elif full_time is not None:
+            if not isinstance(full_time, dict):
+                raise ValueError(f"{label} full-time score must be an object or null")
+            for side in ("home", "away"):
+                value = full_time.get(side)
+                if value is not None and (
+                    not isinstance(value, int) or isinstance(value, bool) or value < 0
+                ):
+                    raise ValueError(f"{label} has an invalid {side} score")
+
+    return fixtures
+
+
 
 
 def is_club_competition(code):
