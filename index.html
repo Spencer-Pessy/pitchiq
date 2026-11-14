@@ -214,6 +214,19 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .match-preview .stat b{font-size:12px}
 }
 
+
+/* Accessible 1X2 donut, using the existing forecast probabilities only */
+.probability-visual{display:flex;align-items:center;justify-content:center;gap:22px;margin:16px 0;padding:15px;border:1px solid var(--line);border-radius:12px;background:#0b0b0b}
+.probability-donut{position:relative;display:grid;place-items:center;flex:0 0 auto;width:136px;aspect-ratio:1;border-radius:50%;box-shadow:0 8px 22px #0007}
+.probability-donut:before{content:"";position:absolute;inset:16px;border-radius:50%;background:#151515;border:1px solid #383838;box-shadow:inset 0 2px 8px #0008}
+.probability-donut span{position:relative;z-index:1;color:#f7f7f7;font-size:21px;font-weight:900;letter-spacing:1px}
+.probability-legend{display:grid;gap:10px;min-width:0;flex:1;max-width:270px}
+.probability-legend-title{margin-bottom:2px;color:#45d483;font-size:10px;font-weight:800;letter-spacing:1.4px}
+.probability-legend>div:not(.probability-legend-title){display:grid;grid-template-columns:11px minmax(0,1fr) auto;align-items:center;gap:9px;color:#c8c8c8;font-size:12px}
+.probability-legend i{display:block;width:10px;height:10px;border-radius:3px}
+.probability-legend b{color:#fff;font-size:14px;font-variant-numeric:tabular-nums}
+@media(max-width:480px){.probability-visual{gap:15px;padding:12px}.probability-donut{width:112px}.probability-donut:before{inset:13px}.probability-donut span{font-size:18px}.probability-legend{gap:8px}.probability-legend>div:not(.probability-legend-title){font-size:11px;gap:7px}.probability-legend b{font-size:13px}}
+
 </style>
 </head>
 <body>
@@ -638,7 +651,15 @@ function res(){
   const n=Number(value),valid=Number.isFinite(n)&&n>=0&&n<=1,percent=valid?Math.round(n*100):null;
   return '<div class="goal-probability-row"><div class="goal-probability-label"><span>'+esc(label)+'</span><b>'+(valid?percent+'%':'Unavailable')+'</b></div><div class="goal-probability-track" role="progressbar" aria-label="'+esc(label)+' probability" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+(valid?percent:0)+'"><i style="width:'+(valid?percent:0)+'%;background:'+colour+'"></i></div></div>';
  };
- const outcomeNames=[f.h+' win','Draw',f.a+' win'],probs=[r.ph,r.pd,r.pa],ranked=probs.map((p,i)=>({p,i})).sort((a,b)=>b.p-a.p),lead=ranked[0].p-ranked[1].p;
+ const outcomeNames=[f.h+' win','Draw',f.a+' win'],probs=[r.ph,r.pd,r.pa];
+ const outcomeTotal=probs.reduce((sum,value)=>sum+Number(value||0),0);
+ const validOutcomes=probs.every(value=>value!==null&&value!==undefined&&Number.isFinite(Number(value))&&Number(value)>=0&&Number(value)<=1)&&outcomeTotal>0&&Math.abs(outcomeTotal-1)<=0.01;
+ const homeStop=validOutcomes?Number(probs[0])/outcomeTotal*100:0;
+ const drawStop=validOutcomes?(Number(probs[0])+Number(probs[1]))/outcomeTotal*100:0;
+ const probabilityDonut=validOutcomes
+  ? `<section class="probability-visual" aria-label="1X2 outcome probabilities"><div class="probability-donut" role="img" aria-label="${esc(f.h)} win ${pct(r.ph)}, draw ${pct(r.pd)}, ${esc(f.a)} win ${pct(r.pa)}" style="background:conic-gradient(var(--home) 0% ${homeStop}%,var(--draw) ${homeStop}% ${drawStop}%,var(--away) ${drawStop}% 100%)"><span>1X2</span></div><div class="probability-legend" aria-label="Outcome probability legend"><div class="probability-legend-title">MODEL OUTCOME SPLIT</div><div><i style="background:var(--home)"></i><span>${esc(f.h)} win</span><b>${pct(r.ph)}</b></div><div><i style="background:var(--draw)"></i><span>Draw</span><b>${pct(r.pd)}</b></div><div><i style="background:var(--away)"></i><span>${esc(f.a)} win</span><b>${pct(r.pa)}</b></div></div></section>`
+  : '<p class="note">Outcome probability chart unavailable because the model values are invalid.</p>';
+ const ranked=probs.map((p,i)=>({p,i})).sort((a,b)=>b.p-a.p),lead=ranked[0].p-ranked[1].p;
  const lean=lead<.06?'The model sees a closely balanced outcome; its leading result is not a strong separation.':`The model's leading outcome is ${outcomeNames[ranked[0].i]} at ${pct(ranked[0].p)}. The next most likely outcome is ${pct(ranked[1].p)}.`;
  const eloGap=Number(s.h.elo||0)-Number(s.a.elo||0),formGap=ppg(s.h.form)-ppg(s.a.form);
  const formRead=Math.abs(formGap)<.15?'Recent form ratings are close.':(formGap>0?f.h:f.a)+' has the stronger recent form rating.';
@@ -648,7 +669,7 @@ function res(){
  $('#res').innerHTML=`<div class="panel"><h2>Forecast</h2>
  <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
  <div class="legend"><span>${esc(f.h)}</span><span>Draw</span><span>${esc(f.a)}</span></div>
- ${preview}<div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
+ ${probabilityDonut}${preview}<div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
  <section class="goal-outlook" aria-label="Goal outlook"><div class="section-eyebrow">GOAL OUTLOOK</div>${probabilityRow("Over 2.5 goals",r.o25,"var(--ok)")}${probabilityRow("Both teams to score",r.bt,"var(--home)")}${probabilityRow("Under 2.5 goals",1-r.o25,"#9B9B9B")}</section><h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${esc(f.h)} ${x[0]}–${x[1]} ${esc(f.a)} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
  <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
 }

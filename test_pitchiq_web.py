@@ -312,6 +312,23 @@ class InternationalStatusPresentationTests(unittest.TestCase):
         self.assertIn("ABD:'ABANDONED',LIVE:'LIVE'", source)
 
 
+
+class MatchCentreOutcomeDonutTests(unittest.TestCase):
+    def test_1x2_donut_uses_the_existing_normalized_model_probabilities(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("const outcomeTotal=probs.reduce", source)
+        self.assertIn("Math.abs(outcomeTotal-1)<=0.01", source)
+        self.assertIn("conic-gradient(var(--home)", source)
+        self.assertIn('role="img" aria-label="${esc(f.h)} win ${pct(r.ph)}', source)
+        self.assertIn("${probabilityDonut}", source)
+        self.assertIn("MODEL OUTCOME SPLIT", source)
+
+    def test_invalid_outcome_probabilities_do_not_render_a_donut(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("value!==null&&value!==undefined", source)
+        self.assertIn("Outcome probability chart unavailable", source)
+
+
 if __name__ == "__main__":
     unittest.main()
 
