@@ -104,5 +104,19 @@ class UpdateRequestPacingTests(unittest.TestCase):
             self.assertIn(f"      - {path}", workflow)
 
 
+    def test_configured_competitions_match_all_12_free_tier_codes(self):
+        assignment = next(
+            node for node in self.tree.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "COMPS"
+                    for target in node.targets)
+        )
+        self.assertEqual(
+            set(ast.literal_eval(assignment.value)),
+            {"PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC",
+             "ELC", "DED", "PPL", "BSA"},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
