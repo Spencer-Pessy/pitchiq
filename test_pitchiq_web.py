@@ -623,7 +623,7 @@ class InternationalFixtureDetailTests(unittest.TestCase):
         self.assertIn("if(tab==='intl'){internationalDetail();return}detail()", source)
         self.assertIn("INTERNATIONAL MATCH DETAIL", source)
         self.assertIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
-        self.assertIn("$('#bk').onclick=()=>{tab='intl';list()}", source)
+        self.assertIn("$('#bk').onclick=()=>pitchBack(()=>{tab='intl';sel=null;list()})", source)
 
 class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
     def test_missing_invalid_and_future_timestamps_are_not_shown_as_fresh(self):
@@ -669,3 +669,22 @@ class OddsFreshnessSafetyTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("if(oddsFresh&&m.odds&&m.odds.every(o=>o>1))", source)
         self.assertIn("f.odds_manual||marketSnapshotFresh(f.odds_updated||D.odds_updated)", source)
+
+class AndroidPwaBackNavigationTests(unittest.TestCase):
+    def test_internal_routes_are_written_to_browser_history(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("function pitchRoute(){return {pitchiq:true,tab,matchId:sel?String(sel.id):null}}", source)
+        self.assertIn("function pitchPush(){history.pushState(pitchRoute(),'','#'+(sel?'match-'+encodeURIComponent(sel.id):'tab-'+encodeURIComponent(tab)))}", source)
+        self.assertIn("window.addEventListener('popstate'", source)
+        self.assertIn("history.replaceState({pitchiq:true,tab:'up',matchId:null}", source)
+
+    def test_tab_and_match_navigation_create_history_entries(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("tab=b.dataset.t;sel=null;pitchPush();list()", source)
+        self.assertIn("sel.odds=sel.odds||null;pitchPush();if(tab==='intl')", source)
+
+    def test_match_back_buttons_use_history_before_fallback(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("function pitchBack(fallback){if(history.state&&history.state.pitchiq&&history.length>1)history.back();else fallback()}", source)
+        self.assertGreaterEqual(source.count("onclick=()=>pitchBack("), 3)
+
