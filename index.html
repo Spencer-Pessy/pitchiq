@@ -257,6 +257,19 @@ const $=s=>document.querySelector(s);
 // Escape all external feed text before inserting it into HTML templates.
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let D=null,P={},I={fixtures:[]},Q={results:[]},tab='up',comp='all',sel=null,playerSort='goals',intlGender='all',intlCompetition='all',intlQuery='';
+function pitchRoute(){return {pitchiq:true,tab,matchId:sel?String(sel.id):null}}
+function pitchPush(){history.pushState(pitchRoute(),'')}
+function pitchBack(fallback){if(history.state&&history.state.pitchiq&&history.length>1)history.back();else fallback()}
+history.replaceState({pitchiq:true,tab:'up',matchId:null},'');
+window.addEventListener('popstate',e=>{
+ const route=e.state&&e.state.pitchiq?e.state:{pitchiq:true,tab:'up',matchId:null};
+ tab=route.tab||'up';sel=null;
+ if(route.matchId!==null&&route.matchId!==undefined){
+  const source=tab==='intl'?(I.fixtures||[]):(D&&D.matches||[]);
+  sel=source.find(x=>String(x.id)===String(route.matchId))||null;
+ }
+ if(sel){if(tab==='intl')internationalDetail();else detail()}else list();
+});
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
 const tau=(i,j,a,b,r)=>i==0&&j==0?1-a*b*r:i==0&&j==1?1+a*r:i==1&&j==0?1+b*r:i==1&&j==1?1-r:1;
 const ppg=s=>{const f=(s||'').toUpperCase().replace(/[^WDL]/g,'').slice(-5);if(!f)return 1.5;let p=0;for(const c of f)p+=c=='W'?3:c=='D'?1:0;return p/f.length};
@@ -499,16 +512,16 @@ function internationalDetail(){
   const score=Array.isArray(f.score)&&f.score.length===2?esc(f.score[0])+' – '+esc(f.score[1]):'vs';
   const gender=f.gender==='women'?'Women’s international':f.gender==='men'?'Men’s international':'International fixture';
   $('#app').innerHTML=head()+tabsHtml()+'<button class="back" id="bk">← Back to International</button><section class="panel"><div class="hero-kicker">INTERNATIONAL MATCH DETAIL</div><h2>'+esc(f.h)+' vs '+esc(f.a)+'</h2><p class="note">'+esc(gender)+' · '+esc(f.comp||'Competition unavailable')+'</p><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><p class="pill">'+esc(status)+'</p><div class="stat"><span>Kickoff · local time</span><b>'+esc(kickoff)+'</b></div>'+(f.country?'<div class="stat"><span>Country / region</span><b>'+esc(f.country)+'</b></div>':'')+(f.venue?'<div class="stat"><span>Venue</span><b>'+esc(f.venue)+'</b></div>':'')+'</section><section class="panel"><p class="note">Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.</p></section>';
-  floatBackButton();bind();$('#bk').onclick=()=>{tab='intl';list()};
+  floatBackButton();bind();$('#bk').onclick=()=>pitchBack(()=>{tab='intl';sel=null;list()});
 }
 function bind(){document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pk=b.dataset.p;list()});
- document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;list()});
+ document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;sel=null;pitchPush();list()});
  const c=$('#cf');if(c)c.onchange=e=>{comp=e.target.value;list()};
  const ps=$('#ps');if(ps)ps.onchange=e=>{playerSort=e.target.value;list()};
  const ig=$('#intlGender');if(ig)ig.onchange=e=>{intlGender=e.target.value;list()};
  const ic=$('#intlCompetition');if(ic)ic.onchange=e=>{intlCompetition=e.target.value;list()};
  const iq=$('#intlSearch');if(iq)iq.oninput=e=>{const start=e.target.selectionStart,end=e.target.selectionEnd;intlQuery=e.target.value;international();const next=$('#intlSearch');if(next){next.focus();next.setSelectionRange(start,end)}};
- document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{const source=tab=='intl'?(I.fixtures||[]):D.matches;sel=source.find(x=>String(x.id)==b.dataset.id);if(!sel)return;sel.odds=sel.odds||null;if(tab==='intl'){internationalDetail();return}detail()});}
+ document.querySelectorAll('button.card').forEach(b=>b.onclick=()=>{const source=tab=='intl'?(I.fixtures||[]):D.matches;sel=source.find(x=>String(x.id)==b.dataset.id);if(!sel)return;sel.odds=sel.odds||null;pitchPush();if(tab==='intl'){internationalDetail();return}detail()});}
 let pk='conf';
 function picks(){
  const lim=Date.now()+36*3600e3;
@@ -640,7 +653,7 @@ function detail(){
  if(!s){
   const status=({NS:'Scheduled',TBD:'Time to be confirmed','1H':'Live',HT:'Half time','2H':'Live',ET:'Extra time',P:'Penalties',FT:'Full time',AET:'After extra time',PEN:'Penalties',PST:'Postponed',CANC:'Cancelled',SUSP:'Suspended'}[f.status]||f.status||'Scheduled');
   $('#app').innerHTML='<button class="back" id="bk">← International</button><div class="comp">'+esc(f.comp)+(f.country?' · '+esc(f.country):'')+'</div><h2>'+esc(f.h)+' vs '+esc(f.a)+'</h2><div class="panel"><h2>'+esc(status)+'</h2><p class="note">Kick-off: '+new Date(f.utc).toLocaleString()+'</p>'+(f.score?'<p><b>Score: '+esc(f.score[0])+' – '+esc(f.score[1])+'</b></p>':'')+(f.venue?'<p class="note">Venue: '+esc(f.venue)+'</p>':'')+'</div><p class="note">This fixture is listed from '+esc(f.source||'public fixture feed')+'. PitchIQ does not provide a model forecast for it yet; national-team performance history is not sufficiently integrated.</p>';
-  floatBackButton();$('#bk').onclick=()=>{sel=null;tab='intl';list()};
+  floatBackButton();$('#bk').onclick=()=>pitchBack(()=>{sel=null;tab='intl';list()});
   return;
  }
  const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3><p class="note">${Number(s[k].venue_matches??0)} ${k=='h'?'home':'away'} matches support scoring rates · form uses ${Number(s[k].form_matches??0)} recent matches across venues</p>${fld.map(([x,l])=>`<label for="${k}-${x}">${l}</label><input id="${k}-${x}" aria-label="${esc(n)} ${l}" data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
@@ -667,7 +680,7 @@ function detail(){
  <details class="panel match-adjustments"><summary>Advanced adjustments & market snapshot</summary><p class="note" style="margin-top:12px">Numbers come from this season’s results, with small samples pulled toward the league average. Adjust inputs for scenario analysis.</p>
  <div class="cols">${col('h',f.h,'var(--home)')}${col('a',f.a,'var(--away)')}</div>
  <label>Decimal odds: home / draw / away (saved market snapshot, editable)</label><div class="cols" style="grid-template-columns:1fr 1fr 1fr"><input aria-label="Home decimal odds" data-k="o0" value="${f.odds?f.odds[0]:''}" inputmode="decimal"><input aria-label="Draw decimal odds" data-k="o1" value="${f.odds?f.odds[1]:''}" inputmode="decimal"><input aria-label="Away decimal odds" data-k="o2" value="${f.odds?f.odds[2]:''}" inputmode="decimal"></div><p class="note">${f.odds?((f.odds_updated||D.odds_updated)?'Market snapshot captured '+new Date(f.odds_updated||D.odds_updated).toLocaleString()+'. ':'Saved market snapshot; capture time unavailable. ')+(f.odds_manual?'Manually edited prices.':(marketSnapshotFresh(f.odds_updated||D.odds_updated)?'Snapshot is within the 36-hour freshness window.':'Snapshot is stale; automatic value comparisons are paused.'))+' Stored pre-match prices, not live odds.':'No verified bookmaker snapshot is available for this fixture. You can enter prices manually.'}</p></details>`;
- floatBackButton();$('#bk').onclick=()=>{sel=null;list()};
+ floatBackButton();$('#bk').onclick=()=>pitchBack(()=>{sel=null;list()});
  if(f.status==='FINISHED'){const editor=$('#res').nextElementSibling;if(editor)editor.remove();res();return}
  document.querySelectorAll('input').forEach(i=>i.oninput=()=>{
   const k=i.dataset.k,v=i.value;
