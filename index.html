@@ -50,6 +50,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tm.r{text-align:right}
 .ko{font-size:15px;color:var(--ink);text-align:center;min-width:64px;font-weight:600}
 .pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin-top:6px;border:1px solid var(--line);color:var(--ink)}
+.outcome-labels{display:block;white-space:normal;line-height:1.55;font-size:12px;max-width:100%;overflow-wrap:anywhere}
 .pill.live{color:var(--live);border-color:var(--live)}
 .mini{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:8px}
 .mini i{display:block}
@@ -622,7 +623,7 @@ function list(){
   const mid=m.score?`${m.score[0]} – ${m.score[1]}`:tm(m);
   html+=`<button class="card" data-id="${m.id}"><div class="comp">${esc(m.comp)}${live(m)?' · <b style="color:var(--live)">LIVE</b>':''}</div>
   <div class="row"><span class="tm">${esc(m.h)}</span><span class="ko">${mid}</span><span class="tm r">${esc(m.a)}</span></div>
-  ${r?'<div class="mini"><i style="width:'+r.ph*100+'%;background:var(--home)"></i><i style="width:'+r.pd*100+'%;background:var(--draw)"></i><i style="width:'+r.pa*100+'%;background:var(--away)"></i></div><span class="pill">'+(tab==='done'?'Pre-match snapshot · ':'')+Math.round(r.ph*100)+' / '+Math.round(r.pd*100)+' / '+Math.round(r.pa*100)+'</span>':'<span class="pill">No archived pre-match forecast</span>'}</button>`;
+  ${r?'<div class="mini"><i style="width:'+r.ph*100+'%;background:var(--home)"></i><i style="width:'+r.pd*100+'%;background:var(--draw)"></i><i style="width:'+r.pa*100+'%;background:var(--away)"></i></div><span class="pill outcome-labels">'+(tab==='done'?'Pre-match snapshot · ':'')+'Home = '+Math.round(r.ph*100)+'% · D (Draw) = '+Math.round(r.pd*100)+'% · A (Away) = '+Math.round(r.pa*100)+'%'+'</span>':'<span class="pill">No archived pre-match forecast</span>'}</button>`;
  }
  if(tab=='up'&&ms.length)html+='</div>';
  $('#app').innerHTML=head()+tabsHtml()+(tab=='up'?overviewHtml():'')+`<select id="cf" aria-label="Competition"><option value="all">All competitions</option>${codes.map(([c,n])=>`<option value="${c}" ${c==comp?'selected':''}>${esc(n)}</option>`).join('')}</select>
