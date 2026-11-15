@@ -7,7 +7,7 @@ from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, valida
 from pitchiq_h2h import normalize_h2h_cache, refresh_h2h_cache, cached_h2h_matches
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
-COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC"]
+COMPS = ["PL", "PD", "SA", "BL1", "FL1", "CL", "WC", "EC", "ELC", "DED", "PPL", "BSA"]
 BASE = "https://api.football-data.org/v4"
 
 
