@@ -674,9 +674,9 @@ class AndroidPwaBackNavigationTests(unittest.TestCase):
     def test_internal_routes_are_written_to_browser_history(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("function pitchRoute(){return {pitchiq:true,tab,matchId:sel?String(sel.id):null}}", source)
-        self.assertIn("function pitchPush(){history.pushState(pitchRoute(),'','#'+(sel?'match-'+encodeURIComponent(sel.id):'tab-'+encodeURIComponent(tab)))}", source)
+        self.assertIn("function pitchPush(){history.pushState(pitchRoute(),'')}", source)
         self.assertIn("window.addEventListener('popstate'", source)
-        self.assertIn("history.replaceState({pitchiq:true,tab:'up',matchId:null}", source)
+        self.assertIn("history.replaceState({pitchiq:true,tab:'up',matchId:null},'')", source)
 
     def test_tab_and_match_navigation_create_history_entries(self):
         source = Path("index.html").read_text(encoding="utf-8")
