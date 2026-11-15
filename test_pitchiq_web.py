@@ -30,6 +30,10 @@ class FinishedMatchForecastIntegrityTests(unittest.TestCase):
     def setUpClass(cls):
         cls.html = Path("index.html").read_text(encoding="utf-8")
 
+    def test_fixture_cards_explain_home_draw_away_probability_percentages(self):
+        self.assertIn("Home = '+Math.round(r.ph*100)+'% · D (Draw) = '+Math.round(r.pd*100)+'% · A (Away) = '+Math.round(r.pa*100)+'%'", self.html)
+        self.assertIn(".outcome-labels{display:block;white-space:normal", self.html)
+
     def test_finished_fixture_cards_use_only_archived_pre_match_forecasts(self):
         self.assertIn("const saved=tab==='done'?P[String(m.id)]:null;", self.html)
         self.assertIn("tab==='done'?(saved&&saved.p?savedForecast(saved.p):null):model(m.s)", self.html)
