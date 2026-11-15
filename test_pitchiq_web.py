@@ -240,7 +240,9 @@ class HomepageOverviewTests(unittest.TestCase):
         self.assertIn("Upcoming fixtures", source)
         self.assertIn("Live matches", source)
         self.assertIn("Competitions covered", source)
-        self.assertIn("Data refreshed", source)
+        self.assertIn("Scores and match status depend on source availability", source)
+        self.assertNotIn("Data refreshed", source)
+        self.assertNotIn("refreshedAt", source)
         self.assertIn("(tab==='up'?overviewHtml():'')", source)
         self.assertIn("$('#app').innerHTML=head()+tabsHtml()+(tab=='up'?overviewHtml():'')+", source)
         self.assertIn("if(tab=='up'&&ms.length)html+='<div class=\"fixture-grid\">';", source)
@@ -551,10 +553,11 @@ class InternationalFixtureFilterTests(unittest.TestCase):
     def test_international_feed_warns_when_snapshot_is_older_than_12_hours(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("const stale=age===null||age>12", source)
-        self.assertIn("International feed may be stale", source)
-        self.assertIn("last successful snapshot is '+age+' hours old", source)
+        self.assertIn("International feed may be delayed", source)
+        self.assertIn("International feed may be delayed", source)
+        self.assertIn("Fixtures are shown from the latest available source snapshot", source)
         self.assertIn("ageMs>=0?Math.round(ageMs/36e5):null", source)
-        self.assertIn("International feed freshness is unavailable", source)
+        self.assertNotIn("hours old", source)
 
     def test_international_tab_still_omits_league_table(self):
         source = Path("index.html").read_text(encoding="utf-8")
@@ -605,11 +608,10 @@ class InternationalFixtureDetailTests(unittest.TestCase):
 class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
     def test_missing_invalid_and_future_timestamps_are_not_shown_as_fresh(self):
         source = Path("index.html").read_text(encoding="utf-8")
-        self.assertIn("const updatedAt=Date.parse(D.updated||'')", source)
-        self.assertIn("ageMs>=0?Math.floor(ageMs/60000):null", source)
-        self.assertIn("stale=mins===null||ageMs>90*60000", source)
-        self.assertIn("Freshness unavailable", source)
-        self.assertIn("freshness unavailable", source)
+        self.assertIn("Live coverage · scores may be delayed", source)
+        self.assertNotIn("const updatedAt=Date.parse(D.updated||'')", source)
+        self.assertNotIn("Freshness unavailable", source)
+        self.assertNotIn("Updated '+(mins", source)
 
 class InternationalFreshnessEdgeCaseTests(unittest.TestCase):
     def test_missing_invalid_and_future_timestamps_trigger_warning(self):
@@ -617,7 +619,9 @@ class InternationalFreshnessEdgeCaseTests(unittest.TestCase):
         self.assertIn("const updatedAt=Date.parse(I.updated||''),ageMs=now-updatedAt", source)
         self.assertIn("Number.isFinite(updatedAt)&&ageMs>=0", source)
         self.assertIn("const stale=age===null||age>12", source)
-        self.assertIn("missing, invalid or in the future", source)
+        self.assertIn("International feed may be delayed", source)
+        self.assertNotIn("last successful snapshot is", source)
+        self.assertNotIn("missing, invalid or in the future", source)
 
 class OddsDisplayDisclosureTests(unittest.TestCase):
     def test_match_detail_discloses_saved_odds_snapshot_time_and_non_live_status(self):
