@@ -258,9 +258,9 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let D=null,P={},I={fixtures:[]},Q={results:[]},tab='up',comp='all',sel=null,playerSort='goals',intlGender='all',intlCompetition='all',intlQuery='';
 function pitchRoute(){return {pitchiq:true,tab,matchId:sel?String(sel.id):null}}
-function pitchPush(){history.pushState(pitchRoute(),'','#'+(sel?'match-'+encodeURIComponent(sel.id):'tab-'+encodeURIComponent(tab)))}
+function pitchPush(){history.pushState(pitchRoute(),'')}
 function pitchBack(fallback){if(history.state&&history.state.pitchiq&&history.length>1)history.back();else fallback()}
-history.replaceState({pitchiq:true,tab:'up',matchId:null},'','#tab-up');
+history.replaceState({pitchiq:true,tab:'up',matchId:null},'');
 window.addEventListener('popstate',e=>{
  const route=e.state&&e.state.pitchiq?e.state:{pitchiq:true,tab:'up',matchId:null};
  tab=route.tab||'up';sel=null;
