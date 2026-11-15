@@ -181,6 +181,22 @@ class NestedFixtureSearchTests(unittest.TestCase):
         self.assertNotIn("[...$('#app').children].forEach(el=>", source)
 
 
+class FloatingMatchBackButtonTests(unittest.TestCase):
+    def test_back_control_stays_visible_on_club_and_international_match_details(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn(".back.back-floating{position:fixed", source)
+        self.assertIn("bottom:calc(env(safe-area-inset-bottom,0px) + 18px)", source)
+        self.assertIn("z-index:60", source)
+        self.assertIn("function floatBackButton(){const button=$('#bk');if(button)button.classList.add('back-floating')}", source)
+        self.assertGreaterEqual(source.count("floatBackButton();"), 3)
+
+    def test_floating_back_control_keeps_a_clear_accessible_label(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn('<button class="back" id="bk">← All matches</button>', source)
+        self.assertIn('<button class="back" id="bk">← International</button>', source)
+        self.assertIn('<button class="back" id="bk">← Back to International</button>', source)
+
+
 class MobileTouchTargetTests(unittest.TestCase):
     def test_mobile_interactive_controls_have_minimum_44px_touch_targets(self):
         source = Path("index.html").read_text(encoding="utf-8")
