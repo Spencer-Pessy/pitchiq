@@ -553,7 +553,7 @@ class InternationalFixtureFilterTests(unittest.TestCase):
     def test_international_feed_warns_when_snapshot_is_older_than_12_hours(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("const stale=age===null||age>12", source)
-        self.assertIn("International feed may be stale", source)
+        self.assertIn("International feed may be delayed", source)
         self.assertIn("International feed may be delayed", source)
         self.assertIn("Fixtures are shown from the latest available source snapshot", source)
         self.assertIn("ageMs>=0?Math.round(ageMs/36e5):null", source)
