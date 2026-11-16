@@ -597,6 +597,12 @@ class NewsTabRegressionTests(unittest.TestCase):
         self.assertIn("News is not a prediction", source)
         self.assertIn("does not manufacture transfer rumours", source)
 
+    def test_feedback_footer_is_only_added_to_news_tab(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("list=function(){_l();if(tab==='news')addFooter()};", source)
+        self.assertEqual(source.count("function addFooter()"), 1)
+        self.assertEqual(source.count("addFooter()"), 2)
+
     def test_news_tab_external_links_open_safely(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn('href="https://t.me/pitchiq_picks" target="_blank" rel="noopener noreferrer"', source)

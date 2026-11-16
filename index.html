@@ -774,10 +774,9 @@ async function shareTop3(){
  const FEEDBACK_URL='https://forms.gle/gJ19T2NeSWWbZmgy6';   // PITCH IQ independent feedback form
 const GOATCOUNTER='pitchiq';    // paste your GoatCounter code (like pitchiq) between the quotes
 if(GOATCOUNTER){const sc=document.createElement('script');sc.async=true;sc.dataset.goatcounter='https://'+GOATCOUNTER+'.goatcounter.com/count';sc.src='//gc.zgo.at/count.js';document.head.appendChild(sc)}
-function addFooter(){if(!FEEDBACK_URL||$('#fb'))return;$('#app').insertAdjacentHTML('beforeend','<p id="fb" style="text-align:center;margin-top:24px"><a href="'+FEEDBACK_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Send feedback</a></p>')}
 (function(){
  const _l=list,_d=detail,_r=record;
- list=function(){_l();addFooter()};
+ list=function(){_l();if(tab==='news')addFooter()};
  detail=function(){
   _d();
   const f=sel,s=f.s;if(!s)return;let sv={};
@@ -788,7 +787,7 @@ function addFooter(){if(!FEEDBACK_URL||$('#fb'))return;$('#app').insertAdjacentH
   const save=()=>{try{localStorage.setItem('piq:'+f.id,JSON.stringify({out:[+s.h.out||0,+s.a.out||0],note:$('#nt').value}))}catch(e){}};
   $('#nt').addEventListener('input',save);
   document.querySelectorAll('[data-k$=".out"]').forEach(i=>i.addEventListener('input',save));
-  res();addFooter();
+  res();
  };
  record=function(){
   _r();
@@ -809,7 +808,6 @@ function addFooter(){if(!FEEDBACK_URL||$('#fb'))return;$('#app').insertAdjacentH
    <table style="margin-top:12px"><tr><th>When confidence was</th><th>Matches</th><th>Model said</th><th>Right</th></tr>${bk.map(b=>`<tr><td>${b[0]}</td><td>${b[1]}</td><td>${b[1]?pc(b[2]):'–'}</td><td>${b[1]?pc(b[3]):'–'}</td></tr>`).join('')}</table>
    <p class="note">Total goals per match: model ${eg.toFixed(2)}, actual ${ag.toFixed(2)}. Few matches means noisy numbers, so judge after 50 or more.</p></div>`);
   }
-  addFooter();
  };
 })();
 async function shareRecord(){
