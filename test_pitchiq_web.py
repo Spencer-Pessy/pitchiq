@@ -632,7 +632,9 @@ class InternationalFixtureDetailTests(unittest.TestCase):
         self.assertIn("function internationalDetail()", source)
         self.assertIn("if(tab==='intl'){internationalDetail();return}detail()", source)
         self.assertIn("INTERNATIONAL MATCH DETAIL", source)
-        self.assertIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
+        self.assertIn("INTERNATIONAL TEAM STRENGTH · RESEARCH DATA", source)
+        self.assertIn("International forecasts are not enabled", source)
+        self.assertNotIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
         self.assertIn("$('#bk').onclick=()=>pitchBack(()=>{tab='intl';sel=null;list()})", source)
 
 class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
