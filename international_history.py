@@ -392,6 +392,46 @@ def backtest_elo(matches):
     }
 
 
+def build_recent_form(matches, limit=5):
+    """Return each team's latest completed men's international results."""
+    if not isinstance(limit, int) or limit < 1:
+        raise ValueError("Recent-form limit must be a positive integer")
+    by_team = defaultdict(list)
+    for match in matches:
+        common = {
+            "date": match["date"],
+            "tournament": match["tournament"],
+            "neutral": bool(match["neutral"]),
+        }
+        home_score, away_score = match["home_score"], match["away_score"]
+        if home_score > away_score:
+            home_result, away_result = "W", "L"
+        elif home_score < away_score:
+            home_result, away_result = "L", "W"
+        else:
+            home_result = away_result = "D"
+        by_team[match["home"]].append({
+            **common,
+            "opponent": match["away"],
+            "venue": "N" if match["neutral"] else "H",
+            "scored": home_score,
+            "conceded": away_score,
+            "result": home_result,
+        })
+        by_team[match["away"]].append({
+            **common,
+            "opponent": match["home"],
+            "venue": "N" if match["neutral"] else "A",
+            "scored": away_score,
+            "conceded": home_score,
+            "result": away_result,
+        })
+    return {
+        team: sorted(rows, key=lambda row: row["date"], reverse=True)[:limit]
+        for team, rows in sorted(by_team.items(), key=lambda item: item[0].casefold())
+    }
+
+
 def build_snapshot(csv_text, fetched_at=None, today=None):
     today = today or date.today()
     matches, invalid = parse_results(csv_text, today=today)
@@ -405,7 +445,7 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
     for team in rated_teams:
         team.update(classify_team(team["team"], team_registry))
     return {
-        "version": 8,
+        "version": 9,
         "updated": fetched_at or datetime.now(timezone.utc).isoformat(),
         "data_through": data_through,
         "freshness_days": (today - latest).days,
@@ -451,6 +491,8 @@ def build_snapshot(csv_text, fetched_at=None, today=None):
         },
         "readiness_note": "Do not publish predictions until a separate chronological out-of-sample model and calibration review is completed.",
         "teams": rated_teams,
+        "recent_form": build_recent_form(matches, limit=5),
+        "recent_form_policy": "Last five completed matches per team from the men\u0027s historical source; descriptive context only, not a forecast.",
         "backtest": backtest_elo(matches),
     }
 
