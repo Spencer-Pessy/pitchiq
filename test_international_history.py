@@ -1,11 +1,41 @@
 import unittest
 from datetime import date, timedelta
 from international_history import (
-    backtest_elo, build_ratings, classify_team, load_team_registry, parse_results, tournament_weight,
+    backtest_elo, build_ratings, build_recent_form, classify_team, load_team_registry, parse_results, tournament_weight,
 )
 
 
 class InternationalHistoryTests(unittest.TestCase):
+
+    def test_recent_form_returns_latest_five_with_venue_and_result(self):
+        matches = []
+        start = date(2024, 1, 1)
+        scores = [(2, 0), (1, 1), (0, 1), (3, 1), (0, 0), (1, 0)]
+        for index, (home_score, away_score) in enumerate(scores):
+            matches.append({
+                "date": (start + timedelta(days=index)).isoformat(),
+                "home": "Kenya",
+                "away": f"Opponent {index}",
+                "home_score": home_score,
+                "away_score": away_score,
+                "tournament": "Friendly",
+                "neutral": index == 5,
+            })
+        form = build_recent_form(matches, limit=5)
+        kenya = form["Kenya"]
+        self.assertEqual(len(kenya), 5)
+        self.assertEqual(kenya[0]["date"], "2024-01-06")
+        self.assertEqual(kenya[0]["venue"], "N")
+        self.assertEqual(kenya[0]["result"], "W")
+        self.assertEqual(kenya[1]["venue"], "H")
+        self.assertEqual(kenya[1]["result"], "D")
+        self.assertEqual(form["Opponent 0"][0]["venue"], "A")
+        self.assertEqual(form["Opponent 0"][0]["result"], "L")
+
+    def test_recent_form_rejects_non_positive_limit(self):
+        with self.assertRaises(ValueError):
+            build_recent_form([], limit=0)
+
     def test_parses_completed_results_and_skips_invalid_rows(self):
         csv_text = (
             "date,home_team,away_team,home_score,away_score,tournament,city,country,neutral\n"
