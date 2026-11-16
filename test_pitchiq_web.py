@@ -272,22 +272,26 @@ class HomepageOverviewTests(unittest.TestCase):
 
 
 class HeadToHeadPresentationTests(unittest.TestCase):
-    def test_club_details_render_h2h_but_international_details_remain_fixture_only(self):
+    def test_club_details_render_h2h_and_international_details_show_research_only_ratings(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("function h2hPanel(home,away,summary)", source)
         self.assertIn("${h2hPanel(f.h,f.a,f.h2h)}", source)
         self.assertNotIn("function internationalH2H(f)", source)
         self.assertNotIn("h2hPanel(f.h,f.a,internationalH2H(f))", source)
-        self.assertIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
+        self.assertIn("INTERNATIONAL TEAM STRENGTH · RESEARCH DATA", source)
+        self.assertIn("They are not calibrated match probabilities", source)
+        self.assertIn("International forecasts are not enabled", source)
 
-    def test_international_details_do_not_use_h2h_or_national_team_analysis(self):
+    def test_international_details_do_not_use_h2h_or_publish_forecasts(self):
         source = Path("index.html").read_text(encoding="utf-8")
         start = source.index("function internationalDetail()")
         end = source.find("\nfunction ", start + 10)
         detail = source[start:end if end >= 0 else len(source)]
         self.assertNotIn("h2hPanel", detail)
         self.assertNotIn("internationalH2H", detail)
-        self.assertIn("Fixture information only", detail)
+        self.assertIn("INTERNATIONAL TEAM STRENGTH · RESEARCH DATA", detail)
+        self.assertIn("International forecasts are not enabled", detail)
+        self.assertIn("No 1X2 probabilities or expected-goals estimates are published", detail)
 
 
 class OddsFreshnessWebTests(unittest.TestCase):
@@ -623,12 +627,14 @@ class ServiceWorkerDataFallbackTests(unittest.TestCase):
         self.assertIn("The page reads the snapshot's own updated timestamp", source)
 
 class InternationalFixtureDetailTests(unittest.TestCase):
-    def test_international_fixture_cards_open_a_fixture_only_detail_view(self):
+    def test_international_fixture_cards_open_a_research_only_detail_view(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("function internationalDetail()", source)
         self.assertIn("if(tab==='intl'){internationalDetail();return}detail()", source)
         self.assertIn("INTERNATIONAL MATCH DETAIL", source)
-        self.assertIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
+        self.assertIn("INTERNATIONAL TEAM STRENGTH · RESEARCH DATA", source)
+        self.assertIn("International forecasts are not enabled", source)
+        self.assertNotIn("Fixture information only. Pitch IQ does not publish predictions or analysis for international matches.", source)
         self.assertIn("$('#bk').onclick=()=>pitchBack(()=>{tab='intl';sel=null;list()})", source)
 
 class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
