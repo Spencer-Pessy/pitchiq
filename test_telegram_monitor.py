@@ -29,7 +29,7 @@ class TelegramMonitorTests(unittest.TestCase):
 
     def test_manual_run_does_not_hide_missing_scheduled_run(self):
         result = evaluate_workflow(
-            "telegram.yml", 24, 12,
+            "telegram.yml", 3, 2,
             [self.run_row(0, event="workflow_dispatch")],
             self.now,
         )
@@ -70,7 +70,7 @@ class TelegramMonitorTests(unittest.TestCase):
         future = self.now + timedelta(hours=1)
         row = self.run_row(0)
         row["created_at"] = future.isoformat()
-        result = evaluate_workflow("telegram.yml", 24, 12, [row], self.now)
+        result = evaluate_workflow("telegram.yml", 3, 2, [row], self.now)
         self.assertEqual(result["status"], "invalid_timestamp")
 
     def test_snapshot_covers_all_three_publishers_without_claiming_delivery(self):
@@ -84,6 +84,17 @@ class TelegramMonitorTests(unittest.TestCase):
         self.assertEqual(snapshot["overall"], "healthy")
         self.assertIs(snapshot["telegram_delivery_verified"], False)
         self.assertIn("does not prove", snapshot["note"])
+
+    def test_picks_health_matches_three_hour_schedule(self):
+        snapshot = build_snapshot({
+            "telegram.yml": [self.run_row(5)],
+            "telegram-news.yml": [self.run_row(2)],
+            "telegram-results.yml": [self.run_row(1)],
+        }, self.now)
+        picks = next(item for item in snapshot["workflows"] if item["workflow"] == "telegram.yml")
+        self.assertEqual(picks["expected_interval_hours"], 3)
+        self.assertEqual(picks["grace_hours"], 2)
+        self.assertEqual(picks["status"], "healthy")
 
     def test_empty_snapshot_is_degraded_not_healthy(self):
         snapshot = build_snapshot({}, self.now)
