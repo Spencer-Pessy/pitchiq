@@ -248,12 +248,12 @@ class MatchPreviewTests(unittest.TestCase):
     def test_match_detail_has_dynamic_preview_and_discloses_missing_context(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("const outcomeNames=[f.h+' win','Draw',f.a+' win']", source)
-        self.assertIn("<h2>Match preview</h2>", source)
+        self.assertIn("<h2>Why PitchIQ favours this outcome</h2>", source)
         self.assertIn("Form comparison", source)
         self.assertIn("Team strength", source)
         self.assertIn("Expected goal balance", source)
         self.assertIn("confirmed lineups, tactics, weather or late team news", source)
-        self.assertIn("${preview}<div class=\"stats\">", source)
+        self.assertIn("${preview}<div class=\"panel\"><h2>Forecast breakdown</h2>", source)
 
 
 class HomepageOverviewTests(unittest.TestCase):
@@ -758,3 +758,37 @@ class FixtureStatusClarityTests(unittest.TestCase):
     def test_unknown_status_is_not_misrepresented_as_upcoming(self):
         self.assertIn("return'is-neutral'", self.html)
         self.assertIn(".fixture-status.is-neutral{border-color:#64748b;background:#263449;color:#e8eef8}", self.html)
+
+
+class ExplicitMatchDecisionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.html = Path("index.html").read_text(encoding="utf-8")
+
+    def test_outcome_decision_selects_home_draw_or_away_from_existing_probabilities(self):
+        self.assertIn("function outcomeDecision(r,h,a)", self.html)
+        self.assertIn("const probs=[r.ph,r.pd,r.pa].map(Number)", self.html)
+        self.assertIn("index===0?'HOME WIN':index===1?'DRAW':index===2?'AWAY WIN'", self.html)
+        self.assertIn("Two or more outcomes are tied at the top", self.html)
+
+    def test_upcoming_and_completed_cards_show_decision_before_probability_bar(self):
+        self.assertIn("decisionMarkup(r,m.h,m.a,'card',tab==='done')", self.html)
+        self.assertIn(".fixture-decision.decision-home", self.html)
+        self.assertIn(".fixture-decision.decision-draw", self.html)
+        self.assertIn(".fixture-decision.decision-away", self.html)
+
+    def test_match_detail_shows_decision_before_explanation_and_probability_breakdown(self):
+        source = self.html
+        start = source.index("function res()")
+        end = source.index("(function(){\n const _p=picks;", start)
+        detail = source[start:end]
+        decision = detail.index("${decisionMarkup(r,f.h,f.a,'panel',!!archived)}")
+        explanation = detail.index("${preview}")
+        breakdown = detail.index('<h2>Forecast breakdown</h2>')
+        self.assertLess(decision, explanation)
+        self.assertLess(explanation, breakdown)
+        self.assertIn("Why PitchIQ favours this outcome", detail)
+        self.assertIn("ORIGINAL PRE-MATCH DECISION", source)
+
+    def test_picks_tab_uses_the_same_explicit_decision_label(self):
+        self.assertIn("decisionMarkup(x.r,x.m.h,x.m.a,'card',false)", self.html)

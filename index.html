@@ -282,6 +282,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:600px){.discover{padding:14px;border-radius:16px}.discover-heading{align-items:flex-start;flex-direction:column;gap:5px}.discover-track{grid-auto-columns: minmax(205px,78%)}.discover-card{min-height:178px}.hero-foot{align-items:flex-start}.hero-deeper{padding:8px 11px;font-size:10px}}
 @media(prefers-reduced-motion:reduce){.discover-card{transition:none}}
 
+
+/* Explicit 1X2 decision: show the leading outcome before deeper analysis */
+.fixture-decision{display:flex;align-items:center;flex-wrap:wrap;gap:4px 9px;width:fit-content;max-width:100%;padding:7px 10px;border:1px solid #52627a;border-radius:9px;color:#fff}
+.fixture-decision .decision-kicker,.decision-panel .decision-kicker{font-size:9px;font-weight:900;letter-spacing:1.1px;color:#fff}
+.fixture-decision strong{font-size:12px;font-weight:950;letter-spacing:.6px}
+.fixture-decision .decision-subject{font-size:11px;font-weight:800;color:#fff}
+.fixture-decision.decision-home,.decision-panel.decision-home{background:#651014;border-color:#f0444c}
+.fixture-decision.decision-draw,.decision-panel.decision-draw{background:#123d70;border-color:#459cff}
+.fixture-decision.decision-away,.decision-panel.decision-away{background:#075b3b;border-color:#28ce89}
+.fixture-decision.decision-split,.decision-panel.decision-split{background:#30343b;border-color:#8994a3}
+.fixture-decision.decision-home,.fixture-decision.decision-draw,.fixture-decision.decision-away{box-shadow:0 3px 12px #0005}
+.decision-panel{display:grid;gap:8px;padding:15px 16px;margin:0 0 14px;border:1px solid;border-left-width:6px;border-radius:13px;color:#fff}
+.decision-panel>div{display:grid;gap:5px}
+.decision-panel strong{font:900 clamp(24px,5vw,30px)/1 'Arial Narrow',Impact,sans-serif;letter-spacing:.5px}
+.decision-panel .decision-subject{font-size:13px;font-weight:800;color:#fff}
+.decision-panel p{margin:0;color:#f0f0f0;font-size:12px;line-height:1.45}
+.pick-card .fixture-decision{margin-top:8px}
+@media(max-width:520px){.decision-panel{padding:13px}.fixture-decision{gap:4px 7px;padding:7px 9px}}
+
 </style>
 </head>
 <body>
@@ -336,6 +355,23 @@ function savedForecast(p){
  if(!Number.isFinite(total)||total<=0)return null;
  all.sort((x,y)=>y[2]-x[2]);
  return{...p,cs0:cs0/total,top:all.slice(0,5).map(([h,a,value])=>[h,a,value/total])};
+}
+function outcomeDecision(r,h,a){
+ if(!r)return null;
+ const probs=[r.ph,r.pd,r.pa].map(Number),total=probs.reduce((sum,value)=>sum+value,0);
+ if(!probs.every(value=>Number.isFinite(value)&&value>=0&&value<=1)||total<=0||Math.abs(total-1)>0.01)return null;
+ const highest=Math.max(...probs),leaders=probs.map((value,index)=>Math.abs(value-highest)<1e-9?index:-1).filter(index=>index>=0);
+ const ranked=[...probs].sort((x,y)=>y-x),margin=ranked[0]-ranked[1],index=leaders.length===1?leaders[0]:-1;
+ return{index,probability:highest,margin,label:index===0?'HOME WIN':index===1?'DRAW':index===2?'AWAY WIN':'NO CLEAR LEADER',subject:index===0?'Home · '+h:index===1?'Draw':index===2?'Away · '+a:'Top outcomes tied'};
+}
+function decisionMarkup(r,h,a,mode='card',archived=false){
+ const d=outcomeDecision(r,h,a),heading=archived?'ORIGINAL PRE-MATCH DECISION':'PITCH IQ DECISION';
+ if(!d)return mode==='panel'?'<section class="decision-panel decision-split"><span class="decision-kicker">PITCH IQ DECISION</span><strong>UNAVAILABLE</strong><p>No valid forecast is available for this match.</p></section>':'<div class="fixture-decision decision-split"><span class="decision-kicker">PITCH IQ DECISION</span><strong>UNAVAILABLE</strong><span class="decision-subject">No valid forecast</span></div>';
+ const tone=d.index===0?'home':d.index===1?'draw':d.index===2?'away':'split';
+ const percentage=Math.round(d.probability*100)+'%';
+ const note=d.index<0?'Two or more outcomes are tied at the top; there is no single leading result.':d.margin<0.06?'Close call: the leading outcome is only '+(d.margin*100).toFixed(1)+' percentage points ahead of the next outcome.':"This is the highest of PitchIQ's three 1X2 probabilities.";
+ if(mode==='panel')return '<section class="decision-panel decision-'+tone+'"><div><span class="decision-kicker">'+heading+'</span><strong>'+d.label+'</strong><span class="decision-subject">'+esc(d.subject)+' · '+percentage+'</span></div><p>'+note+' This is a model estimate, not a guaranteed result.</p></section>';
+ return '<div class="fixture-decision decision-'+tone+'"><span class="decision-kicker">'+heading+'</span><strong>'+d.label+'</strong><span class="decision-subject">'+esc(d.subject)+' · '+percentage+'</span></div>';
 }
 const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
 const tm=m=>new Date(m.utc).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -586,7 +622,7 @@ function picks(){
   if(oddsFresh&&Array.isArray(m.odds)&&m.odds.length===3&&m.odds.every(x=>Number.isFinite(Number(x))&&Number(x)>1&&Number(x)<1000)){const inv=m.odds.map(x=>1/Number(x)),sum=inv[0]+inv[1]+inv[2],e=v.map((p,k)=>p*Number(m.odds[k])-1);gi=e.indexOf(Math.max(...e));g={e:e[gi],mk:inv[gi]/sum}}
   return{m,r,i,c:v[i],g,gi}}).sort((a,b)=>pk=='gap'?((b.g?b.g.e:-9)-(a.g?a.g.e:-9)):b.c-a.c);
  $('#app').innerHTML=head()+tabsHtml()+`<section class="pick-intro"><div class="hero-kicker">PITCH IQ MODEL WATCHLIST</div><div class="pick-head"><div><h2>Next 36 hours</h2><p>A transparent shortlist of upcoming fixtures ranked by model probability or, when fresh odds exist, disagreement with the market.</p></div><div class="pick-count"><b>${ms.length}</b><span>eligible matches</span></div></div><div class="pick-meta"><span>${pk=='conf'?'Sorted by model confidence':'Sorted by market difference'}</span><span>${oh===null?'Odds not loaded':!oddsFresh?'Market snapshot paused · stale':'Market snapshot fresh · '+oh+'h old'}</span><span>Estimates, not guarantees</span></div></section><div class="tabs"><button data-p="conf" aria-pressed="${pk=='conf'}">Most confident</button><button data-p="gap" aria-pressed="${pk=='gap'}">Biggest gap vs market</button></div>
- <p class="note">Odds status: ${oh===null?'Odds aren’t loaded yet.':!oddsFresh?'Market snapshot is stale ('+oh+' h old); value comparisons are paused.':'Odds updated '+oh+' h ago, averaged across bookmakers.'} A large disagreement is a review signal, not proof that the model is right. Confidence is not certainty.</p>`+(ms.map((x,k)=>`<button class="card pick-card" data-id="${x.m.id}"><div class="pk"><span class="rk">${String(k+1).padStart(2,'0')}</span><div><div class="comp">${esc(x.m.comp)} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${esc(x.m.h)} vs ${esc(x.m.a)}</div><span class="pill">${nm(x.m)[x.i]} · ${Math.round(x.c*100)}%</span><div class="pick-meter" aria-label="Leading outcome probability"><i style="width:${Math.max(0,Math.min(100,Math.round(x.c*100)))}%"></i></div>${x.g?`<div class="note" style="margin-top:8px">Model-market gap: <b class="${x.g.e>=.05?'ok':'no'}">${nm(x.m)[x.gi]} (${x.g.e>0?'+':''}${(x.g.e*100).toFixed(1)}%)</b> · market ${Math.round(x.g.mk*100)}%</div>`:''}</div></div></button>`).join('')||'<div class="panel"><h3>No eligible fixtures right now</h3><p class="note" style="margin:0">PitchIQ only lists fixtures inside the next 36 hours with a valid model forecast. The shortlist will populate when suitable matches enter that window.</p></div>');
+ <p class="note">Odds status: ${oh===null?'Odds aren’t loaded yet.':!oddsFresh?'Market snapshot is stale ('+oh+' h old); value comparisons are paused.':'Odds updated '+oh+' h ago, averaged across bookmakers.'} A large disagreement is a review signal, not proof that the model is right. Confidence is not certainty.</p>`+(ms.map((x,k)=>`<button class="card pick-card" data-id="${x.m.id}"><div class="pk"><span class="rk">${String(k+1).padStart(2,'0')}</span><div><div class="comp">${esc(x.m.comp)} · ${dy(x.m)} ${tm(x.m)}</div><div class="tm">${esc(x.m.h)} vs ${esc(x.m.a)}</div>${decisionMarkup(x.r,x.m.h,x.m.a,'card',false)}<div class="pick-meter" aria-label="Leading outcome probability"><i style="width:${Math.max(0,Math.min(100,Math.round(x.c*100)))}%"></i></div>${x.g?`<div class="note" style="margin-top:8px">Model-market gap: <b class="${x.g.e>=.05?'ok':'no'}">${nm(x.m)[x.gi]} (${x.g.e>0?'+':''}${(x.g.e*100).toFixed(1)}%)</b> · market ${Math.round(x.g.mk*100)}%</div>`:''}</div></div></button>`).join('')||'<div class="panel"><h3>No eligible fixtures right now</h3><p class="note" style="margin:0">PitchIQ only lists fixtures inside the next 36 hours with a valid model forecast. The shortlist will populate when suitable matches enter that window.</p></div>');
  bind();
 }
 function tables(){
@@ -694,6 +730,7 @@ function list(){
   html+=`<button class="card fixture-card" data-id="${m.id}"><div class="fixture-card-head"><div class="comp">${esc(m.comp)}</div>${live(m)?'<span class="fixture-status is-live">LIVE</span>':tab==='done'?'<span class="fixture-status is-final">FULL TIME</span>':'<span class="fixture-status">UPCOMING</span>'}</div>
   <div class="fixture-teams"><span class="fixture-team">${esc(m.h)}</span><span class="fixture-vs">${mid}</span><span class="fixture-team away">${esc(m.a)}</span></div>
   ${tab==='up'?'<div class="fixture-kickoff">'+esc(tm(m))+'</div>':''}
+  ${r?decisionMarkup(r,m.h,m.a,'card',tab==='done'):''}
   ${r?'<div class="mini"><i style="width:'+r.ph*100+'%;background:var(--home)"></i><i style="width:'+r.pd*100+'%;background:var(--draw)"></i><i style="width:'+r.pa*100+'%;background:var(--away)"></i></div><span class="pill outcome-labels">'+(tab==='done'?'Pre-match snapshot · ':'')+'Home = '+Math.round(r.ph*100)+'% · D (Draw) = '+Math.round(r.pd*100)+'% · A (Away) = '+Math.round(r.pa*100)+'%'+'</span>':'<span class="pill">No archived pre-match forecast</span>'}</button>`;
  }
  if(tab=='up'&&ms.length)html+='</div>';
@@ -771,12 +808,12 @@ function res(){
  const eloGap=Number(s.h.elo||0)-Number(s.a.elo||0),formGap=ppg(s.h.form)-ppg(s.a.form);
  const formRead=Math.abs(formGap)<.15?'Recent form ratings are close.':(formGap>0?f.h:f.a)+' has the stronger recent form rating.';
  const eloRead=Math.abs(eloGap)<20?'Elo ratings are close.':`${esc(eloGap>0?f.h:f.a)} has a ${Math.abs(Math.round(eloGap))}-point Elo advantage.`;
- const currentPreview=`<div class="panel match-preview"><h2>Match preview</h2><p class="note">${lean}</p><div class="stats">${st('Form comparison',formRead)}${st('Team strength',eloRead)}${st('Expected goal balance',`${r.lh.toFixed(2)} – ${r.la.toFixed(2)}`)}${st('Goal outlook',`${pct(r.o25)} over 2.5 · ${pct(r.bt)} both teams score`)}</div><p class="note">Form samples: ${Number(s.h.form_matches??0)} for ${esc(f.h)} and ${Number(s.a.form_matches??0)} for ${esc(f.a)}. Venue scoring samples: ${Number(s.h.venue_matches??0)} home matches and ${Number(s.a.venue_matches??0)} away matches. This preview summarises the model inputs; it does not include confirmed lineups, tactics, weather or late team news.</p></div>`;
+ const currentPreview=`<div class="panel match-preview"><h2>Why PitchIQ favours this outcome</h2><p class="note">${lean}</p><div class="stats">${st('Form comparison',formRead)}${st('Team strength',eloRead)}${st('Expected goal balance',`${r.lh.toFixed(2)} – ${r.la.toFixed(2)}`)}${st('Goal outlook',`${pct(r.o25)} over 2.5 · ${pct(r.bt)} both teams score`)}</div><p class="note">Form samples: ${Number(s.h.form_matches??0)} for ${esc(f.h)} and ${Number(s.a.form_matches??0)} for ${esc(f.a)}. Venue scoring samples: ${Number(s.h.venue_matches??0)} home matches and ${Number(s.a.venue_matches??0)} away matches. This preview summarises the model inputs; it does not include confirmed lineups, tactics, weather or late team news.</p></div>`;
  const preview=archived?'<div class="panel match-preview"><h2>Original pre-match snapshot</h2><p class="note">These probabilities and expected-goal rates were saved before kickoff and are shown unchanged. They are not recalculated from the finished match.</p></div>':currentPreview;
- $('#res').innerHTML=`<div class="panel"><h2>Forecast</h2>
+ $('#res').innerHTML=`${decisionMarkup(r,f.h,f.a,'panel',!!archived)}${preview}<div class="panel"><h2>Forecast breakdown</h2>
  <div class="bar"><div style="width:${r.ph*100}%;background:var(--home)">${Math.round(r.ph*100)}</div><div style="width:${r.pd*100}%;background:var(--draw)">${Math.round(r.pd*100)}</div><div style="width:${r.pa*100}%;background:var(--away)">${Math.round(r.pa*100)}</div></div>
  <div class="legend"><span>${esc(f.h)}</span><span>Draw</span><span>${esc(f.a)}</span></div>
- ${probabilityDonut}${preview}<div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
+ ${probabilityDonut}<div class="stats">${st('Expected goals',r.lh.toFixed(2)+' – '+r.la.toFixed(2))}${st('Total goals',(r.lh+r.la).toFixed(2))}${st('Over 2.5',pct(r.o25))}${st('Under 2.5',pct(1-r.o25))}${st('Both score',pct(r.bt))}${st('Neither scores',pct(r.cs0))}</div>
  <section class="goal-outlook" aria-label="Goal outlook"><div class="section-eyebrow">GOAL OUTLOOK</div>${probabilityRow("Over 2.5 goals",r.o25,"var(--ok)")}${probabilityRow("Both teams to score",r.bt,"var(--home)")}${probabilityRow("Under 2.5 goals",1-r.o25,"#9B9B9B")}</section><h2 style="margin-top:14px">Likeliest scores</h2><ol>${r.top.map(x=>`<li>${esc(f.h)} ${x[0]}–${x[1]} ${esc(f.a)} (${pct(x[2])})</li>`).join('')}</ol></div>${v}
  <p class="note">Statistical estimate, not a guarantee. Bet only what you can afford to lose.</p>`;
 }
