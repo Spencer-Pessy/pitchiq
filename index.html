@@ -96,7 +96,8 @@ h1::before{content:"";display:inline-block;width:40px;height:40px;margin-right:1
  .panel{overflow-x:auto}
  table{min-width:360px}
 }
-@media(prefers-reduced-motion:reduce){#splash{display:none!important}*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+.fixture-card{display:flex;flex-direction:column;gap:10px;text-align:left;min-height:150px;padding:15px 16px;border-left-width:3px}.fixture-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}.fixture-card-head .comp{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c9c9c9}.fixture-status{flex:0 0 auto;padding:4px 7px;border:1px solid #3b3b3b;border-radius:6px;background:#080808;color:#d8d8d8;font-size:10px;font-weight:800;letter-spacing:.7px}.fixture-status.is-live{border-color:#a92b2b;background:#3a0909;color:#ff7777}.fixture-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:9px;min-width:0}.fixture-team{font-size:clamp(15px,2vw,19px);line-height:1.2;font-weight:800;overflow-wrap:anywhere}.fixture-team.away{text-align:right}.fixture-vs{font-size:10px;color:#777;font-weight:900;letter-spacing:1px}.fixture-kickoff{display:flex;align-items:center;gap:6px;color:#bdbdbd;font-size:11px}.fixture-kickoff:before{content:'◷';color:#ff7777;font-size:14px}.fixture-card .mini{margin-top:0}.fixture-card .outcome-labels{margin-top:0}.fixture-card .pill{align-self:flex-start;margin-top:0}@media(max-width:700px){.fixture-card{min-height:0;padding:13px 14px;gap:9px}.fixture-team{font-size:17px}.fixture-status{font-size:9px}}
+ @media(prefers-reduced-motion:reduce){#splash{display:none!important}*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 /* PITCH IQ visual refresh — clear first-screen hierarchy and responsive fixture layout */
 :root{--bg:#080808;--panel:#141414;--ink:#f7f7f7;--mute:#a7a7a7;--line:#303030;--home:#e10600;--away:#e6e6e6;--draw:#555;--ok:#45d483;--no:#ff7777;--live:#ff5151}
@@ -636,7 +637,7 @@ function international(){
   const kickoff=Number.isNaN(date.getTime())?'Kickoff TBC':date.toLocaleString([],{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   const gender=f.gender==='women'?'Women':f.gender==='men'?'Men':'';
    const meta=[gender,f.comp,f.country,kickoff].filter(Boolean).map(esc).join(' · ');
-  return '<button class="card" data-id="'+esc(f.id)+'"><div class="comp">'+meta+'</div><div class="row"><span class="tm">'+esc(f.h)+'</span><span class="ko">'+score+'</span><span class="tm r">'+esc(f.a)+'</span></div><span class="pill">'+esc(label(f))+'</span></button>';
+  return '<button class="card fixture-card" data-id="'+esc(f.id)+'"><div class="fixture-card-head"><div class="comp">'+meta+'</div><span class="fixture-status '+(f.status==='LIVE'?'is-live':'')+'">'+esc(label(f)).toUpperCase()+'</span></div><div class="fixture-teams"><span class="fixture-team">'+esc(f.h)+'</span><span class="fixture-vs">'+score+'</span><span class="fixture-team away">'+esc(f.a)+'</span></div></button>';
  };
  const section=(title,items,empty)=>'<h2 class="day">'+title+' · '+items.length+'</h2>'+(items.length?'<div class="fixture-grid">'+items.map(card).join('')+'</div>':'<p class="note">'+empty+'</p>');
  const upcomingSorted=[...upcoming].sort((a,b)=>new Date(a.utc)-new Date(b.utc));
@@ -688,8 +689,9 @@ function list(){
   const saved=tab==='done'?P[String(m.id)]:null;
   const r=tab==='done'?(saved&&saved.p?savedForecast(saved.p):null):model(m.s);
   const mid=m.score?`${m.score[0]} – ${m.score[1]}`:tm(m);
-  html+=`<button class="card" data-id="${m.id}"><div class="comp">${esc(m.comp)}${live(m)?' · <b style="color:var(--live)">LIVE</b>':''}</div>
-  <div class="row"><span class="tm">${esc(m.h)}</span><span class="ko">${mid}</span><span class="tm r">${esc(m.a)}</span></div>
+  html+=`<button class="card fixture-card" data-id="${m.id}"><div class="fixture-card-head"><div class="comp">${esc(m.comp)}</div>${live(m)?'<span class="fixture-status is-live">LIVE</span>':tab==='done'?'<span class="fixture-status">FULL TIME</span>':'<span class="fixture-status">UPCOMING</span>'}</div>
+  <div class="fixture-teams"><span class="fixture-team">${esc(m.h)}</span><span class="fixture-vs">${mid}</span><span class="fixture-team away">${esc(m.a)}</span></div>
+  ${tab==='up'?'<div class="fixture-kickoff">'+esc(tm(m))+'</div>':''}
   ${r?'<div class="mini"><i style="width:'+r.ph*100+'%;background:var(--home)"></i><i style="width:'+r.pd*100+'%;background:var(--draw)"></i><i style="width:'+r.pa*100+'%;background:var(--away)"></i></div><span class="pill outcome-labels">'+(tab==='done'?'Pre-match snapshot · ':'')+'Home = '+Math.round(r.ph*100)+'% · D (Draw) = '+Math.round(r.pd*100)+'% · A (Away) = '+Math.round(r.pa*100)+'%'+'</span>':'<span class="pill">No archived pre-match forecast</span>'}</button>`;
  }
  if(tab=='up'&&ms.length)html+='</div>';
