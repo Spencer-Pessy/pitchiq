@@ -36,7 +36,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          token="$GH_TOKEN"
+          unset GH_TOKEN
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           for attempt in 1 2 3; do
@@ -50,7 +51,7 @@ jobs:
               exit 0
             fi
             git commit -m "Update free international fixture feed"
-            if git push; then
+            if git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push; then
               echo "International fixture snapshot published successfully."
               exit 0
             fi
