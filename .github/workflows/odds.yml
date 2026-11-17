@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -53,9 +55,13 @@ jobs:
           mkdir -p /tmp/pitchiq-odds
           cp odds.json /tmp/pitchiq-odds/odds.json
       - name: Publish odds snapshot with safe retry
+        env:
+          GH_TOKEN: ${{ github.token }}
         if: steps.credentials.outputs.available == 'true'
         run: |
           set -euo pipefail
+          token="$GH_TOKEN"
+          unset GH_TOKEN
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           for attempt in 1 2 3; do
@@ -69,7 +75,7 @@ jobs:
               exit 0
             fi
             git commit -m "Update odds"
-            if git push; then
+            if git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push; then
               echo "Odds snapshot published successfully."
               exit 0
             fi

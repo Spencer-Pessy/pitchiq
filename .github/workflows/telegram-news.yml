@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -33,8 +35,12 @@ jobs:
           TELEGRAM_NEWS_CHAT_ID: "@pitchiq_picks"
       # Retry only the Git publication; never rerun the Telegram send step.
       - name: Save news deduplication ledger with safe retry
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          token="$GH_TOKEN"
+          unset GH_TOKEN
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           cp daily/news_seen.json /tmp/pitchiq-news-seen.json
@@ -50,7 +56,7 @@ jobs:
               exit 0
             fi
             git commit -m "Record published football news links"
-            if git push; then
+            if git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push; then
               echo "News deduplication ledger published."
               exit 0
             fi

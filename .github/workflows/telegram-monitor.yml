@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 permissions:
   actions: read
-  contents: write
+  contents: read
 concurrency:
   group: pitchiq-telegram-health-monitor
   cancel-in-progress: false
@@ -26,8 +26,13 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -35,14 +40,41 @@ jobs:
         run: |
           python -m py_compile telegram_monitor.py test_telegram_monitor.py
           python -m unittest -v test_telegram_monitor
-      - name: Record scheduled workflow health (no Telegram messages)
+      - name: Record scheduled workflow health (read-only token)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python telegram_monitor.py
+      - name: Upload health snapshot for publisher job
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitchiq-telegram-health
+          path: daily/telegram_health.json
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: monitor
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Download health snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: pitchiq-telegram-health
+          path: daily
       - name: Publish health snapshot with safe retry
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          token="$GH_TOKEN"
+          unset GH_TOKEN
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           cp daily/telegram_health.json /tmp/pitchiq-telegram-health.json
@@ -58,7 +90,7 @@ jobs:
               exit 0
             fi
             git commit -m "Record Telegram workflow health"
-            if git push; then
+            if git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push; then
               echo "Telegram health snapshot published."
               exit 0
             fi
