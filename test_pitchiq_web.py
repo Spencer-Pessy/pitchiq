@@ -780,7 +780,7 @@ class ExplicitMatchDecisionTests(unittest.TestCase):
     def test_match_detail_shows_decision_before_explanation_and_probability_breakdown(self):
         source = self.html
         start = source.index("function res()")
-        end = source.index("(function(){\\n const _p=picks;", start)
+        end = source.index("(function(){\n const _p=picks;", start)
         detail = source[start:end]
         decision = detail.index("${decisionMarkup(r,f.h,f.a,'panel',!!archived)}")
         explanation = detail.index("${preview}")
