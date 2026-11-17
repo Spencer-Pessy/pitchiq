@@ -248,7 +248,7 @@ class MatchPreviewTests(unittest.TestCase):
     def test_match_detail_has_dynamic_preview_and_discloses_missing_context(self):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("const outcomeNames=[f.h+' win','Draw',f.a+' win']", source)
-        self.assertIn("<h2>Match preview</h2>", source)
+        self.assertIn("<h2>Why PitchIQ favours this outcome</h2>", source)
         self.assertIn("Form comparison", source)
         self.assertIn("Team strength", source)
         self.assertIn("Expected goal balance", source)
@@ -780,7 +780,7 @@ class ExplicitMatchDecisionTests(unittest.TestCase):
     def test_match_detail_shows_decision_before_explanation_and_probability_breakdown(self):
         source = self.html
         start = source.index("function res()")
-        end = source.index("function picks()", start)
+        end = source.index("(function(){\\n const _p=picks;", start)
         detail = source[start:end]
         decision = detail.index("${decisionMarkup(r,f.h,f.a,'panel',!!archived)}")
         explanation = detail.index("${preview}")
