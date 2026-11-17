@@ -41,7 +41,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          token="$GH_TOKEN"
+          unset GH_TOKEN
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           rm -rf /tmp/pitchiq-daily
@@ -62,7 +63,7 @@ jobs:
               exit 0
             fi
             git commit -m "Daily picture"
-            if git push; then
+            if git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push; then
               echo "Telegram artifacts published successfully."
               exit 0
             fi
