@@ -253,7 +253,7 @@ class MatchPreviewTests(unittest.TestCase):
         self.assertIn("Team strength", source)
         self.assertIn("Expected goal balance", source)
         self.assertIn("confirmed lineups, tactics, weather or late team news", source)
-        self.assertIn("${preview}<div class=\"stats\">", source)
+        self.assertIn("${preview}<div class=\"panel\"><h2>Forecast breakdown</h2>", source)
 
 
 class HomepageOverviewTests(unittest.TestCase):
