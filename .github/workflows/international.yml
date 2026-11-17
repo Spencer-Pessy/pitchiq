@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -30,8 +32,11 @@ jobs:
           python -m py_compile international.py test_international.py
           python -m unittest -v test_international
       - name: Refresh and publish international fixtures with safe retry
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           for attempt in 1 2 3; do
