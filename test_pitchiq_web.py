@@ -721,7 +721,7 @@ class MobileFixtureCardRefreshTests(unittest.TestCase):
         self.assertIn("UPCOMING", self.html)
 
     def test_international_fixture_cards_share_the_responsive_team_layout(self):
-        self.assertIn('class="card fixture-card" data-id="'+esc(f.id)+'"', self.html)
+        self.assertIn("""return '<button class="card fixture-card" data-id="'+esc(f.id)+'">""", self.html)
         self.assertIn("esc(label(f)).toUpperCase()", self.html)
 
     def test_fixture_refresh_keeps_existing_home_draw_away_probability_labels(self):
