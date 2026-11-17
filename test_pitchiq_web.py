@@ -704,3 +704,30 @@ class AndroidPwaBackNavigationTests(unittest.TestCase):
         self.assertIn("function pitchBack(fallback){if(history.state&&history.state.pitchiq&&history.length>1)history.back();else fallback()}", source)
         self.assertGreaterEqual(source.count("onclick=()=>pitchBack("), 3)
 
+
+
+
+class MobileFixtureCardRefreshTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.html = Path("index.html").read_text(encoding="utf-8")
+
+    def test_club_fixture_cards_have_clear_status_team_and_kickoff_hierarchy(self):
+        self.assertIn('class="card fixture-card"', self.html)
+        self.assertIn('class="fixture-card-head"', self.html)
+        self.assertIn('class="fixture-teams"', self.html)
+        self.assertIn('class="fixture-kickoff"', self.html)
+        self.assertIn("FULL TIME", self.html)
+        self.assertIn("UPCOMING", self.html)
+
+    def test_international_fixture_cards_share_the_responsive_team_layout(self):
+        self.assertIn('class="card fixture-card" data-id="'+esc(f.id)+'"', self.html)
+        self.assertIn("esc(label(f)).toUpperCase()", self.html)
+
+    def test_fixture_refresh_keeps_existing_home_draw_away_probability_labels(self):
+        self.assertIn("Home = '+Math.round(r.ph*100)+'% · D (Draw) = '+Math.round(r.pd*100)+'% · A (Away) = '+Math.round(r.pa*100)+'%'", self.html)
+
+    def test_fixture_cards_support_small_screens_and_reduced_motion(self):
+        self.assertIn("@media(max-width:700px){.fixture-card", self.html)
+        self.assertIn(".fixture-team.away{text-align:right}", self.html)
+        self.assertIn("@media(prefers-reduced-motion:reduce)", self.html)
