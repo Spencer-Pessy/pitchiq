@@ -39,7 +39,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          token="$GH_TOKEN"
+          unset GH_TOKEN
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           cp daily/news_seen.json /tmp/pitchiq-news-seen.json
@@ -55,7 +56,7 @@ jobs:
               exit 0
             fi
             git commit -m "Record published football news links"
-            if git push; then
+            if git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push; then
               echo "News deduplication ledger published."
               exit 0
             fi
