@@ -126,6 +126,31 @@ class OddsMarketValidationTests(unittest.TestCase):
                 market_events(payload)
 
 
+class OddsCoverageConfigurationTests(unittest.TestCase):
+    def test_includes_additional_major_competitions(self):
+        from pathlib import Path
+        source = Path("odds.py").read_text(encoding="utf-8")
+        for sport_key in (
+            "soccer_uefa_europa_league",
+            "soccer_netherlands_eredivisie",
+            "soccer_efl_champ",
+            "soccer_usa_mls",
+            "soccer_mexico_ligamx",
+        ):
+            with self.subTest(sport_key=sport_key):
+                self.assertIn(sport_key, source)
+
+    def test_daily_request_budget_stays_within_500_monthly_free_credits(self):
+        from pathlib import Path
+        import re
+        source = Path("odds.py").read_text(encoding="utf-8")
+        match = re.search(r"WANT = \\[(.*?)\\]", source, re.S)
+        self.assertIsNotNone(match)
+        sport_keys = re.findall(r'"(soccer_[a-z0-9_]+)"', match.group(1))
+        self.assertEqual(len(sport_keys), 11)
+        self.assertLessEqual(len(sport_keys) * 30, 500)
+
+
 if __name__ == "__main__":
     unittest.main()
 
