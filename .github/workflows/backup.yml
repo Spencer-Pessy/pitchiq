@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Check out complete repository snapshot
         uses: actions/checkout@v5
+          with:
+            persist-credentials: false
         with:
           fetch-depth: 1
 
