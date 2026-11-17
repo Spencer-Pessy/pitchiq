@@ -144,7 +144,7 @@ class OddsCoverageConfigurationTests(unittest.TestCase):
         from pathlib import Path
         import re
         source = Path("odds.py").read_text(encoding="utf-8")
-        match = re.search(r"WANT = \\[(.*?)\\]", source, re.S)
+        match = re.search(r"WANT = \[(.*?)\]", source, re.S)
         self.assertIsNotNone(match)
         sport_keys = re.findall(r'"(soccer_[a-z0-9_]+)"', match.group(1))
         self.assertEqual(len(sport_keys), 11)
