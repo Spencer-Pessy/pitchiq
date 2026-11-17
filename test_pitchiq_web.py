@@ -731,3 +731,11 @@ class MobileFixtureCardRefreshTests(unittest.TestCase):
         self.assertIn("@media(max-width:700px){.fixture-card", self.html)
         self.assertIn(".fixture-team.away{text-align:right}", self.html)
         self.assertIn("@media(prefers-reduced-motion:reduce)", self.html)
+
+
+    def test_fixture_cards_use_bold_high_contrast_brand_surfaces(self):
+        self.assertIn(".card.fixture-card{background:linear-gradient(125deg,#17243b 0%,#111b2b 56%,#241316 100%)", self.html)
+        self.assertIn("background:#b5121b;color:#fff", self.html)
+        self.assertIn("background:#123d70;color:#fff", self.html)
+        self.assertIn("background:#075b3b;color:#fff", self.html)
+        self.assertIn('class="fixture-status is-final">FULL TIME', self.html)
