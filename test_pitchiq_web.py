@@ -739,3 +739,22 @@ class MobileFixtureCardRefreshTests(unittest.TestCase):
         self.assertIn("background:#123d70;color:#fff", self.html)
         self.assertIn("background:#075b3b;color:#fff", self.html)
         self.assertIn('class="fixture-status is-final">FULL TIME', self.html)
+
+
+class FixtureStatusClarityTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.html = Path("index.html").read_text(encoding="utf-8")
+
+    def test_international_live_phases_share_live_status_treatment(self):
+        self.assertIn("['LIVE','1H','HT','2H','ET','P','PEN'].includes(s)", self.html)
+        self.assertIn("statusClass(f)", self.html)
+
+    def test_completed_and_disrupted_fixtures_have_distinct_status_styles(self):
+        self.assertIn("['FT','AET'].includes(s)", self.html)
+        self.assertIn("['PST','CANC','SUSP','ABD'].includes(s)", self.html)
+        self.assertIn(".fixture-status.is-alert{border-color:#e5a52f;background:#69400a;color:#fff}", self.html)
+
+    def test_unknown_status_is_not_misrepresented_as_upcoming(self):
+        self.assertIn("return'is-neutral'", self.html)
+        self.assertIn(".fixture-status.is-neutral{border-color:#64748b;background:#263449;color:#e8eef8}", self.html)
