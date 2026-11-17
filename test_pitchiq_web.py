@@ -187,7 +187,11 @@ class FloatingMatchBackButtonTests(unittest.TestCase):
         self.assertIn(".back.back-floating{position:fixed", source)
         self.assertIn("bottom:calc(env(safe-area-inset-bottom,0px) + 18px)", source)
         self.assertIn("z-index:60", source)
-        self.assertIn("function floatBackButton(){const button=$('#bk');if(button)button.classList.add('back-floating')}", source)
+        self.assertIn("function floatBackButton(){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;const app=$('#app');if(app)app.scrollTop=0;const button=$('#bk');if(button)button.classList.add('back-floating')}", source)
+        self.assertIn("window.scrollTo(0,0)", source)
+        self.assertIn("document.documentElement.scrollTop=0", source)
+        self.assertIn("document.body.scrollTop=0", source)
+        self.assertIn("if(app)app.scrollTop=0", source)
         self.assertGreaterEqual(source.count("floatBackButton();"), 3)
 
     def test_floating_back_control_keeps_a_clear_accessible_label(self):
