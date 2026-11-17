@@ -28,6 +28,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -41,8 +43,11 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python telegram_monitor.py
       - name: Publish health snapshot with safe retry
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
           cp daily/telegram_health.json /tmp/pitchiq-telegram-health.json
