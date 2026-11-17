@@ -1,6 +1,50 @@
 {
   "version": 1,
-  "pending": [],
+  "pending": [
+    {
+      "id": "555083",
+      "h": "Flamengo",
+      "a": "Paranaense",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-18T23:30:00Z",
+      "p": {
+        "ph": 0.6123,
+        "pd": 0.2324,
+        "pa": 0.1553
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "555086",
+      "h": "Clube do Remo",
+      "a": "Chapecoense",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-18T23:00:00Z",
+      "p": {
+        "ph": 0.534,
+        "pd": 0.2839,
+        "pa": 0.182
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "555082",
+      "h": "Cruzeiro",
+      "a": "Palmeiras",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-18T23:30:00Z",
+      "p": {
+        "ph": 0.2542,
+        "pd": 0.2945,
+        "pa": 0.4513
+      },
+      "pick_index": 2
+    }
+  ],
   "results": [],
-  "sent_ids": []
+  "sent_ids": [
+    "555083",
+    "555086",
+    "555082"
+  ]
 }
