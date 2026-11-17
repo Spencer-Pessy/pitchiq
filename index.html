@@ -246,6 +246,35 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .results-intro{border-color:#294b70;background:linear-gradient(115deg,#260707,#122239 58%,#10251c)}
 .social-grid a:hover{border-color:var(--accent-blue);background:#101e2c}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-color:var(--accent-blue)}
+
+/* Premium discovery rail: brand red remains primary, with restrained green/blue accents */
+.hero-deeper{display:inline-flex;align-items:center;gap:10px;padding:9px 15px;border:1px solid #45d48366;border-radius:999px;background:linear-gradient(110deg,#102b20,#102033);color:#f7fff9;text-decoration:none;font-size:11px;font-weight:900;letter-spacing:1.2px;white-space:nowrap;box-shadow:0 0 22px #45d48318}
+.hero-deeper span{color:var(--accent-green);font-size:18px;line-height:1}
+.hero-deeper:focus-visible,.discover-card:focus-visible{outline:3px solid var(--accent-green);outline-offset:3px}
+.discover{margin:0 0 22px;padding:18px;border:1px solid #28394a;border-radius:20px;background:linear-gradient(145deg,#101722 0%,#0c111a 55%,#101a17 100%);box-shadow:0 16px 38px #0007}
+.discover-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px}
+.discover-heading h2{font-size:clamp(22px,3vw,29px);margin:5px 0}
+.discover-heading p{margin:0;color:#aab5c2;font-size:13px}
+.discover-hint{flex:0 0 auto;color:#9aa9b7;font-size:11px;white-space:nowrap}
+.discover-hint span{color:var(--accent-green);font-size:16px;margin-left:5px}
+.discover-track{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(205px,1fr);grid-auto-columns:minmax(205px,230px);gap:11px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding:2px 2px 12px;scrollbar-color:#42566b #101722;scrollbar-width:thin}
+.discover-card{position:relative;display:flex;min-height:188px;flex-direction:column;align-items:flex-start;gap:7px;padding:16px;text-align:left;border:1px solid #ffffff1c;border-radius:15px;color:#f7f9fc;cursor:pointer;scroll-snap-align:start;overflow:hidden;transition:transform .2s,border-color .2s,filter .2s}
+.discover-card:after{content:"";position:absolute;width:130px;height:130px;right:-48px;top:-58px;border-radius:50%;background:#ffffff0b;pointer-events:none}
+.discover-card:hover{transform:translateY(-3px);border-color:#ffffff65;filter:brightness(1.12)}
+.discover-red{background:radial-gradient(circle at 100% 0%,#63201e 0,transparent 58%),linear-gradient(145deg,#241414,#12151d)}
+.discover-green{background:radial-gradient(circle at 100% 0%,#17523c 0,transparent 58%),linear-gradient(145deg,#10271f,#111923)}
+.discover-blue{background:radial-gradient(circle at 100% 0%,#1d4771 0,transparent 58%),linear-gradient(145deg,#111f32,#11151f)}
+.discover-violet{background:radial-gradient(circle at 100% 0%,#48285e 0,transparent 58%),linear-gradient(145deg,#21182c,#12151e)}
+.discover-news{background:radial-gradient(circle at 100% 0%,#5a3b20 0,transparent 58%),linear-gradient(145deg,#292016,#141820)}
+.discover-icon{display:grid;place-items:center;width:34px;height:34px;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0c;font-size:19px;color:#fff}
+.discover-kicker{margin-top:3px;color:#aebdca;font-size:9px;font-weight:900;letter-spacing:1.5px}
+.discover-card>b{font-size:18px;line-height:1.15;letter-spacing:-.3px}
+.discover-card>small{color:#bac3ce;font-size:11px;line-height:1.45}
+.discover-link{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:auto;padding-top:10px;border-top:1px solid #ffffff20;color:#e8f2f7;font-size:9px;font-weight:900;letter-spacing:1.2px}
+.discover-link i{color:var(--accent-green);font-size:16px;font-style:normal}
+@media(max-width:600px){.discover{padding:14px;border-radius:16px}.discover-heading{align-items:flex-start;flex-direction:column;gap:5px}.discover-track{grid-auto-columns: minmax(205px,78%)}.discover-card{min-height:178px}.hero-foot{align-items:flex-start}.hero-deeper{padding:8px 11px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.discover-card{transition:none}}
+
 </style>
 </head>
 <body>
@@ -490,7 +519,14 @@ function head(){const h=D.data_health;
  return '<header><h1>Pitch<span>IQ</span></h1><span class="tag">Live coverage · scores may be delayed</span></header>'+health}
 function overviewHtml(){
  const now=Date.now(),future=D.matches.filter(m=>m.status!=='FINISHED'&&new Date(m.utc)>now),liveCount=future.filter(live).length,upcoming=future.length-liveCount,competitions=new Set(future.map(m=>m.code)).size;
- return `<section class="hero" aria-label="PitchIQ overview"><div class="hero-kicker">FREE FOOTBALL INTELLIGENCE</div><h2>Read the game. Understand the numbers.</h2><p class="hero-copy">Independent match forecasts, probability breakdowns and transparent results tracking — built for football fans, not hype.</p><div class="hero-stats"><div><b>${upcoming}</b><span>Upcoming fixtures</span></div><div><b>${liveCount}</b><span>Live matches</span></div><div><b>${competitions}</b><span>Competitions covered</span></div></div><div class="hero-foot"><span>Scores and match status depend on source availability</span><span>Model estimates · Not guarantees</span></div></section>`;
+ return `<section class="hero" aria-label="PitchIQ overview"><div class="hero-kicker">FREE FOOTBALL INTELLIGENCE</div><h2>Read the game. Understand the numbers.</h2><p class="hero-copy">Independent match forecasts, probability breakdowns and transparent results tracking — built for football fans, not hype.</p><div class="hero-stats"><div><b>${upcoming}</b><span>Upcoming fixtures</span></div><div><b>${liveCount}</b><span>Live matches</span></div><div><b>${competitions}</b><span>Competitions covered</span></div></div><div class="hero-foot"><span>Scores and match status depend on source availability</span><a class="hero-deeper" href="#discover">GO DEEPER <span aria-hidden="true">→</span></a></div></section>
+ <section class="discover" id="discover" aria-label="Explore PitchIQ"><div class="discover-heading"><div><div class="hero-kicker">YOUR FOOTBALL CONTROL ROOM</div><h2>Explore PITCH IQ</h2><p>One place for the matches, insights and stories that matter.</p></div><span class="discover-hint">Swipe to explore <span aria-hidden="true">↔</span></span></div><div class="discover-track">
+ <button class="discover-card discover-red" data-t="up"><span class="discover-icon">◉</span><span class="discover-kicker">MATCH CENTRE</span><b>Upcoming matches</b><small>Fixtures, live scores and match details</small><span class="discover-link">VIEW MATCHES <i>↗</i></span></button>
+ <button class="discover-card discover-green" data-t="pick"><span class="discover-icon">◎</span><span class="discover-kicker">MODEL WATCHLIST</span><b>Today's picks</b><small>Explore model estimates and match probabilities</small><span class="discover-link">EXPLORE PICKS <i>↗</i></span></button>
+ <button class="discover-card discover-blue" data-t="intl"><span class="discover-icon">✦</span><span class="discover-kicker">NATIONAL TEAMS</span><b>International football</b><small>Fixtures and historical team intelligence</small><span class="discover-link">DISCOVER MORE <i>↗</i></span></button>
+ <button class="discover-card discover-violet" data-t="done"><span class="discover-icon">▤</span><span class="discover-kicker">TRANSPARENT TRACKING</span><b>Results & performance</b><small>Review completed matches and model records</small><span class="discover-link">SEE RESULTS <i>↗</i></span></button>
+ <button class="discover-card discover-news" data-t="news"><span class="discover-icon">◌</span><span class="discover-kicker">THE NEWSROOM</span><b>Football stories</b><small>Follow headlines with links to their sources</small><span class="discover-link">READ THE NEWS <i>↗</i></span></button>
+ </div></section>`;
 }
 function tabsHtml(){const items=[['up','Upcoming'],['pick','Picks'],['done','Results'],['rec','Record'],['tab','Table'],['intl','International'],['news','News']].filter(([k])=>tab!=='intl'||k!=='tab');return `<div class="tabs">${items.map(([k,n])=>`<button data-t="${k}" aria-pressed="${tab==k}">${n}</button>`).join('')}</div>`}
 function news(){
