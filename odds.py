@@ -5,8 +5,14 @@ from pitchiq_odds import active_sport_keys, market_events, require_nonempty_snap
 
 KEY = os.environ["ODDS_API_KEY"]
 BASE = "https://api.the-odds-api.com/v4"
-WANT = ["soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
-        "soccer_germany_bundesliga", "soccer_france_ligue_one", "soccer_uefa_champs_league"]
+WANT = [
+    "soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
+    "soccer_germany_bundesliga", "soccer_france_ligue_one", "soccer_uefa_champs_league",
+    # Additional competitions supported by The Odds API; inactive/off-season
+    # competitions are skipped by the active-sport discovery check below.
+    "soccer_uefa_europa_league", "soccer_netherlands_eredivisie",
+    "soccer_efl_champ", "soccer_usa_mls", "soccer_mexico_ligamx",
+]
 
 
 def get(path, **q):
