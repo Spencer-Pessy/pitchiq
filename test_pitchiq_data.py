@@ -15,7 +15,30 @@ from pitchiq_data import (
     backfill_market_odds,
     goal_rate_calibration,
     clean_prediction_ledger,
+    require_prediction_ledger,
 )
+
+
+class StrictPredictionLedgerTests(unittest.TestCase):
+    def test_accepts_empty_and_valid_legacy_ledgers_without_changing_records(self):
+        ledger = {
+            "123": {"id": 123, "p": {"ph": 0.5, "pd": 0.3, "pa": 0.2},
+                    "made": "2026-11-01T12:00:00Z"}
+        }
+        self.assertEqual(require_prediction_ledger({}), {})
+        self.assertEqual(require_prediction_ledger(ledger), ledger)
+
+    def test_rejects_non_dictionary_public_ledgers(self):
+        for value in (None, [], "bad", 7):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    require_prediction_ledger(value)
+
+    def test_rejects_malformed_entries_instead_of_silently_dropping_them(self):
+        with self.assertRaises(ValueError):
+            require_prediction_ledger({"123": {"id": 123}, "bad": None})
+        with self.assertRaises(ValueError):
+            require_prediction_ledger({"   ": {"id": 1}})
 
 
 class HeadToHeadTests(unittest.TestCase):
