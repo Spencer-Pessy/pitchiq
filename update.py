@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, validate_competition_fixtures, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, same_team_name, build_head_to_head
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, validate_competition_fixtures, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, require_prediction_ledger, same_team_name, build_head_to_head
 from pitchiq_h2h import normalize_h2h_cache, refresh_h2h_cache, cached_h2h_matches
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
@@ -226,13 +226,26 @@ for x in out:
             x["odds"] = ev["odds"]
             break
 
-# Self-calibration: compare past raw goal forecasts with real scores, adjust gently
+# Load the public forecast ledger once. Never replace unreadable or malformed
+# history with an empty dictionary: that could erase previously published forecasts.
 try:
-    with open("predictions.json") as f:
+    with open("predictions.json", encoding="utf-8") as f:
         _prediction_data = json.load(f)
-    _pp = [p for p in _prediction_data.values() if isinstance(p, dict) and is_club_competition(p.get("code"))] if isinstance(_prediction_data, dict) else []
-except Exception:
-    _pp = []
+except (OSError, ValueError) as error:
+    raise SystemExit(
+        f"Aborting update: cannot read existing predictions.json ({error}). "
+        "The previous data and public prediction history will be kept."
+    )
+try:
+    preds = require_prediction_ledger(_prediction_data)
+except ValueError as error:
+    raise SystemExit(
+        f"Aborting update: invalid existing predictions.json: {error}. "
+        "The previous data and public prediction history will be kept."
+    )
+
+# Self-calibration uses the same validated, immutable public history.
+_pp = [p for p in preds.values() if is_club_competition(p.get("code"))]
 CAL, _calibration_count = goal_rate_calibration(_pp)
 
 print("calibration:", CAL, "from", _calibration_count, "valid results")
@@ -242,11 +255,6 @@ def predict(s):
     return model_predict(s, CAL)
 
 # Results tracker: save each prediction before kickoff, score it after full time
-try:
-    with open("predictions.json") as f:
-        preds = clean_prediction_ledger(json.load(f))
-except Exception:
-    preds = {}
 
 # Attach the first available market snapshot to older upcoming forecasts.
 # This never changes their saved probabilities, inputs, or original forecast time.
