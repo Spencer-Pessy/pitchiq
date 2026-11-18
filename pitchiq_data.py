@@ -343,6 +343,16 @@ def clean_prediction_ledger(value):
     }
 
 
+def require_prediction_ledger(value):
+    """Validate public forecast history without silently dropping any records."""
+    if not isinstance(value, dict):
+        raise ValueError("public prediction ledger must be an object keyed by fixture ID")
+    for key, record in value.items():
+        if not str(key).strip() or not isinstance(record, dict):
+            raise ValueError("public prediction ledger contains a blank ID or non-record entry")
+    return clean_prediction_ledger(value)
+
+
 def record_forward_evaluations(existing, fixtures, finished_scores, now, predict_fn, snapshot_fn):
     """Create immutable research forecasts and attach final scores when available.
 
