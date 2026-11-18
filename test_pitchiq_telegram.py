@@ -119,14 +119,17 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
         self.assertIn("Pending picks are not counted in the accuracy rate.", panel)
         self.assertIn("original fixture ID", panel)
 
-    def test_published_pick_ledger_starts_with_valid_empty_schema(self):
+    def test_published_pick_ledger_has_valid_schema_and_normalized_entries(self):
         import json
         ledger = json.loads(Path("daily/published_picks.json").read_text(encoding="utf-8"))
+        self.assertIsInstance(ledger, dict)
         self.assertEqual(set(ledger), {"version", "pending", "results", "sent_ids"})
         self.assertEqual(ledger["version"], 1)
-        self.assertEqual(ledger["pending"], [])
-        self.assertEqual(ledger["results"], [])
-        self.assertEqual(ledger["sent_ids"], [])
+        for field in ("pending", "results", "sent_ids"):
+            self.assertIsInstance(ledger[field], list)
+        # The ledger is live state: it may contain delivered pending picks and
+        # settled results. Validate normalization without requiring it to be empty.
+        self.assertEqual(clean_pick_state(ledger), ledger)
 
     def test_results_only_mode_exits_before_new_picks_and_news(self):
         source = Path("telegram.py").read_text(encoding="utf-8")
