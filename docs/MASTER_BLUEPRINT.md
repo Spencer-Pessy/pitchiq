@@ -1,7 +1,7 @@
 # PITCH IQ — Master Product & Technical Blueprint
 
 **Status:** Living blueprint; implementation is active, not declared complete  
-**Last reviewed:** 14 November 2026  
+**Last reviewed:** 18 November 2026  
 **Live website:** https://spencer-pessy.github.io/pitchiq/  
 **Repository:** https://github.com/Spencer-Pessy/pitchiq
 
@@ -103,7 +103,7 @@ The enabled GitHub Actions workflows provide the recurring data and publishing o
 - Club data refresh: every 30 minutes.
 - International fixtures: every six hours.
 - Odds snapshot: once daily, subject to explicit free-tier confirmation and secret availability.
-- Telegram picks: daily, only when eligible unpublished fixtures exist.
+- Telegram picks: every three hours at minute 43 UTC (01:43–22:43 UTC), only when eligible unpublished club fixtures exist within the next 36 hours.
 - Telegram news: every four hours, with deduplication and source links.
 - Published-pick results: hourly, results-only.
 - Telegram workflow health: every 30 minutes; checks workflow status and age but does not claim that a successful workflow proves message delivery.
@@ -125,7 +125,7 @@ The Match Centre should display up to the five most recent finished meetings ava
 - TikTok and Instagram: @pitch.iq04
 - X: @PitchIQ04
 
-The picks bot posts up to three eligible forecasts on match days and later reports the results for those same saved picks. It must not substitute unrelated results or generate picks for international matches. The news channel posts sourced football headlines with original links; transfer speculation must be labelled unconfirmed. Social content should build conversation and trust rather than turn every post into a sales pitch.
+The picks bot checks every three hours and posts up to three eligible club forecasts when available, then reports the results for those same saved picks. It must not substitute unrelated results or generate picks for international matches. The news channel posts sourced football headlines with original links; transfer speculation must be labelled unconfirmed. Social content should build conversation and trust rather than turn every post into a sales pitch.
 
 ## 9. Security, reliability, and release process
 
