@@ -7,6 +7,12 @@ on:
       - pitchiq_h2h.py
       - test_pitchiq_h2h.py
       - test_pitchiq_telegram.py
+      - test_pitchiq_model.py
+      - test_pitchiq_data.py
+      - test_pitchiq_web.py
+      - test_international.py
+      - test_pitchiq_odds.py
+      - test_update.py
       - pitchiq_data.py
       - pitchiq_model.py
       - model_metrics.py
