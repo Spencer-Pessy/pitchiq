@@ -73,7 +73,9 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertEqual(FakeTime.sleeps, [5.0])
 
     def test_public_and_research_ledgers_are_normalized_before_processing(self):
-        self.assertIn("clean_prediction_ledger(json.load(f))", self.source)
+        self.assertIn("require_prediction_ledger(_prediction_data)", self.source)
+        self.assertIn("cannot read existing predictions.json", self.source)
+        self.assertIn("invalid existing predictions.json", self.source)
         self.assertIn('p.get("final") is None and p.get("id") in byid', self.source)
 
     def test_calibration_uses_validated_club_history_and_excludes_internationals(self):
