@@ -6,6 +6,7 @@ on:
       - update.py
       - pitchiq_h2h.py
       - test_pitchiq_h2h.py
+      - test_pitchiq_telegram.py
       - pitchiq_data.py
       - pitchiq_model.py
       - model_metrics.py
