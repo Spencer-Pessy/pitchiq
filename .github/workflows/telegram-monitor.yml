@@ -64,7 +64,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Download health snapshot
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: pitchiq-telegram-health
           path: daily
