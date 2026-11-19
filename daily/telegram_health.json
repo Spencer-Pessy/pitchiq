@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-19T23:13:36.672793+00:00",
-  "overall": "degraded",
+  "checked_at": "2026-11-19T23:13:59.549080+00:00",
+  "overall": "healthy",
   "telegram_delivery_verified": false,
   "note": "GitHub scheduled-run health only; this does not prove a Telegram message was delivered.",
   "workflows": [
@@ -20,12 +20,12 @@
     },
     {
       "workflow": "telegram-news.yml",
-      "status": "running",
+      "status": "healthy",
       "last_scheduled_run": {
         "id": 44635780678,
         "created_at": "2026-11-19T23:13:24Z",
-        "run_status": "in_progress",
-        "conclusion": null
+        "run_status": "completed",
+        "conclusion": "success"
       },
       "age_minutes": 0,
       "expected_interval_hours": 4,
