@@ -1,7 +1,7 @@
 # PITCH IQ — Master Product & Technical Blueprint
 
 **Status:** Living blueprint; implementation is active, not declared complete  
-**Last reviewed:** 18 November 2026  
+**Last reviewed:** 19 November 2026  
 **Live website:** https://spencer-pessy.github.io/pitchiq/  
 **Repository:** https://github.com/Spencer-Pessy/pitchiq
 
@@ -175,3 +175,16 @@ PITCH IQ is **not yet declared finished**. The blueprint is now documented, but 
 6. **Blueprint maintenance:** Update this document when a feature, source, workflow, data schema, or product rule changes; distinguish implemented, tested, and planned work.
 
 A feature is complete only when its data source and limitations are documented, tests pass, the live website is verified, and no paid service has been introduced without approval.
+
+
+## 12. Verified operational status on 19 November 2026
+
+This is a dated monitoring snapshot, not a completion declaration.
+
+- **Club data:** The latest published `data.json` snapshot is `2026-11-19T00:21:06Z`. At 05:52 UTC it was about 5 hours 31 minutes old despite the 30-minute schedule. The latest observed scheduled updater run was #153 (00:17 UTC), which succeeded; no later updater run appeared in the Actions history at the time of review. GitHub Status reported all systems operational on 19 November, so the cause of the missed runs is not confirmed. Do not claim the schedule is restored.
+- **Coverage:** The snapshot contains 419 published fixtures. Provider metadata covers all 12 configured free-tier competitions; 10 competitions have current standings and there are zero reported standings failures. The club feed remains the priority.
+- **Forecast integrity:** The public ledger contains 504 forecasts, including 86 settled. The most-likely 1X2 outcome was correct in 49/86 (57.0%); the 95% Wilson interval is 46.4%–66.9%. The separate forward-only ledger contains 418 forecasts and no completed matches. Comparing the 500 public records at the updater's starting commit with the current ledger found all 500 retained and no changes to their saved pre-match forecast fields; four new records were added.
+- **Tests and deployment:** The latest model test run (#785) passed 307 tests and the latest offline run (#288) passed 285 tests on source commit `d61a85c`. The successful updater run #153 also ran 268 offline tests on `978e629` before publishing. The intervening commits through `053df94` changed only generated data/health ledgers, not source code. Pages deployment #1098 succeeded for `053df94`. No separate test workflow was attached to that exact data-only HEAD at the time of this review.
+- **Optional feeds:** The international snapshot contains 180 fixtures and was last updated at `2026-11-18T20:43:59Z`; the updater logs recorded ESPN HTTP 503 responses. International coverage remains separate and must not delay club coverage. The odds snapshot contains 184 events and was last updated at `2026-11-18T16:36:16Z`; its next daily refresh was not yet due at the review time.
+- **Dependency maintenance:** Dependabot PRs #17–#19 each have successful offline and model-test runs on their PR heads, but each branch is 46 commits behind `main`. They were not merged; synchronize and rerun checks before considering them.
+- **Next actions:** Investigate the missing scheduled club updater runs, verify actual Telegram delivery separately from workflow success, and revisit the stale dependency branches after synchronization. Keep the free-only policy and forecast-history protections unchanged.
