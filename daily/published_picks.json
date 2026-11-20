@@ -1,6 +1,46 @@
 {
   "version": 1,
-  "pending": [],
+  "pending": [
+    {
+      "id": "565859",
+      "h": "Bayern",
+      "a": "1. FC Köln",
+      "comp": "Bundesliga",
+      "utc": "2026-11-20T19:30:00Z",
+      "p": {
+        "ph": 0.8215,
+        "pd": 0.117,
+        "pa": 0.0615
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "561944",
+      "h": "Southampton",
+      "a": "Derby County",
+      "comp": "Championship",
+      "utc": "2026-11-21T12:30:00Z",
+      "p": {
+        "ph": 0.7617,
+        "pd": 0.158,
+        "pa": 0.0803
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "564754",
+      "h": "Real Madrid",
+      "a": "Celta",
+      "comp": "Primera Division",
+      "utc": "2026-11-21T20:00:00Z",
+      "p": {
+        "ph": 0.7163,
+        "pd": 0.2032,
+        "pa": 0.0805
+      },
+      "pick_index": 0
+    }
+  ],
   "results": [
     {
       "id": "555083",
@@ -63,6 +103,9 @@
   "sent_ids": [
     "555083",
     "555086",
-    "555082"
+    "555082",
+    "565859",
+    "561944",
+    "564754"
   ]
 }
