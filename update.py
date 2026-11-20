@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, validate_competition_fixtures, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, clean_prediction_ledger, require_prediction_ledger, same_team_name, build_head_to_head
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, validate_competition_fixtures, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, require_prediction_ledger, same_team_name, build_head_to_head
 from pitchiq_h2h import normalize_h2h_cache, refresh_h2h_cache, cached_h2h_matches
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
@@ -290,10 +290,23 @@ print("predictions stored:", len(preds))
 # Maintain a separate forward-only research ledger. Existing public forecasts
 # remain immutable; this ledger captures current inputs for already-listed fixtures.
 try:
-    with open("model_evaluation.json") as f:
-        evaluation = clean_prediction_ledger(json.load(f))
-except Exception:
-    evaluation = {}
+    with open("model_evaluation.json", encoding="utf-8") as f:
+        _evaluation_data = json.load(f)
+except FileNotFoundError:
+    # A first run may not have a research ledger yet.
+    _evaluation_data = {}
+except (OSError, ValueError) as error:
+    raise SystemExit(
+        f"Aborting update: cannot read existing model_evaluation.json ({error}). "
+        "The previous data and research evaluation history will be kept."
+    )
+try:
+    evaluation = require_prediction_ledger(_evaluation_data)
+except ValueError as error:
+    raise SystemExit(
+        f"Aborting update: invalid existing model_evaluation.json ({error}). "
+        "The previous data and research evaluation history will be kept."
+    )
 finished_scores = {str(match_id): goals(match) for match_id, match in byid.items()}
 evaluation = record_forward_evaluations(
     evaluation, out, finished_scores, now, predict,

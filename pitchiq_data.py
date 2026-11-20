@@ -344,12 +344,12 @@ def clean_prediction_ledger(value):
 
 
 def require_prediction_ledger(value):
-    """Validate public forecast history without silently dropping any records."""
+    """Validate a forecast ledger without silently dropping any records."""
     if not isinstance(value, dict):
-        raise ValueError("public prediction ledger must be an object keyed by fixture ID")
+        raise ValueError("forecast ledger must be an object keyed by fixture ID")
     for key, record in value.items():
         if not str(key).strip() or not isinstance(record, dict):
-            raise ValueError("public prediction ledger contains a blank ID or non-record entry")
+            raise ValueError("forecast ledger contains a blank ID or non-record entry")
     return clean_prediction_ledger(value)
 
 

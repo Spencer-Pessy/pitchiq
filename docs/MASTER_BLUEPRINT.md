@@ -1,7 +1,7 @@
 # PITCH IQ — Master Product & Technical Blueprint
 
 **Status:** Living blueprint; implementation is active, not declared complete  
-**Last reviewed:** 19 November 2026  
+**Last reviewed:** 20 November 2026  
 **Live website:** https://spencer-pessy.github.io/pitchiq/  
 **Repository:** https://github.com/Spencer-Pessy/pitchiq
 
@@ -88,7 +88,7 @@ Third-party free quotas, endpoints, and coverage can change. Recheck terms and q
 
 - `data.json` — current club fixtures, match details, tables, feed-health metadata, and model diagnostics.
 - `predictions.json` — immutable first pre-match forecast records with later result updates.
-- `model_evaluation.json` — separate forward-only research forecasts and their eventual results.
+- `model_evaluation.json` — separate forward-only research forecasts and their eventual results. The updater validates the existing ledger and stops rather than resetting it when history is unreadable or malformed.
 - `h2h_cache.json` — quota-aware H2H cache.
 - `international.json` — separate international fixtures.
 - `international_ratings.json` and `international_team_registry.json` — research-only historical ratings and team identity checks.
@@ -188,3 +188,18 @@ This is a dated monitoring snapshot, not a completion declaration.
 - **Optional feeds:** The international snapshot contains 180 fixtures and was last updated at `2026-11-18T20:43:59Z`; the updater logs recorded ESPN HTTP 503 responses. International coverage remains separate and must not delay club coverage. The odds snapshot contains 184 events and was last updated at `2026-11-18T16:36:16Z`; its next daily refresh was not yet due at the review time.
 - **Dependency maintenance:** Dependabot PRs #17–#19 each have successful offline and model-test runs on their PR heads, but each branch is 46 commits behind `main`. They were not merged; synchronize and rerun checks before considering them.
 - **Next actions:** Investigate the missing scheduled club updater runs, verify actual Telegram delivery separately from workflow success, and revisit the stale dependency branches after synchronization. Keep the free-only policy and forecast-history protections unchanged.
+
+
+## 13. Operational review on 20 November 2026
+
+This point-in-time review was collected at 05:43 UTC (08:43 Qatar time), before the fail-closed research-ledger change in the same commit. The inspected base `main` SHA was `54607bb`.
+
+- **Club feed and schedule:** `data.json` was last updated at `2026-11-19T23:50:25Z`, about 5 hours 53 minutes old at review time. It contained 446 published match rows (437 future, 6 finished, 2 live and 1 cancelled). Provider metadata covered 3,595 fixtures across all 12 configured free-tier competitions; 10 standings competitions were available with no reported standings failures. The latest observed scheduled club updater was run #44640417484 at 23:46:18Z on 19 November and succeeded. No later scheduled updater appeared in the latest 100 Actions runs; the newest run in that list was at 03:16:40Z on 20 November. This is a missed schedule, not a recorded failing updater job; the cause is unconfirmed. Keep club refresh the priority.
+- **Forecast integrity:** The public ledger contained 531 forecasts, including 92 settled; the most-likely 1X2 outcome was correct in 53/92 (57.6%), with a 95% Wilson interval of 47.4%–67.2%. Comparing the ledger at source-test commit `d1be1af` with the reviewed snapshot found all 504 shared records retained with identical probabilities, saved inputs, original timestamps, kickoff, teams and competition; 27 records were added. The separate forward-only research ledger contained 445 forecasts, including 6 completed. No production model weights were changed.
+- **Tests and Pages:** The latest model workflow passed 307 tests and the offline workflow passed 285 tests on `d1be1af`. The comparison from that commit to reviewed base `54607bb` contained only generated JSON snapshots and ledgers, with no source-code changes. There was no test workflow on that exact data-only base commit, so do not describe it as tested on the exact SHA. Pages deployment #1123 succeeded for the exact base SHA `54607bb`. The new research-ledger guard must still pass the workflows triggered by this commit before it is marked complete.
+- **Telegram:** The latest picks run at 23:13Z on 19 November passed bot preflight but found no eligible matches in its next-36-hour window, so it sent no picks. The latest news run at 23:13Z confirmed a Telegram message (message ID 31). The latest results-only run at 03:16Z on 20 November completed and found no new results to post. The monitor snapshot was also checked at 03:16Z and is no longer current at this review time; `telegram_delivery_verified` remains false because workflow health is not proof of delivery.
+- **Optional feeds and odds:** The separate international feed contained 157 fixtures and was last updated at 20:49Z on 19 November. The last club updater logs included ESPN HTTP 503 responses; international coverage remains optional and must not delay club fixtures. The odds snapshot contained 190 events and was last updated at 16:40Z on 19 November; it remains a separate daily free-tier workflow.
+- **Portable backup:** Backup run #44469758857 succeeded on `d1be1af`; its 1,161,900-byte archive remains available until 17 February 2027. It predates the later generated JSON updates, so download a newer successful artifact after the next push-triggered backup completes.
+- **Workflow history:** The latest 100 Actions runs contained no failed conclusions. Ten cancelled Pages runs were superseded builds, not failed deployments.
+
+**Next actions:** Investigate the missing scheduled club refresh and publisher runs without adding paid services; verify the next scheduled executions, confirm this commit's test workflows and Pages deployment, and continue the H2H, backup and data-quality checks. Do not claim the schedule is restored until a new scheduled run is observed.
