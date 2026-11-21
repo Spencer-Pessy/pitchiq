@@ -831,6 +831,12 @@ class SportAPILiveDisplayTests(unittest.TestCase):
         self.assertIn("async function refreshLiveSnapshot(){", self.html)
         self.assertIn("fetch('live.json?'+Date.now())", self.html)
         self.assertIn("setInterval(refreshLiveSnapshot,60000)", self.html)
+    def test_live_snapshot_refresh_restores_original_match_state_before_reapplying(self):
+        self.assertIn("const LIVE_BASE=new WeakMap();", self.html)
+        self.assertIn("match.status=base.status;", self.html)
+        self.assertIn("delete match.live_source;", self.html)
+        self.assertIn("match.status=item.status==='HT'?'PAUSED':'IN_PLAY'", self.html)
+
     def test_sportapi_live_status_updates_existing_match_cards_and_detail(self):
         self.assertIn("match.status=item.status==='HT'?'PAUSED':'IN_PLAY'", self.html)
         self.assertIn("match.score=item.score", self.html)
