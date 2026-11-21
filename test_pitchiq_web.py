@@ -809,3 +809,27 @@ class ExplicitMatchDecisionTests(unittest.TestCase):
 
     def test_picks_tab_uses_the_same_explicit_decision_label(self):
         self.assertIn("decisionMarkup(x.r,x.m.h,x.m.a,'card',false)", self.html)
+
+class SportAPILiveDisplayTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.html = Path("index.html").read_text(encoding="utf-8")
+
+    def test_live_snapshot_is_loaded_without_blocking_the_main_feed(self):
+        self.assertIn("fetch('live.json?'+Date.now())", self.html)
+        self.assertIn("catch(()=>({matches:[]}))", self.html)
+        self.assertIn("LIVE=liveFeed||{matches:[]};applyLiveFeed();list()", self.html)
+
+    def test_live_scores_have_a_separate_visible_panel_and_are_escaped(self):
+        self.assertIn("function livePanel(){", self.html)
+        self.assertIn('class="live-score-panel"', self.html)
+        self.assertIn("esc(item.comp)", self.html)
+        self.assertIn("esc(item.h)", self.html)
+        self.assertIn("esc(item.a)", self.html)
+
+    def test_sportapi_live_status_updates_existing_match_cards_and_detail(self):
+        self.assertIn("match.status=item.status==='HT'?'PAUSED':'IN_PLAY'", self.html)
+        self.assertIn("match.score=item.score", self.html)
+        self.assertIn("const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';", self.html)
+        self.assertIn("IN_PLAY:'LIVE',PAUSED:'HALF TIME'", self.html)
+        self.assertIn("'IN_PLAY','PAUSED'", self.html)
