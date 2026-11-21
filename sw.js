@@ -1,4 +1,4 @@
-const CACHE = 'pitchiq-cache-v10';
+const CACHE = 'pitchiq-cache-v11';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo-banner-512.png'];
 
 self.addEventListener('install', event => {
@@ -50,6 +50,7 @@ self.addEventListener('fetch', event => {
             url.pathname.endsWith('/predictions.json') ? {} :
             url.pathname.endsWith('/odds.json') ? {events: []} :
             url.pathname.endsWith('/international.json') ? {fixtures: []} :
+            url.pathname.endsWith('/live.json') ? {provider: 'SportAPI', updated: null, count: 0, matches: []} :
             {updated: null, matches: [], tables: {}};
           return new Response(JSON.stringify(empty), {
             headers: {'Content-Type': 'application/json; charset=utf-8'}
