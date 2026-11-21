@@ -15,45 +15,6 @@
       "pick_index": 0
     },
     {
-      "id": "561951",
-      "h": "West Ham",
-      "a": "Preston NE",
-      "comp": "Championship",
-      "utc": "2026-11-21T15:00:00Z",
-      "p": {
-        "ph": 0.7022,
-        "pd": 0.1785,
-        "pa": 0.1193
-      },
-      "pick_index": 0
-    },
-    {
-      "id": "561952",
-      "h": "Wolverhampton",
-      "a": "Charlton",
-      "comp": "Championship",
-      "utc": "2026-11-21T15:00:00Z",
-      "p": {
-        "ph": 0.6571,
-        "pd": 0.2132,
-        "pa": 0.1297
-      },
-      "pick_index": 0
-    },
-    {
-      "id": "560644",
-      "h": "Aston Villa",
-      "a": "Sunderland",
-      "comp": "Premier League",
-      "utc": "2026-11-21T15:00:00Z",
-      "p": {
-        "ph": 0.6558,
-        "pd": 0.1966,
-        "pa": 0.1475
-      },
-      "pick_index": 0
-    },
-    {
       "id": "558828",
       "h": "Twente",
       "a": "Willem II",
@@ -63,19 +24,6 @@
         "ph": 0.752,
         "pd": 0.1494,
         "pa": 0.0986
-      },
-      "pick_index": 0
-    },
-    {
-      "id": "558525",
-      "h": "Como 1907",
-      "a": "Cagliari",
-      "comp": "Serie A",
-      "utc": "2026-11-21T14:00:00Z",
-      "p": {
-        "ph": 0.6494,
-        "pd": 0.2204,
-        "pa": 0.1302
       },
       "pick_index": 0
     },
@@ -219,6 +167,82 @@
         "ph": 0.7617,
         "pd": 0.158,
         "pa": 0.0803
+      },
+      "pick_index": 0,
+      "final": [
+        2,
+        0
+      ],
+      "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "561951",
+      "h": "West Ham",
+      "a": "Preston NE",
+      "comp": "Championship",
+      "utc": "2026-11-21T15:00:00Z",
+      "p": {
+        "ph": 0.7022,
+        "pd": 0.1785,
+        "pa": 0.1193
+      },
+      "pick_index": 0,
+      "final": [
+        1,
+        1
+      ],
+      "actual_index": 1,
+      "correct": false
+    },
+    {
+      "id": "561952",
+      "h": "Wolverhampton",
+      "a": "Charlton",
+      "comp": "Championship",
+      "utc": "2026-11-21T15:00:00Z",
+      "p": {
+        "ph": 0.6571,
+        "pd": 0.2132,
+        "pa": 0.1297
+      },
+      "pick_index": 0,
+      "final": [
+        2,
+        1
+      ],
+      "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "560644",
+      "h": "Aston Villa",
+      "a": "Sunderland",
+      "comp": "Premier League",
+      "utc": "2026-11-21T15:00:00Z",
+      "p": {
+        "ph": 0.6558,
+        "pd": 0.1966,
+        "pa": 0.1475
+      },
+      "pick_index": 0,
+      "final": [
+        0,
+        0
+      ],
+      "actual_index": 1,
+      "correct": false
+    },
+    {
+      "id": "558525",
+      "h": "Como 1907",
+      "a": "Cagliari",
+      "comp": "Serie A",
+      "utc": "2026-11-21T14:00:00Z",
+      "p": {
+        "ph": 0.6494,
+        "pd": 0.2204,
+        "pa": 0.1302
       },
       "pick_index": 0,
       "final": [
