@@ -376,11 +376,27 @@ function decisionMarkup(r,h,a,mode='card',archived=false){
  return '<div class="fixture-decision decision-'+tone+'"><span class="decision-kicker">'+heading+'</span><strong>'+d.label+'</strong><span class="decision-subject">'+esc(d.subject)+' · '+percentage+'</span></div>';
 }
 const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
+const LIVE_BASE=new WeakMap();
 function applyLiveFeed(){
+ if(!D||!Array.isArray(D.matches))return;
+ D.matches.forEach(match=>{
+  if(!LIVE_BASE.has(match)){
+   LIVE_BASE.set(match,{
+    status:match.status,score:match.score,minute:match.minute,
+    hasScore:Object.prototype.hasOwnProperty.call(match,'score'),
+    hasMinute:Object.prototype.hasOwnProperty.call(match,'minute')
+   });
+  }
+  const base=LIVE_BASE.get(match);
+  match.status=base.status;
+  if(base.hasScore)match.score=base.score;else delete match.score;
+  if(base.hasMinute)match.minute=base.minute;else delete match.minute;
+  delete match.live_source;
+ });
  const rows=Array.isArray(LIVE.matches)?LIVE.matches:[];
  const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
  rows.forEach(item=>{
-  const match=(D.matches||[]).find(candidate=>{
+  const match=D.matches.find(candidate=>{
    const sameTeams=norm(candidate.h)===norm(item.h)&&norm(candidate.a)===norm(item.a);
    const timeGap=Math.abs(Date.parse(candidate.utc)-Date.parse(item.utc));
    return sameTeams&&Number.isFinite(timeGap)&&timeGap<=6*3600e3;
