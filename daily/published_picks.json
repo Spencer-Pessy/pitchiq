@@ -2,19 +2,6 @@
   "version": 1,
   "pending": [
     {
-      "id": "565859",
-      "h": "Bayern",
-      "a": "1. FC Köln",
-      "comp": "Bundesliga",
-      "utc": "2026-11-20T19:30:00Z",
-      "p": {
-        "ph": 0.8215,
-        "pd": 0.117,
-        "pa": 0.0615
-      },
-      "pick_index": 0
-    },
-    {
       "id": "561944",
       "h": "Southampton",
       "a": "Derby County",
@@ -175,6 +162,25 @@
         1
       ],
       "actual_index": 0,
+      "correct": false
+    },
+    {
+      "id": "565859",
+      "h": "Bayern",
+      "a": "1. FC Köln",
+      "comp": "Bundesliga",
+      "utc": "2026-11-20T19:30:00Z",
+      "p": {
+        "ph": 0.8215,
+        "pd": 0.117,
+        "pa": 0.0615
+      },
+      "pick_index": 0,
+      "final": [
+        1,
+        1
+      ],
+      "actual_index": 1,
       "correct": false
     }
   ],
