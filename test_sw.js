@@ -78,6 +78,11 @@ async function main() {
   const fallback = await noCache.response.json();
   assert.deepEqual(fallback, {fixtures: []});
 
+
+  const liveFallback = await requestData({networkError: new Error("offline"), path: "/pitchiq/live.json"});
+  assert.equal(liveFallback.response.status, 200, "missing live snapshot should return safe JSON");
+  assert.deepEqual(await liveFallback.response.json(), {provider: "SportAPI", updated: null, count: 0, matches: []});
+
   console.log("Service-worker runtime tests passed.");
 }
 
