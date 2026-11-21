@@ -831,6 +831,11 @@ class SportAPILiveDisplayTests(unittest.TestCase):
         self.assertIn("async function refreshLiveSnapshot(){", self.html)
         self.assertIn("fetch('live.json?'+Date.now())", self.html)
         self.assertIn("setInterval(refreshLiveSnapshot,60000)", self.html)
+    def test_live_scores_are_hidden_when_snapshot_is_stale(self):
+        self.assertIn("function liveFeedFresh(){", self.html)
+        self.assertIn("age<=20*60e3", self.html)
+        self.assertIn("liveFeedFresh()&&Array.isArray(LIVE.matches)", self.html)
+
     def test_live_snapshot_refresh_restores_original_match_state_before_reapplying(self):
         self.assertIn("const LIVE_BASE=new WeakMap();", self.html)
         self.assertIn("match.status=base.status;", self.html)
