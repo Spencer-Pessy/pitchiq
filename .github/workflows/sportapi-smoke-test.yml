@@ -18,8 +18,12 @@ jobs:
         with:
           python-version: "3.12"
       - name: Run offline validation tests
-        run: python -m unittest -v test_sportapi_smoke_test
+        run: python -m unittest -v test_sportapi_smoke_test test_sportapi_live_probe
       - name: Probe SportAPI using the repository secret
         env:
           SPORTAPI_KEY: ${{ secrets.SPORTAPI_KEY }}
         run: python sportapi_smoke_test.py
+      - name: Check today's live-score coverage
+        env:
+          SPORTAPI_KEY: ${{ secrets.SPORTAPI_KEY }}
+        run: python sportapi_live_probe.py
