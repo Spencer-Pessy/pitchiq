@@ -2,19 +2,6 @@
   "version": 1,
   "pending": [
     {
-      "id": "561944",
-      "h": "Southampton",
-      "a": "Derby County",
-      "comp": "Championship",
-      "utc": "2026-11-21T12:30:00Z",
-      "p": {
-        "ph": 0.7617,
-        "pd": 0.158,
-        "pa": 0.0803
-      },
-      "pick_index": 0
-    },
-    {
       "id": "564754",
       "h": "Real Madrid",
       "a": "Celta",
@@ -182,6 +169,25 @@
       ],
       "actual_index": 1,
       "correct": false
+    },
+    {
+      "id": "561944",
+      "h": "Southampton",
+      "a": "Derby County",
+      "comp": "Championship",
+      "utc": "2026-11-21T12:30:00Z",
+      "p": {
+        "ph": 0.7617,
+        "pd": 0.158,
+        "pa": 0.0803
+      },
+      "pick_index": 0,
+      "final": [
+        2,
+        0
+      ],
+      "actual_index": 0,
+      "correct": true
     }
   ],
   "sent_ids": [
