@@ -1005,6 +1005,23 @@ async function shareRecord(){
   if(!had&&$('#fb')&&TELEGRAM_URL)$('#fb').insertAdjacentHTML('beforeend',' &nbsp;·&nbsp; <a href="'+TELEGRAM_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Telegram alerts</a>');
  };
 })();
+ async function refreshLiveSnapshot(){
+  if(!D||document.visibilityState==='hidden')return;
+  try{
+   const response=await fetch('live.json?'+Date.now());
+   if(!response.ok)return;
+   const fresh=await response.json();
+   if(!fresh||!Array.isArray(fresh.matches)||fresh.updated===LIVE.updated)return;
+   LIVE=fresh;applyLiveFeed();
+   if(tab==='up'){
+    if(sel){
+     const current=(D.matches||[]).find(match=>String(match.id)===String(sel.id));
+     if(current){sel=current;detail()}
+    }else list();
+   }
+  }catch(_){}
+ }
+ setInterval(refreshLiveSnapshot,60000);
  Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('international.json?'+Date.now()).then(r=>r.ok?r.json():{fixtures:[]}).catch(()=>({fixtures:[]})),fetch('international_ratings.json?'+Date.now()).then(r=>r.ok?r.json():{teams:[]}).catch(()=>({teams:[]})),fetch('daily/published_picks.json?'+Date.now()).then(r=>r.ok?r.json():{results:[]}).catch(()=>({results:[]})),fetch('live.json?'+Date.now()).then(r=>r.ok?r.json():{matches:[]}).catch(()=>({matches:[]}))]).then(([d,p,i,ir,q,liveFeed])=>{D=d;P=p;I=i||{fixtures:[]};IR=ir||{teams:[]};Q=q||{results:[]};LIVE=liveFeed||{matches:[]};applyLiveFeed();list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
