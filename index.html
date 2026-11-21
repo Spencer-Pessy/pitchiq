@@ -618,7 +618,15 @@ function head(){const h=D.data_health;
  const health=h?('<p class="note" style="margin:6px 0 12px">Feed coverage: '+(Number(h.fixture_competitions)||0)+' competitions · '+(Number(h.fixture_total)||0)+' fixtures · World Cup/EURO archive '+(Number(h.international_fixture_total)||0)+standings+'</p>'):'';
  return '<header><h1>Pitch<span>IQ</span></h1><span class="tag">Live coverage · scores may be delayed</span></header>'+health}
 function overviewHtml(){
- const now=Date.now(),future=D.matches.filter(m=>m.status!=='FINISHED'&&new Date(m.utc)>now),liveCount=future.filter(live).length,upcoming=future.length-liveCount,competitions=new Set(future.map(m=>m.code)).size;
+ const now=Date.now(),future=D.matches.filter(m=>m.status!=='FINISHED'&&new Date(m.utc)>now);
+ const feedMatches=liveFeedFresh()&&Array.isArray(LIVE.matches)?LIVE.matches:[];
+ const clean=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const mainOnlyLive=future.filter(live).filter(match=>!feedMatches.some(item=>{
+  const sameTeams=clean(match.h)===clean(item.h)&&clean(match.a)===clean(item.a);
+  const gap=Math.abs(Date.parse(match.utc)-Date.parse(item.utc));
+  return sameTeams&&Number.isFinite(gap)&&gap<=6*3600e3;
+ })).length;
+ const liveCount=feedMatches.length+mainOnlyLive,upcoming=future.filter(m=>!live(m)).length,competitions=new Set(future.map(m=>m.code)).size;
  return `<section class="hero" aria-label="PitchIQ overview"><div class="hero-kicker">FREE FOOTBALL INTELLIGENCE</div><h2>Read the game. Understand the numbers.</h2><p class="hero-copy">Independent match forecasts, probability breakdowns and transparent results tracking — built for football fans, not hype.</p><div class="hero-stats"><div><b>${upcoming}</b><span>Upcoming fixtures</span></div><div><b>${liveCount}</b><span>Live matches</span></div><div><b>${competitions}</b><span>Competitions covered</span></div></div><div class="hero-foot"><span>Scores and match status depend on source availability</span><a class="hero-deeper" href="#discover">GO DEEPER <span aria-hidden="true">→</span></a></div></section>
  <section class="discover" id="discover" aria-label="Explore PitchIQ"><div class="discover-heading"><div><div class="hero-kicker">YOUR FOOTBALL CONTROL ROOM</div><h2>Explore PITCH IQ</h2><p>One place for the matches, insights and stories that matter.</p></div><span class="discover-hint">Swipe to explore <span aria-hidden="true">↔</span></span></div><div class="discover-track">
  <button class="discover-card discover-red" data-t="up"><span class="discover-icon">◉</span><span class="discover-kicker">MATCH CENTRE</span><b>Upcoming matches</b><small>Fixtures, live scores and match details</small><span class="discover-link">VIEW MATCHES <i>↗</i></span></button>
