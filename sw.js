@@ -25,7 +25,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  const isData = /\\/(data|predictions|odds|international|live)\\.json$/.test(url.pathname) || url.pathname.endsWith('/daily/published_picks.json');
+  const isData = /\/(data|predictions|odds|international|live)\.json$/.test(url.pathname) || url.pathname.endsWith('/daily/published_picks.json');
   if (isData) {
     // Ignore the page's cache-busting query string so offline copies remain reusable.
     const key = new Request(url.origin + url.pathname);
