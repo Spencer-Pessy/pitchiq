@@ -1,4 +1,4 @@
-const CACHE = 'pitchiq-cache-v10';
+const CACHE = 'pitchiq-cache-v11';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo-banner-512.png'];
 
 self.addEventListener('install', event => {
@@ -25,7 +25,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  const isData = /\/(data|predictions|odds|international)\.json$/.test(url.pathname) || url.pathname.endsWith('/daily/published_picks.json');
+  const isData = /\/(data|predictions|odds|international|live)\.json$/.test(url.pathname) || url.pathname.endsWith('/daily/published_picks.json');
   if (isData) {
     // Ignore the page's cache-busting query string so offline copies remain reusable.
     const key = new Request(url.origin + url.pathname);
@@ -50,6 +50,7 @@ self.addEventListener('fetch', event => {
             url.pathname.endsWith('/predictions.json') ? {} :
             url.pathname.endsWith('/odds.json') ? {events: []} :
             url.pathname.endsWith('/international.json') ? {fixtures: []} :
+            url.pathname.endsWith('/live.json') ? {provider: 'SportAPI', updated: null, count: 0, matches: []} :
             {updated: null, matches: [], tables: {}};
           return new Response(JSON.stringify(empty), {
             headers: {'Content-Type': 'application/json; charset=utf-8'}
