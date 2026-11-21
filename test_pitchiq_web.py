@@ -827,6 +827,10 @@ class SportAPILiveDisplayTests(unittest.TestCase):
         self.assertIn("esc(item.h)", self.html)
         self.assertIn("esc(item.a)", self.html)
 
+    def test_live_scores_refresh_automatically_without_reloading_the_page(self):
+        self.assertIn("async function refreshLiveSnapshot(){", self.html)
+        self.assertIn("fetch('live.json?'+Date.now())", self.html)
+        self.assertIn("setInterval(refreshLiveSnapshot,60000)", self.html)
     def test_sportapi_live_status_updates_existing_match_cards_and_detail(self):
         self.assertIn("match.status=item.status==='HT'?'PAUSED':'IN_PLAY'", self.html)
         self.assertIn("match.score=item.score", self.html)
