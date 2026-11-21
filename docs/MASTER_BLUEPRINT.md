@@ -127,6 +127,8 @@ The Match Centre should display up to the five most recent finished meetings ava
 
 The picks bot checks every three hours and posts up to three eligible club forecasts when available, then reports the results for those same saved picks. It must not substitute unrelated results or generate picks for international matches. The news channel posts sourced football headlines with original links; transfer speculation must be labelled unconfirmed. Social content should build conversation and trust rather than turn every post into a sales pitch.
 
+Referral attribution uses the existing GoatCounter integration. Validated `?ref=` labels are recorded as custom referrers on the landing-page view, while the `ref` parameter is removed from the analytics page path. This measures attributed visits only, not registrations or conversions; it does not collect personal identity or add another analytics service.
+
 ## 9. Security, reliability, and release process
 
 Before every manual GitHub write:
@@ -203,3 +205,19 @@ This point-in-time review was collected at 05:43 UTC (08:43 Qatar time), before 
 - **Workflow history:** The latest 100 Actions runs contained no failed conclusions. Ten cancelled Pages runs were superseded builds, not failed deployments.
 
 **Next actions:** Investigate the missing scheduled club refresh and publisher runs without adding paid services; verify the next scheduled executions, confirm this commit's test workflows and Pages deployment, and continue the H2H, backup and data-quality checks. Do not claim the schedule is restored until a new scheduled run is observed.
+
+
+## 14. Operational review on 21 November 2026
+
+This snapshot was collected at 05:17 UTC (08:17 Qatar time), before the referral-attribution change in this commit.
+
+- **Club feed:** `data.json` was updated at `2026-11-21T03:59:08Z`, about 78 minutes before this review. It contains 476 published match rows: 6 finished, 356 timed, 113 scheduled and 1 cancelled. There are 470 future fixtures, including 44 scheduled for 21 November. Provider metadata covers 3,595 fixtures across all 12 configured free-tier competitions; 10 standings tables are available and the feed reports zero standings failures.
+- **Club refresh schedule:** The latest observed scheduled updater was run `44863476075` at 03:54:46Z on 21 November and succeeded. The workflow is configured for minutes 7 and 37 each hour, but no later scheduled updater run was present by 05:17Z (the 04:37Z and 05:07Z slots were not observed). The cause is unconfirmed; do not claim the schedule is restored. The successful updater job ran 268 offline model/feed tests before publishing.
+- **Provider validation and optional sources:** The updater rejected no club fixture responses and published a complete snapshot. World Cup and European Championship standings endpoints returned HTTP 404, but those competitions are not included in the 10 standings competitions and the feed reports no standings failures. ESPN returned HTTP 503 for several optional international scoreboard competition/date requests; the separate international snapshot contained 104 fixtures and was last updated at `2026-11-20T20:32:48Z`. International coverage remains optional and must not delay club fixtures. The odds snapshot contained 170 events and was last updated at `2026-11-20T16:16:01Z`.
+- **H2H coverage:** Of the 476 published match rows, 69 contained at least one returned H2H meeting and 30 contained five meetings; 407 had no meetings returned. Continue gradual cache enrichment within the free request allowance and never fabricate missing meetings.
+- **Forecast integrity:** The public ledger contains 567 forecasts, including 98 settled. The most-likely 1X2 outcome was correct in 55/98 (56.1%); its 95% Wilson interval is 46.3%–65.5%. Compared with the 531 records at commit `3814325`, all 531 shared records retained identical saved probabilities, inputs, odds fields, original timestamps, kickoff, teams and competition; 36 records were added and none were removed. The separate forward-only research ledger contains 481 forecasts, including 12 completed. No historical public forecast or production model weight was changed.
+- **Tests and deployment:** Model tests (307) and offline tests (285) passed on source commit `3814325`; the source-code files remained unchanged between that commit and reviewed HEAD `cb32a51`, with intervening changes limited to generated JSON and daily records. The successful updater run `44863476075` ran 268 offline tests on its starting source revision. No dedicated model/offline test workflow was attached to exact HEAD `cb32a5126df7b453265b1b36b9cf418efccbd131`. GitHub Pages deployment `44865384102` succeeded for that exact HEAD.
+- **Telegram:** The 04:17Z monitor snapshot reported scheduled-run health within configured grace windows, but `telegram_delivery_verified` remained false. Workflow success is not proof that a Telegram message was delivered.
+- **Security and privacy:** The website source scan found no `eval`, `new Function` or `document.write`, and no token-shaped secrets. All nine inspected new-tab links included `noopener`. Provider-supplied text is escaped through the shared `esc()` helper and covered by a regression test. The website keeps notes and favourites in local storage; there are no user accounts.
+
+**Next actions:** Verify the referral-attribution tests and deployment on the new commit; continue monitoring the scheduled club updater for another missed interval; inspect the next data snapshot and preserve forecast immutability; keep H2H and backup checks moving. Do not add paid services or change model weights without approval.

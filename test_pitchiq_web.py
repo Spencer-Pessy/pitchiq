@@ -170,6 +170,23 @@ class NewsAndSocialContactTests(unittest.TestCase):
         self.assertIn('target="_blank" rel="noopener noreferrer"><b>X</b>', source)
 
 
+class ReferralAttributionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.html = Path("index.html").read_text(encoding="utf-8")
+
+    def test_referral_source_is_validated_and_attributed_in_goatcounter(self):
+        self.assertIn("function pitchReferralSource(){", self.html)
+        self.assertIn("new URLSearchParams(location.search).get('ref')", self.html)
+        self.assertIn("/^[a-z0-9_-]{1,40}$/i.test(source)", self.html)
+        self.assertIn("return source?'PitchIQ referral: '+source:referrer", self.html)
+
+    def test_referral_parameter_is_removed_from_analytics_page_path(self):
+        self.assertIn("url.searchParams.delete('ref')", self.html)
+        self.assertIn("return url.pathname+url.search", self.html)
+        self.assertIn("window.goatcounter={", self.html)
+
+
 class NestedFixtureSearchTests(unittest.TestCase):
     def test_team_search_filters_nested_fixture_grid_cards_and_day_headings(self):
         source = Path("index.html").read_text(encoding="utf-8")

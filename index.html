@@ -864,7 +864,16 @@ async function shareTop3(){
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
 }
  const FEEDBACK_URL='https://forms.gle/gJ19T2NeSWWbZmgy6';   // PITCH IQ independent feedback form
-const GOATCOUNTER='pitchiq';    // paste your GoatCounter code (like pitchiq) between the quotes
+const GOATCOUNTER='pitchiq';    // existing free GoatCounter site code
+function pitchReferralSource(){
+ const source=(new URLSearchParams(location.search).get('ref')||'').trim();
+ return /^[a-z0-9_-]{1,40}$/i.test(source)?source.toLowerCase():'';
+}
+// Attribute campaign links without putting ref labels into page paths or collecting identities.
+window.goatcounter={
+ path:function(path){const url=new URL(path,location.origin);url.searchParams.delete('ref');return url.pathname+url.search},
+ referrer:function(referrer){const source=pitchReferralSource();return source?'PitchIQ referral: '+source:referrer}
+};
 if(GOATCOUNTER){const sc=document.createElement('script');sc.async=true;sc.dataset.goatcounter='https://'+GOATCOUNTER+'.goatcounter.com/count';sc.src='//gc.zgo.at/count.js';document.head.appendChild(sc)}
 (function(){
  const _l=list,_d=detail,_r=record;
