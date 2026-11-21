@@ -8,6 +8,9 @@ from datetime import datetime, timezone
 
 from sportapi_smoke_test import request_json
 
+# SportAPI documents LIVE and HT as active match states.
+ACTIVE_STATUSES = {"LIVE", "HT"}
+
 
 def summarize_live_fixtures(payload):
     if not isinstance(payload, dict) or payload.get("success") is not True:
@@ -26,7 +29,7 @@ def summarize_live_fixtures(payload):
             raise ValueError("Fixture record has no valid status")
         normalized = status.strip().upper()
         status_counts[normalized] = status_counts.get(normalized, 0) + 1
-        if normalized == "LIVE":
+        if normalized in ACTIVE_STATUSES:
             live.append({
                 "fixture_id": fixture.get("id"),
                 "competition": fixture.get("league_name"),
@@ -35,12 +38,14 @@ def summarize_live_fixtures(payload):
                 "home_score": fixture.get("home_score"),
                 "away_score": fixture.get("away_score"),
                 "minute": fixture.get("minute"),
+                "status": normalized,
                 "kickoff_utc": fixture.get("kickoff_utc"),
             })
 
     return {
         "fixtures_returned": len(fixtures),
         "status_counts": status_counts,
+        "active_statuses": sorted(ACTIVE_STATUSES),
         "live_fixture_count": len(live),
         "live_fixtures": live[:30],
     }
