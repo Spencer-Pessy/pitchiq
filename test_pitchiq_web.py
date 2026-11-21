@@ -831,6 +831,11 @@ class SportAPILiveDisplayTests(unittest.TestCase):
         self.assertIn("async function refreshLiveSnapshot(){", self.html)
         self.assertIn("fetch('live.json?'+Date.now())", self.html)
         self.assertIn("setInterval(refreshLiveSnapshot,60000)", self.html)
+    def test_homepage_live_counter_includes_sportapi_fixtures_without_double_counting(self):
+        self.assertIn("const feedMatches=liveFeedFresh()&&Array.isArray(LIVE.matches)?LIVE.matches:[];", self.html)
+        self.assertIn("const liveCount=feedMatches.length+mainOnlyLive", self.html)
+        self.assertIn("upcoming=future.filter(m=>!live(m)).length", self.html)
+
     def test_live_scores_are_hidden_when_snapshot_is_stale(self):
         self.assertIn("function liveFeedFresh(){", self.html)
         self.assertIn("age<=20*60e3", self.html)
