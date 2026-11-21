@@ -376,6 +376,11 @@ function decisionMarkup(r,h,a,mode='card',archived=false){
  return '<div class="fixture-decision decision-'+tone+'"><span class="decision-kicker">'+heading+'</span><strong>'+d.label+'</strong><span class="decision-subject">'+esc(d.subject)+' · '+percentage+'</span></div>';
 }
 const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
+function liveFeedFresh(){
+ const updated=Date.parse(LIVE.updated||'');
+ const age=Date.now()-updated;
+ return Number.isFinite(updated)&&age>=-5*60e3&&age<=20*60e3;
+}
 const LIVE_BASE=new WeakMap();
 function applyLiveFeed(){
  if(!D||!Array.isArray(D.matches))return;
@@ -393,7 +398,7 @@ function applyLiveFeed(){
   if(base.hasMinute)match.minute=base.minute;else delete match.minute;
   delete match.live_source;
  });
- const rows=Array.isArray(LIVE.matches)?LIVE.matches:[];
+ const rows=liveFeedFresh()&&Array.isArray(LIVE.matches)?LIVE.matches:[];
  const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
  rows.forEach(item=>{
   const match=D.matches.find(candidate=>{
@@ -410,7 +415,7 @@ function applyLiveFeed(){
  });
 }
 function livePanel(){
- const rows=(Array.isArray(LIVE.matches)?LIVE.matches:[]).filter(item=>
+ const rows=(liveFeedFresh()&&Array.isArray(LIVE.matches)?LIVE.matches:[]).filter(item=>
   !(D.matches||[]).some(match=>{
    const clean=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
    const sameTeams=clean(match.h)===clean(item.h)&&clean(match.a)===clean(item.a);
@@ -1027,7 +1032,7 @@ async function shareRecord(){
    const response=await fetch('live.json?'+Date.now());
    if(!response.ok)return;
    const fresh=await response.json();
-   if(!fresh||!Array.isArray(fresh.matches)||fresh.updated===LIVE.updated)return;
+   if(!fresh||!Array.isArray(fresh.matches))return;
    LIVE=fresh;applyLiveFeed();
    if(tab==='up'){
     if(sel){
