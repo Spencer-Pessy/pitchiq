@@ -396,8 +396,8 @@ function applyLiveFeed(){
 function livePanel(){
  const rows=(Array.isArray(LIVE.matches)?LIVE.matches:[]).filter(item=>
   !(D.matches||[]).some(match=>{
-   const sameTeams=String(match.h||'').trim().toLowerCase()===String(item.h||'').trim().toLowerCase()
-    &&String(match.a||'').trim().toLowerCase()===String(item.a||'').trim().toLowerCase();
+   const clean=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+   const sameTeams=clean(match.h)===clean(item.h)&&clean(match.a)===clean(item.a);
    const gap=Math.abs(Date.parse(match.utc)-Date.parse(item.utc));
    return sameTeams&&Number.isFinite(gap)&&gap<=6*3600e3;
   })
@@ -1005,7 +1005,7 @@ async function shareRecord(){
   if(!had&&$('#fb')&&TELEGRAM_URL)$('#fb').insertAdjacentHTML('beforeend',' &nbsp;·&nbsp; <a href="'+TELEGRAM_URL+'" target="_blank" rel="noopener" style="color:var(--home);font-weight:600">Telegram alerts</a>');
  };
 })();
- Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('international.json?'+Date.now()).then(r=>r.ok?r.json():{fixtures:[]}).catch(()=>({fixtures:[]})),fetch('international_ratings.json?'+Date.now()).then(r=>r.ok?r.json():{teams:[]}).catch(()=>({teams:[]})),fetch('daily/published_picks.json?'+Date.now()).then(r=>r.ok?r.json():{results:[]}).catch(()=>({results:[]})),fetch('live.json?'+Date.now()).then(r=>r.ok?r.json():{matches:[]}).catch(()=>({matches:[]}))]).then(([d,p,i,ir,q,liveFeed])=>{D=d;P=p;I=i||{fixtures:[]};IR=ir||{teams:[]};Q=q||{results:[]};LIVE=liveFeed||{matches:[]};applyLiveFeed();list()})).catch(()=>{
+ Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('international.json?'+Date.now()).then(r=>r.ok?r.json():{fixtures:[]}).catch(()=>({fixtures:[]})),fetch('international_ratings.json?'+Date.now()).then(r=>r.ok?r.json():{teams:[]}).catch(()=>({teams:[]})),fetch('daily/published_picks.json?'+Date.now()).then(r=>r.ok?r.json():{results:[]}).catch(()=>({results:[]})),fetch('live.json?'+Date.now()).then(r=>r.ok?r.json():{matches:[]}).catch(()=>({matches:[]}))]).then(([d,p,i,ir,q,liveFeed])=>{D=d;P=p;I=i||{fixtures:[]};IR=ir||{teams:[]};Q=q||{results:[]};LIVE=liveFeed||{matches:[]};applyLiveFeed();list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
  async function shareImg(){
