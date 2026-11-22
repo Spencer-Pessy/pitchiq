@@ -944,12 +944,17 @@ async function shareTop3(){
  const FEEDBACK_URL='https://forms.gle/gJ19T2NeSWWbZmgy6';   // PITCH IQ independent feedback form
 const GOATCOUNTER='pitchiq';    // existing free GoatCounter site code
 function pitchReferralSource(){
- const source=(new URLSearchParams(location.search).get('ref')||'').trim();
+ const params=new URLSearchParams(location.search);
+ const source=(params.get('ref')||params.get('utm_source')||params.get('source')||params.get('src')||'').trim();
  return /^[a-z0-9_-]{1,40}$/i.test(source)?source.toLowerCase():'';
 }
-// Attribute campaign links without putting ref labels into page paths or collecting identities.
+// Keep campaign/source tags out of page paths; GoatCounter records them separately.
 window.goatcounter={
- path:function(path){const url=new URL(path,location.origin);url.searchParams.delete('ref');return url.pathname+url.search},
+ path:function(path){
+  const url=new URL(path,location.origin);
+  ['ref','utm_source','utm_campaign','campaign','source','src'].forEach(key=>url.searchParams.delete(key));
+  return url.pathname+url.search;
+ },
  referrer:function(referrer){const source=pitchReferralSource();return source?'PitchIQ referral: '+source:referrer}
 };
 if(GOATCOUNTER){const sc=document.createElement('script');sc.async=true;sc.dataset.goatcounter='https://'+GOATCOUNTER+'.goatcounter.com/count';sc.src='//gc.zgo.at/count.js';document.head.appendChild(sc)}
