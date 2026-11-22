@@ -1,7 +1,7 @@
 # PITCH IQ — Master Product & Technical Blueprint
 
 **Status:** Living blueprint; implementation is active, not declared complete  
-**Last reviewed:** 20 November 2026  
+**Last reviewed:** 22 November 2026  
 **Live website:** https://spencer-pessy.github.io/pitchiq/  
 **Repository:** https://github.com/Spencer-Pessy/pitchiq
 
@@ -65,7 +65,7 @@ The site presents home/draw/away probabilities, over-2.5 and both-teams-to-score
 | Odds comparison | The Odds API | Optional free-tier use only; designed around the provider's published 500-credit monthly allowance. No paid upgrade. |
 | International fixtures | OpenFootball CC0 archive plus ESPN public scoreboard | Separate feed; ESPN is unofficial and coverage may be incomplete. No international predictions or analysis. |
 | International history research | CC0 men's international results dataset | Research-only Elo diagnostic; not used for production predictions, website forecasts, or Telegram picks. |
-| SportAPI | Manual smoke-test workflow | Authentication/coverage probe only; not a production feed unless separately reviewed and explicitly approved. |
+| SportAPI live scores | `sportapi_live_feed.py` and the `live-scores.yml` workflow | Secondary display-only LIVE/HT overlay; one date-fixtures request every 10 minutes, stored in `live.json`, ignored by the website after 20 minutes. It does not replace football-data.org club fixtures/standings or feed predictions. |
 | Football news | Sourced headlines with original source links | Label transfer rumours as unconfirmed; distinguish news from model forecasts. |
 
 Third-party free quotas, endpoints, and coverage can change. Recheck terms and quotas before changing request volume or adding a source.
@@ -76,6 +76,7 @@ Third-party free quotas, endpoints, and coverage can change. Recheck terms and q
 - `pitchiq_model.py` contains forecasting calculations independently of API/file operations.
 - `pitchiq_data.py` handles data normalization and competition/league inputs.
 - `pitchiq_h2h.py` manages cached H2H enrichment and identity checks.
+- `sportapi_live_feed.py` publishes the separate live-score snapshot; `sportapi_live_probe.py` and `sportapi_smoke_test.py` are read-only diagnostics.
 - `odds.py` and `pitchiq_odds.py` handle optional odds snapshots and validation.
 - `international.py` publishes the separate international fixture feed.
 - `international_history.py` builds the separate historical national-team research artifact.
@@ -93,6 +94,7 @@ Third-party free quotas, endpoints, and coverage can change. Recheck terms and q
 - `international.json` — separate international fixtures.
 - `international_ratings.json` and `international_team_registry.json` — research-only historical ratings and team identity checks.
 - `odds.json` — optional saved odds snapshot.
+- `live.json` — separate SportAPI LIVE/HT score overlay; never used to create or revise forecasts.
 - `daily/published_picks.json` — exact Telegram picks and their original probabilities.
 - `daily/news_seen.json` and `daily/telegram_health.json` — news deduplication and workflow-health records.
 
@@ -101,6 +103,7 @@ Third-party free quotas, endpoints, and coverage can change. Recheck terms and q
 The enabled GitHub Actions workflows provide the recurring data and publishing operations:
 
 - Club data refresh: every 30 minutes.
+- SportAPI live-score refresh: every 10 minutes, one request per run; the website ignores live snapshots older than 20 minutes and marks the primary club feed delayed after 90 minutes.
 - International fixtures: every six hours.
 - Odds snapshot: once daily, subject to explicit free-tier confirmation and secret availability.
 - Telegram picks: every three hours at minute 43 UTC (01:43–22:43 UTC), only when eligible unpublished club fixtures exist within the next 36 hours.
@@ -221,3 +224,18 @@ This snapshot was collected at 05:17 UTC (08:17 Qatar time), before the referral
 - **Security and privacy:** The website source scan found no `eval`, `new Function` or `document.write`, and no token-shaped secrets. All nine inspected new-tab links included `noopener`. Provider-supplied text is escaped through the shared `esc()` helper and covered by a regression test. The website keeps notes and favourites in local storage; there are no user accounts.
 
 **Next actions:** Verify the referral-attribution tests and deployment on the new commit; continue monitoring the scheduled club updater for another missed interval; inspect the next data snapshot and preserve forecast immutability; keep H2H and backup checks moving. Do not add paid services or change model weights without approval.
+
+## 15. Operational review on 22 November 2026
+
+This snapshot was collected at 05:21 UTC (08:21 Qatar time) against base 6ee832234a9b46cbef41f6fda6f0735dfe2d508e, before the stale-club-feed guard and documentation correction in this commit.
+
+- **Club feed freshness:** data.json was last updated at 2026-11-22T00:25:55Z and contained 474 published match rows. Provider metadata covered all 12 configured free-tier competitions (3,595 fixtures); 10 standings tables were available and the snapshot reported zero standings failures. The snapshot was about 4 hours 55 minutes old at review time.
+- **Scheduled club refresh:** The latest observed scheduled updater was run 44965877904, started at 00:17:18Z and completed successfully at 00:26:34Z. No later updater run appeared in the latest 100 Actions runs at review time, despite the configured 7,37 * * * * schedule. The cause is unconfirmed; do not claim the schedule is restored.
+- **SportAPI live scores:** live.json was last updated at 00:51:41Z and contained two active rows. The latest observed live-scores.yml run was 44968664045, which passed its validation, fetch and publication steps at 00:51Z. No later live-score run appeared by the review time despite the 10-minute schedule. The existing 20-minute SportAPI freshness guard therefore ignores this stale snapshot. The primary-feed guard added in this review also hides stale IN_PLAY/PAUSED statuses and labels the club feed delayed after 90 minutes.
+- **Forecast immutability:** Comparing predictions.json at baseline dc55e0a485334deaf519e52d914710b4afe1fc0a with the reviewed snapshot found 567 shared records, zero removals and one new record. All 567 shared records retained identical IDs, teams, competition, kickoff, probabilities, saved odds and original made timestamps. pitchiq_model.py is byte-for-byte unchanged from that baseline; no production weights or historical forecasts were altered.
+- **Tests and Pages:** The SportAPI live-score source commit 71d3981eeac93678200af4d81a4867e4645f7522 passed 300 offline tests (run 44917051837) and 312 model tests (run 44917051857). Earlier failures on intermediate commits were caused by an outdated service-worker cache-version expectation and were followed by passing runs. Exact base HEAD 6ee8322 had a successful Pages deployment (44979868170), but no offline/model test workflow was attached to that exact data/health-only commit.
+- **Optional feeds:** international.json contained 104 fixtures and was last updated at 2026-11-21T19:30:22Z; its next expected six-hour refresh was not observed by review time. odds.json contained 170 events and was last updated at 2026-11-20T16:16:01Z. Odds run 44919376488 failed safely on 21 November because one Italy Serie A outcome had an invalid decimal price; the publisher preserved the previous snapshot and the provider response headers showed 304 requests remaining after the failed run. Do not retry early or spend extra credits to work around malformed provider data.
+- **Telegram:** The latest monitor snapshot (2026-11-22T03:16:16Z) reported scheduled-run health for picks, news and results, but explicitly set telegram_delivery_verified to false. That snapshot was over two hours old at review time; workflow success is not proof of message delivery.
+- **Security and privacy:** A static scan of the website found no eval, new Function or document.write; all nine inspected _blank links included noopener. No API-key or Telegram-token-shaped literal was found in the inspected source files. Provider-supplied website text continues to use the shared escaping helper.
+
+**Next actions:** Confirm new scheduled update.yml and live-scores.yml executions before calling either schedule healthy; monitor the next daily odds run without retrying the malformed response; verify offline/model tests and Pages deployment on the commit containing this guard; keep international coverage optional and preserve the free-only and forecast-immutability rules.
