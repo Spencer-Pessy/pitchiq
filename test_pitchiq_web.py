@@ -850,6 +850,27 @@ class SportAPILiveDisplayTests(unittest.TestCase):
     def test_sportapi_live_status_updates_existing_match_cards_and_detail(self):
         self.assertIn("match.status=item.status==='HT'?'PAUSED':'IN_PLAY'", self.html)
         self.assertIn("match.score=item.score", self.html)
-        self.assertIn("const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';", self.html)
+        self.assertIn("const live=m=>(m.live_source==='SportAPI'?liveFeedFresh():clubFeedFresh())&&liveStatus(m);", self.html)
         self.assertIn("IN_PLAY:'LIVE',PAUSED:'HALF TIME'", self.html)
         self.assertIn("'IN_PLAY','PAUSED'", self.html)
+
+class ClubFeedFreshnessDisplayTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.html = Path("index.html").read_text(encoding="utf-8")
+
+    def test_primary_club_feed_has_a_ninety_minute_freshness_guard(self):
+        self.assertIn("function clubFeedFresh(){", self.html)
+        self.assertIn("age<=90*60e3", self.html)
+        self.assertIn("const staleLive=m=>liveStatus(m)&&!live(m);", self.html)
+
+    def test_stale_primary_live_rows_are_hidden_and_the_feed_delay_is_disclosed(self):
+        self.assertIn("!staleLive(m)", self.html)
+        self.assertIn("Club feed delayed", self.html)
+        self.assertIn("Club feed last updated", self.html)
+        self.assertIn("Live statuses from the stale club snapshot are hidden", self.html)
+
+    def test_stale_match_centre_does_not_present_an_old_score_as_live(self):
+        self.assertIn("isStaleLive?'STATUS UNCONFIRMED'", self.html)
+        self.assertIn("isStaleLive?'SCORE DELAYED'", self.html)
+        self.assertIn("Last live status is unconfirmed", self.html)

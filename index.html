@@ -375,7 +375,14 @@ function decisionMarkup(r,h,a,mode='card',archived=false){
  if(mode==='panel')return '<section class="decision-panel decision-'+tone+'"><div><span class="decision-kicker">'+heading+'</span><strong>'+d.label+'</strong><span class="decision-subject">'+esc(d.subject)+' · '+percentage+'</span></div><p>'+note+' This is a model estimate, not a guaranteed result.</p></section>';
  return '<div class="fixture-decision decision-'+tone+'"><span class="decision-kicker">'+heading+'</span><strong>'+d.label+'</strong><span class="decision-subject">'+esc(d.subject)+' · '+percentage+'</span></div>';
 }
-const live=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
+function clubFeedFresh(){
+ const updated=Date.parse(D?.updated||'');
+ const age=Date.now()-updated;
+ return Number.isFinite(updated)&&age>=-5*60e3&&age<=90*60e3;
+}
+const liveStatus=m=>m.status=='IN_PLAY'||m.status=='PAUSED';
+const live=m=>(m.live_source==='SportAPI'?liveFeedFresh():clubFeedFresh())&&liveStatus(m);
+const staleLive=m=>liveStatus(m)&&!live(m);
 function liveFeedFresh(){
  const updated=Date.parse(LIVE.updated||'');
  const age=Date.now()-updated;
@@ -614,9 +621,13 @@ function record(){
  bind();
 }
 function head(){const h=D.data_health;
+ const fresh=clubFeedFresh(),updatedAt=Date.parse(D.updated||'');
+ const updatedLabel=Number.isFinite(updatedAt)?new Date(updatedAt).toLocaleString():'unknown';
  const standings=tab==='intl'?'':(' · standings '+(Number(h?.standings_competitions)||0)+'/'+(Number(h?.fixture_competitions)||0)+(Number(h?.standings_failures)>0?' · '+(Number(h.standings_failures)||0)+' standings feed(s) unavailable':''));
  const health=h?('<p class="note" style="margin:6px 0 12px">Feed coverage: '+(Number(h.fixture_competitions)||0)+' competitions · '+(Number(h.fixture_total)||0)+' fixtures · World Cup/EURO archive '+(Number(h.international_fixture_total)||0)+standings+'</p>'):'';
- return '<header><h1>Pitch<span>IQ</span></h1><span class="tag">Live coverage · scores may be delayed</span></header>'+health}
+ const staleNote=fresh?'':'<p class="note" style="margin:6px 0 12px">Club feed last updated '+esc(updatedLabel)+'. Live statuses from the stale club snapshot are hidden until a fresh refresh succeeds.</p>';
+ return '<header><h1>Pitch<span>IQ</span></h1><span class="tag">'+(fresh?'Club feed current':'Club feed delayed')+'</span></header>'+health+staleNote
+}
 function overviewHtml(){
  const now=Date.now(),future=D.matches.filter(m=>m.status!=='FINISHED'&&new Date(m.utc)>now);
  const feedMatches=liveFeedFresh()&&Array.isArray(LIVE.matches)?LIVE.matches:[];
@@ -782,7 +793,7 @@ function list(){
  if(tab=='rec')return record();
  if(tab=='pick')return picks();
  if(tab=='tab')return tables();
- const ms=D.matches.filter(m=>(comp=='all'||m.code==comp)&&(tab=='up'?m.status!='FINISHED':m.status=='FINISHED'));
+ const ms=D.matches.filter(m=>(comp=='all'||m.code==comp)&&(tab=='up'?m.status!='FINISHED'&&!staleLive(m):m.status=='FINISHED'));
  if(tab!='up')ms.reverse();
  const codes=[...new Map(D.matches.map(m=>[m.code,m.comp]))];
  let html=tab=='done'?publishedResultsHtml():tab=='up'?livePanel():'',last='';
@@ -814,8 +825,10 @@ function detail(){
   return;
  }
  const col=(k,n,c)=>`<div style="--c:${c}"><h3>${esc(n)}</h3><p class="note">${Number(s[k].venue_matches??0)} ${k=='h'?'home':'away'} matches support scoring rates · form uses ${Number(s[k].form_matches??0)} recent matches across venues</p>${fld.map(([x,l])=>`<label for="${k}-${x}">${l}</label><input id="${k}-${x}" aria-label="${esc(n)} ${l}" data-k="${k}.${x}" value="${esc(s[k][x])}" ${x=='form'?'autocapitalize="characters"':'inputmode="decimal"'}>`).join('')}</div>`;
- const matchStatus=({NS:'UPCOMING',TBD:'KICKOFF TBC','1H':'LIVE · FIRST HALF',HT:'HALF TIME','2H':'LIVE · SECOND HALF',IN_PLAY:'LIVE',PAUSED:'HALF TIME',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED',ABD:'ABANDONED'}[f.status]||String(f.status||'SCHEDULED').replace(/_/g,' '));
- const isLive=['1H','HT','2H','IN_PLAY','PAUSED','ET','P','LIVE'].includes(f.status),isDone=['FT','AET','PEN','FINISHED'].includes(f.status);
+ const activeStatus=['1H','HT','2H','IN_PLAY','PAUSED','ET','P','LIVE'].includes(f.status);
+ const statusSourceFresh=f.live_source==='SportAPI'?liveFeedFresh():clubFeedFresh();
+ const isLive=activeStatus&&statusSourceFresh,isStaleLive=activeStatus&&!statusSourceFresh,isDone=['FT','AET','PEN','FINISHED'].includes(f.status);
+ const matchStatus=isStaleLive?'STATUS UNCONFIRMED':({NS:'UPCOMING',TBD:'KICKOFF TBC','1H':'LIVE · FIRST HALF',HT:'HALF TIME','2H':'LIVE · SECOND HALF',IN_PLAY:'LIVE',PAUSED:'HALF TIME',ET:'EXTRA TIME',P:'PENALTIES',FT:'FULL TIME',AET:'AFTER EXTRA TIME',PEN:'PENALTIES',PST:'POSTPONED',CANC:'CANCELLED',SUSP:'SUSPENDED',ABD:'ABANDONED'}[f.status]||String(f.status||'SCHEDULED').replace(/_/g,' '));
  const formMarkup=team=>{const form=String(team.form||'').slice(-5);return form?'<div class="form-strip" aria-label="Recent form">'+[...form].map(x=>'<span class="form-dot '+(x==='W'?'win':x==='D'?'draw':'loss')+'">'+esc(x)+'</span>').join('')+'</div>':'<span class="note">Form unavailable</span>'};
  const metricCompare=(label,homeValue,awayValue)=>{
   const h=Number(homeValue),a=Number(awayValue),validH=Number.isFinite(h),validA=Number.isFinite(a),max=Math.max(validH?h:0,validA?a:0,.01);
@@ -823,13 +836,13 @@ function detail(){
   return '<div class="metric-compare"><h3>'+esc(label)+'</h3>'+bar(f.h,h,validH,'var(--home)')+bar(f.a,a,validA,'var(--ok)')+'</div>';
  };
  const kickDate=new Date(f.utc),kickLabel=Number.isNaN(kickDate.getTime())?'Kickoff unavailable':kickDate.toLocaleString([],{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
- const scoreMarkup=Array.isArray(f.score)&&f.score.length===2?esc(f.score[0])+' <span>–</span> '+esc(f.score[1]):'VS';
+ const scoreMarkup=isStaleLive?'SCORE DELAYED':Array.isArray(f.score)&&f.score.length===2?esc(f.score[0])+' <span>–</span> '+esc(f.score[1]):'VS';
  $('#app').innerHTML=`<button class="back" id="bk">← All matches</button>
  <section class="match-hero"><div class="match-hero-top"><span class="match-comp">${esc(f.comp||'Competition')}</span><span class="match-status ${isLive?'is-live':isDone?'is-done':''}">${isLive?'<i></i>':''}${esc(matchStatus)}</span></div>
  <div class="match-scoreboard"><div class="match-side"><div class="team-monogram home-monogram">${esc(String(f.h||'?').trim().slice(0,1).toUpperCase())}</div><h2>${esc(f.h)}</h2><span class="side-label">HOME</span>${formMarkup(s.h)}</div>
- <div class="match-centre-score"><strong>${scoreMarkup}</strong><span>${isLive?'LIVE':isDone?'RESULT':esc(kickLabel)}</span>${isLive&&f.minute?'<small>'+esc(f.minute)+'′</small>':''}</div>
+ <div class="match-centre-score"><strong>${scoreMarkup}</strong><span>${isStaleLive?'STATUS UNCONFIRMED':isLive?'LIVE':isDone?'RESULT':esc(kickLabel)}</span>${isLive&&f.minute?'<small>'+esc(f.minute)+'′</small>':''}</div>
  <div class="match-side"><div class="team-monogram away-monogram">${esc(String(f.a||'?').trim().slice(0,1).toUpperCase())}</div><h2>${esc(f.a)}</h2><span class="side-label">AWAY</span>${formMarkup(s.a)}</div></div>
- <div class="match-hero-foot"><span>${isLive?'Match in progress':isDone?'Final score':'Kick-off · '+esc(kickLabel)}</span><span>POWERED BY PITCH IQ</span></div></section>
+ <div class="match-hero-foot"><span>${isStaleLive?'Last live status is unconfirmed':isLive?'Match in progress':isDone?'Final score':'Kick-off · '+esc(kickLabel)}</span><span>POWERED BY PITCH IQ</span></div></section>
  <nav class="match-jump" aria-label="Match sections"><a href="#res">Match preview</a><a href="#h2h">Head to head</a><a href="#team-context">Team context</a></nav>
  ${f.goals&&f.goals.length?`<div class="panel goal-panel"><h2>⚽ Match events</h2>${f.goals.map(g=>`<div class="gl"><span>${g.min?esc(g.min+(g.extra?'+'+g.extra:'')+"′ "):''}${esc(g.scorer||'Goal')}</span><span>${g.assist?'Assist: '+esc(g.assist)+' · ':''}${esc(g.team)}</span></div>`).join('')}</div>`:''}
  <div id="res"></div><div id="h2h">${h2hPanel(f.h,f.a,f.h2h)}</div>
