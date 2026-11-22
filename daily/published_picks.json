@@ -15,19 +15,6 @@
       "pick_index": 0
     },
     {
-      "id": "555095",
-      "h": "Chapecoense",
-      "a": "Cruzeiro",
-      "comp": "Campeonato Brasileiro Série A",
-      "utc": "2026-11-22T00:00:00Z",
-      "p": {
-        "ph": 0.1712,
-        "pd": 0.1912,
-        "pa": 0.6376
-      },
-      "pick_index": 2
-    },
-    {
       "id": "564749",
       "h": "Barça",
       "a": "Villarreal",
@@ -295,6 +282,25 @@
         1
       ],
       "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "555095",
+      "h": "Chapecoense",
+      "a": "Cruzeiro",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-22T00:00:00Z",
+      "p": {
+        "ph": 0.1712,
+        "pd": 0.1912,
+        "pa": 0.6376
+      },
+      "pick_index": 2,
+      "final": [
+        1,
+        2
+      ],
+      "actual_index": 2,
       "correct": true
     }
   ],
