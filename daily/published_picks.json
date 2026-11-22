@@ -2,32 +2,6 @@
   "version": 1,
   "pending": [
     {
-      "id": "558828",
-      "h": "Twente",
-      "a": "Willem II",
-      "comp": "Eredivisie",
-      "utc": "2026-11-22T11:15:00Z",
-      "p": {
-        "ph": 0.752,
-        "pd": 0.1494,
-        "pa": 0.0986
-      },
-      "pick_index": 0
-    },
-    {
-      "id": "564749",
-      "h": "Barça",
-      "a": "Villarreal",
-      "comp": "Primera Division",
-      "utc": "2026-11-22T13:00:00Z",
-      "p": {
-        "ph": 0.7573,
-        "pd": 0.1382,
-        "pa": 0.1045
-      },
-      "pick_index": 0
-    },
-    {
       "id": "565863",
       "h": "Bremen",
       "a": "HSV",
@@ -37,19 +11,6 @@
         "ph": 0.6718,
         "pd": 0.1922,
         "pa": 0.136
-      },
-      "pick_index": 0
-    },
-    {
-      "id": "559625",
-      "h": "Paris FC",
-      "a": "Angers SCO",
-      "comp": "Ligue 1",
-      "utc": "2026-11-22T14:00:00Z",
-      "p": {
-        "ph": 0.6369,
-        "pd": 0.2154,
-        "pa": 0.1477
       },
       "pick_index": 0
     },
@@ -301,6 +262,63 @@
         2
       ],
       "actual_index": 2,
+      "correct": true
+    },
+    {
+      "id": "558828",
+      "h": "Twente",
+      "a": "Willem II",
+      "comp": "Eredivisie",
+      "utc": "2026-11-22T11:15:00Z",
+      "p": {
+        "ph": 0.752,
+        "pd": 0.1494,
+        "pa": 0.0986
+      },
+      "pick_index": 0,
+      "final": [
+        2,
+        1
+      ],
+      "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "564749",
+      "h": "Barça",
+      "a": "Villarreal",
+      "comp": "Primera Division",
+      "utc": "2026-11-22T13:00:00Z",
+      "p": {
+        "ph": 0.7573,
+        "pd": 0.1382,
+        "pa": 0.1045
+      },
+      "pick_index": 0,
+      "final": [
+        3,
+        2
+      ],
+      "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "559625",
+      "h": "Paris FC",
+      "a": "Angers SCO",
+      "comp": "Ligue 1",
+      "utc": "2026-11-22T14:00:00Z",
+      "p": {
+        "ph": 0.6369,
+        "pd": 0.2154,
+        "pa": 0.1477
+      },
+      "pick_index": 0,
+      "final": [
+        4,
+        0
+      ],
+      "actual_index": 0,
       "correct": true
     }
   ],
