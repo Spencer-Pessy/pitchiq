@@ -65,6 +65,45 @@
         "pa": 0.1477
       },
       "pick_index": 0
+    },
+    {
+      "id": "555090",
+      "h": "Paranaense",
+      "a": "Clube do Remo",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-22T19:00:00Z",
+      "p": {
+        "ph": 0.6249,
+        "pd": 0.2316,
+        "pa": 0.1435
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "559629",
+      "h": "Marseille",
+      "a": "Le Mans",
+      "comp": "Ligue 1",
+      "utc": "2026-11-22T19:45:00Z",
+      "p": {
+        "ph": 0.6248,
+        "pd": 0.2043,
+        "pa": 0.1709
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "555096",
+      "h": "Fluminense",
+      "a": "Mirassol",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-22T21:30:00Z",
+      "p": {
+        "ph": 0.5665,
+        "pd": 0.2627,
+        "pa": 0.1709
+      },
+      "pick_index": 0
     }
   ],
   "results": [
@@ -274,6 +313,9 @@
     "555095",
     "564749",
     "565863",
-    "559625"
+    "559625",
+    "555090",
+    "559629",
+    "555096"
   ]
 }
