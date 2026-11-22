@@ -132,7 +132,7 @@ class OddsMarketValidationTests(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0]["odds"], [2.0, 3.8, 4.0])
 
-    def test_rejects_invalid_prices_instead_of_publishing_partial_data(self):
+    def test_invalid_prices_discard_only_the_incomplete_market(self):
         for price in (True, 1, 1000, float("nan"), float("inf"), "2.0", None):
             payload = [{
                 "home_team": "Arsenal", "away_team": "Chelsea",
@@ -143,8 +143,8 @@ class OddsMarketValidationTests(unittest.TestCase):
                     {"name": "Chelsea", "price": 4.5},
                 ]}]}],
             }]
-            with self.subTest(price=price), self.assertRaises(ValueError):
-                market_events(payload)
+            with self.subTest(price=price):
+                self.assertEqual(market_events(payload), [])
 
 
 class OddsCoverageConfigurationTests(unittest.TestCase):
