@@ -178,9 +178,10 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
 
 
 
-    def test_picks_are_scheduled_every_three_hours_after_odds_refresh(self):
+    def test_picks_are_scheduled_once_daily_after_odds_refresh(self):
         workflow = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
-        self.assertIn("cron: '43 1-22/3 * * *'", workflow)
+        self.assertIn("cron: '43 7 * * *'", workflow)
+        self.assertNotIn("1-22/3", workflow)
         odds_workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "23 7 * * *"', odds_workflow)
         odds_minute = int(odds_workflow.split('cron: "')[1].split()[0])
