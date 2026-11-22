@@ -178,14 +178,16 @@ class ResultsOnlyWorkflowTests(unittest.TestCase):
 
 
 
-    def test_picks_are_scheduled_once_daily_after_odds_refresh(self):
+    def test_picks_are_scheduled_once_daily_after_data_and_odds_refresh(self):
         workflow = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
-        self.assertIn("cron: '43 7 * * *'", workflow)
+        self.assertIn("cron: '0 8 * * *'", workflow)
         self.assertNotIn("1-22/3", workflow)
         odds_workflow = Path(".github/workflows/odds.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "23 7 * * *"', odds_workflow)
-        odds_minute = int(odds_workflow.split('cron: "')[1].split()[0])
-        picks_minute = int(workflow.split("cron: '")[1].split()[0])
+        odds_cron = odds_workflow.split('cron: "')[1].split('"')[0].split()
+        picks_cron = workflow.split("cron: '")[1].split("'")[0].split()
+        odds_minute = int(odds_cron[1]) * 60 + int(odds_cron[0])
+        picks_minute = int(picks_cron[1]) * 60 + int(picks_cron[0])
         self.assertLess(odds_minute, picks_minute)
         self.assertIn("no Telegram post will be sent", Path("telegram.py").read_text(encoding="utf-8"))
 
