@@ -67,6 +67,11 @@ def market_events(payload):
                 outcomes = market.get("outcomes")
                 if not isinstance(outcomes, list):
                     raise ValueError(f"odds event {index} h2h outcomes must be a list")
+                # Treat each bookmaker's three-way market as one unit. A
+                # suspended/malformed quote should not discard valid quotes
+                # from other bookmakers, nor contribute a partial market.
+                market_prices = {}
+                market_valid = True
                 seen_outcomes = set()
                 for outcome in outcomes:
                     if not isinstance(outcome, dict):
@@ -79,8 +84,12 @@ def market_events(payload):
                     seen_outcomes.add(name)
                     if (isinstance(price, bool) or not isinstance(price, (int, float))
                             or not math.isfinite(price) or price <= 1 or price >= 1000):
-                        raise ValueError(f"odds event {index} outcome has invalid decimal price")
-                    prices.setdefault(name, []).append(float(price))
+                        market_valid = False
+                        continue
+                    market_prices[name] = float(price)
+                if market_valid and all(name in market_prices for name in (home, "Draw", away)):
+                    for name in (home, "Draw", away):
+                        prices.setdefault(name, []).append(market_prices[name])
         home_prices = prices.get(home, [])
         away_prices = prices.get(away, [])
         draw_prices = prices.get("Draw", [])
