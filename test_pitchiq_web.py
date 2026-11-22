@@ -661,10 +661,11 @@ class InternationalFixtureDetailTests(unittest.TestCase):
 class MainFeedFreshnessEdgeCaseTests(unittest.TestCase):
     def test_missing_invalid_and_future_timestamps_are_not_shown_as_fresh(self):
         source = Path("index.html").read_text(encoding="utf-8")
-        self.assertIn("Live coverage · scores may be delayed", source)
-        self.assertNotIn("const updatedAt=Date.parse(D.updated||'')", source)
-        self.assertNotIn("Freshness unavailable", source)
-        self.assertNotIn("Updated '+(mins", source)
+        self.assertIn("function clubFeedFresh(){", source)
+        self.assertIn("const fresh=clubFeedFresh()", source)
+        self.assertIn("fresh?'Club feed current':'Club feed delayed'", source)
+        self.assertIn("Club feed last updated", source)
+        self.assertIn("age>=-5*60e3&&age<=90*60e3", source)
 
 class InternationalFreshnessEdgeCaseTests(unittest.TestCase):
     def test_missing_invalid_and_future_timestamps_trigger_warning(self):
