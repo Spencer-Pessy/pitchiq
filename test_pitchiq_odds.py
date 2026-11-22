@@ -111,6 +111,27 @@ class OddsMarketValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate outcome"):
             market_events(payload)
 
+    def test_skips_a_bookmaker_with_an_invalid_price_and_keeps_valid_market(self):
+        payload = [{
+            "home_team": "Arsenal", "away_team": "Chelsea",
+            "commence_time": "2026-11-22T15:00:00Z",
+            "bookmakers": [
+                {"markets": [{"key": "h2h", "outcomes": [
+                    {"name": "Arsenal", "price": 1.8},
+                    {"name": "Draw", "price": None},
+                    {"name": "Chelsea", "price": 4.5},
+                ]}]},
+                {"markets": [{"key": "h2h", "outcomes": [
+                    {"name": "Arsenal", "price": 2.0},
+                    {"name": "Draw", "price": 3.8},
+                    {"name": "Chelsea", "price": 4.0},
+                ]}]},
+            ],
+        }]
+        events = market_events(payload)
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["odds"], [2.0, 3.8, 4.0])
+
     def test_rejects_invalid_prices_instead_of_publishing_partial_data(self):
         for price in (True, 1, 1000, float("nan"), float("inf"), "2.0", None):
             payload = [{
