@@ -177,12 +177,15 @@ class ReferralAttributionTests(unittest.TestCase):
 
     def test_referral_source_is_validated_and_attributed_in_goatcounter(self):
         self.assertIn("function pitchReferralSource(){", self.html)
-        self.assertIn("new URLSearchParams(location.search).get('ref')", self.html)
+        self.assertIn("new URLSearchParams(location.search)", self.html)
+        self.assertIn("params.get('ref')||params.get('utm_source')", self.html)
+        self.assertIn("params.get('source')||params.get('src')", self.html)
         self.assertIn("/^[a-z0-9_-]{1,40}$/i.test(source)", self.html)
         self.assertIn("return source?'PitchIQ referral: '+source:referrer", self.html)
 
-    def test_referral_parameter_is_removed_from_analytics_page_path(self):
-        self.assertIn("url.searchParams.delete('ref')", self.html)
+    def test_campaign_parameters_are_removed_from_analytics_page_path(self):
+        self.assertIn("['ref','utm_source','utm_campaign','campaign','source','src'].forEach", self.html)
+        self.assertIn("url.searchParams.delete(key)", self.html)
         self.assertIn("return url.pathname+url.search", self.html)
         self.assertIn("window.goatcounter={", self.html)
 
