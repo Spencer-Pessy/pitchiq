@@ -111,6 +111,12 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertIn("github.event.workflow_run.conclusion == 'success'", workflow)
         self.assertIn('cron: "*/10 * * * *"', workflow)
 
+    def test_telegram_picks_schedule_matches_approved_daily_blueprint(self):
+        workflow = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
+        blueprint = Path("docs/MASTER_BLUEPRINT.md").read_text(encoding="utf-8")
+        self.assertIn("cron: '0 8 * * *'", workflow)
+        self.assertIn("Telegram picks: daily at 08:00 UTC", blueprint)
+
     def test_model_and_evaluation_changes_trigger_data_refresh(self):
         workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
         for path in ("pitchiq_model.py", "model_metrics.py"):
