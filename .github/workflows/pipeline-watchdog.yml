@@ -1,0 +1,44 @@
+name: PitchIQ pipeline watchdog
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/pipeline-watchdog.yml"
+      - "pipeline_watchdog.py"
+      - "test_pipeline_watchdog.py"
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_run:
+    workflows: ["Update data", "Refresh live scores"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: read
+concurrency:
+  group: pitchiq-pipeline-watchdog
+  cancel-in-progress: false
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate and test pipeline watchdog
+        run: |
+          python -m py_compile pipeline_watchdog.py test_pipeline_watchdog.py
+          python -m unittest -v test_pipeline_watchdog
+      - name: Check snapshot freshness and dispatch recovery when stale
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python pipeline_watchdog.py

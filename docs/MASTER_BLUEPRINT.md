@@ -98,6 +98,15 @@ Third-party free quotas, endpoints, and coverage can change. Recheck terms and q
 - `daily/published_picks.json` — exact Telegram picks and their original probabilities.
 - `daily/news_seen.json` and `daily/telegram_health.json` — news deduplication and workflow-health records.
 
+## 6.1 Published-data watchdog and recovery
+
+- `pipeline_watchdog.py` checks the committed timestamps in `data.json` and `live.json`; it makes no football-provider requests and therefore consumes no football API quota.
+- The `PitchIQ pipeline watchdog` runs every ten minutes and after completion of either the main data or live-score workflow. If the main data snapshot is older than 90 minutes, it dispatches the existing `update.yml` workflow. If the live snapshot is older than 20 minutes, it dispatches the existing `live-scores.yml` workflow.
+- Before dispatching, the watchdog checks for an active run and applies a per-feed cooldown (20 minutes for club data, 15 minutes for live scores) to prevent duplicate jobs or API usage. A failed recovery can be retried after the cooldown.
+- The watchdog reports each snapshot's age and whether recovery was dispatched, already running, or held by cooldown. It does not claim that a dispatch succeeded; the corresponding refresh workflow must complete and publish a newer valid snapshot.
+- GitHub scheduled workflows remain best-effort and can themselves be delayed or skipped. This watchdog reduces the impact by adding a separate schedule and event-driven checks, but it is not an external always-on scheduler and cannot guarantee recovery during a GitHub Actions outage or when GitHub disables scheduled workflows. The website's freshness labels remain the final user-facing safeguard.
+- The watchdog requires the repository Actions permission to dispatch existing workflows. It does not read or expose provider secrets.
+
 ## 6. Scheduled automation
 
 The enabled GitHub Actions workflows provide the recurring data and publishing operations:
