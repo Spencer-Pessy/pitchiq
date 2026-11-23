@@ -1,1 +1,1 @@
-{"provider": "SportAPI", "updated": "2026-11-23T10:07:54.300542+00:00", "count": 0, "matches": [], "requests_used": 1, "daily_requests_remaining": "1996", "monthly_requests_remaining": "13941"}
+{"provider": "SportAPI", "updated": "2026-11-23T12:23:09.229754+00:00", "count": 1, "matches": [{"id": 18454220, "comp": "Ukraine Premier League", "h": "Chornomorets", "a": "Epitsentr", "utc": "2026-11-23T11:00:00Z", "status": "HT", "minute": "HT", "score": null, "source": "SportAPI"}], "requests_used": 1, "daily_requests_remaining": "1995", "monthly_requests_remaining": "13940"}
