@@ -104,12 +104,14 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertIn("ODDS_API_KEY is not configured; no odds request was made.", odds_workflow)
 
 
-    def test_live_scores_refresh_after_successful_club_data_workflow(self):
-        workflow = Path(".github/workflows/live-scores.yml").read_text(encoding="utf-8")
-        self.assertIn('workflows: ["Update data"]', workflow)
-        self.assertIn("types: [completed]", workflow)
-        self.assertIn("github.event.workflow_run.conclusion == 'success'", workflow)
-        self.assertIn('cron: "*/10 * * * *"', workflow)
+    def test_live_scores_refresh_is_recovered_by_explicit_watchdog_dispatch(self):
+        live_workflow = Path(".github/workflows/live-scores.yml").read_text(encoding="utf-8")
+        update_workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
+        self.assertIn('cron: "*/10 * * * *"', live_workflow)
+        self.assertIn("actions: write", update_workflow)
+        self.assertIn("gh workflow run pipeline-watchdog.yml --ref main", update_workflow)
+        self.assertIn("gh workflow run pipeline-watchdog.yml --ref main", live_workflow)
+        self.assertNotIn("workflow_run:", live_workflow)
 
     def test_telegram_picks_schedule_matches_approved_daily_blueprint(self):
         workflow = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
