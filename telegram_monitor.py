@@ -48,7 +48,7 @@ def evaluate_workflow(filename, interval_hours, grace_hours, runs, now=None):
     if not relevant:
         return {
             "workflow": filename,
-            "status": "no_qualifying_runs",
+            "status": "no_scheduled_runs",
             "last_scheduled_run": None,
             "last_refresh_trigger_run": None,
             "last_execution": None,
