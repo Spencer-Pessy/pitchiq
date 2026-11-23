@@ -121,6 +121,33 @@ class TelegramMonitorTests(unittest.TestCase):
         self.assertIn("branches: [main]", source)
         self.assertIn("github.event.workflow_run.conclusion == 'success'", source)
 
+    def test_successful_refresh_trigger_prevents_false_stale_results_status(self):
+        result = evaluate_workflow(
+            "telegram-results.yml", 1, 3,
+            [self.run_row(5), self.run_row(1, event="workflow_run")],
+            self.now,
+        )
+        self.assertEqual(result["status"], "healthy")
+        self.assertEqual(result["last_scheduled_run"]["event"], "schedule")
+        self.assertEqual(result["last_refresh_trigger_run"]["event"], "workflow_run")
+        self.assertEqual(result["last_execution"]["event"], "workflow_run")
+
+    def test_failed_refresh_trigger_is_not_counted_as_healthy(self):
+        result = evaluate_workflow(
+            "telegram-results.yml", 1, 3,
+            [self.run_row(1, event="workflow_run", conclusion="failure")],
+            self.now,
+        )
+        self.assertEqual(result["status"], "failed")
+
+    def test_manual_dispatch_does_not_mask_stale_qualifying_runs(self):
+        result = evaluate_workflow(
+            "telegram-results.yml", 1, 3,
+            [self.run_row(6), self.run_row(0, event="workflow_dispatch")],
+            self.now,
+        )
+        self.assertEqual(result["status"], "stale")
+
 
 if __name__ == "__main__":
     unittest.main()

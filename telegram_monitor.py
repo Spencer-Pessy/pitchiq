@@ -35,30 +35,35 @@ def evaluate_workflow(filename, interval_hours, grace_hours, runs, now=None):
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("now must be timezone-aware")
-    scheduled = [
-        run for run in runs if isinstance(run, dict) and run.get("event") == "schedule"
+    relevant = [
+        run for run in runs
+        if isinstance(run, dict) and run.get("event") in {"schedule", "workflow_run"}
     ]
-    scheduled.sort(
+    relevant.sort(
         key=lambda run: parse_timestamp(run.get("created_at")) or datetime.min.replace(tzinfo=timezone.utc),
         reverse=True,
     )
-    if not scheduled:
+    scheduled = [run for run in relevant if run.get("event") == "schedule"]
+    latest_scheduled = scheduled[0] if scheduled else None
+    if not relevant:
         return {
             "workflow": filename,
-            "status": "no_scheduled_runs",
+            "status": "no_qualifying_runs",
             "last_scheduled_run": None,
+            "last_refresh_trigger_run": None,
+            "last_execution": None,
             "age_minutes": None,
             "expected_interval_hours": interval_hours,
             "grace_hours": grace_hours,
         }
 
-    latest = scheduled[0]
+    latest = relevant[0]
     created = parse_timestamp(latest.get("created_at"))
     if created is None:
         status, age = "invalid_timestamp", None
     else:
         age = max(0, int((now.astimezone(timezone.utc) - created).total_seconds() // 60))
-        if latest.get("status") == "in_progress" or latest.get("status") == "queued":
+        if latest.get("status") in {"in_progress", "queued"}:
             status = "running"
         elif latest.get("conclusion") != "success":
             status = "failed"
@@ -69,15 +74,24 @@ def evaluate_workflow(filename, interval_hours, grace_hours, runs, now=None):
         else:
             status = "healthy"
 
+    def run_summary(run):
+        if run is None:
+            return None
+        return {
+            "id": run.get("id"),
+            "event": run.get("event"),
+            "created_at": run.get("created_at"),
+            "run_status": run.get("status"),
+            "conclusion": run.get("conclusion"),
+        }
+
+    latest_refresh = next((run for run in relevant if run.get("event") == "workflow_run"), None)
     return {
         "workflow": filename,
         "status": status,
-        "last_scheduled_run": {
-            "id": latest.get("id"),
-            "created_at": latest.get("created_at"),
-            "run_status": latest.get("status"),
-            "conclusion": latest.get("conclusion"),
-        },
+        "last_scheduled_run": run_summary(latest_scheduled),
+        "last_refresh_trigger_run": run_summary(latest_refresh),
+        "last_execution": run_summary(latest),
         "age_minutes": age,
         "expected_interval_hours": interval_hours,
         "grace_hours": grace_hours,
