@@ -103,10 +103,10 @@ Third-party free quotas, endpoints, and coverage can change. Recheck terms and q
 The enabled GitHub Actions workflows provide the recurring data and publishing operations:
 
 - Club data refresh: every 30 minutes.
-- SportAPI live-score refresh: every 10 minutes, one request per run; the website ignores live snapshots older than 20 minutes and marks the primary club feed delayed after 90 minutes.
+- SportAPI live-score refresh: every 10 minutes, one request per run; additionally refresh after each successful club-data workflow completion as a fallback. The website ignores live snapshots older than 20 minutes and marks the primary club feed delayed after 90 minutes.
 - International fixtures: every six hours.
 - Odds snapshot: once daily, subject to explicit free-tier confirmation and secret availability.
-- Telegram picks: every three hours at minute 43 UTC (01:43–22:43 UTC), only when eligible unpublished club fixtures exist within the next 36 hours.
+- Telegram picks: daily at 08:00 UTC, only when eligible unpublished club fixtures exist within the next 36 hours; the daily publisher may post up to three eligible club forecasts.
 - Telegram news: every four hours, with deduplication and source links.
 - Published-pick results: hourly, results-only.
 - Telegram workflow health: every 30 minutes; checks workflow status and age but does not claim that a successful workflow proves message delivery.
