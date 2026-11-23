@@ -1,6 +1,46 @@
 {
   "version": 1,
-  "pending": [],
+  "pending": [
+    {
+      "id": "555102",
+      "h": "Chapecoense",
+      "a": "Palmeiras",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-24T21:00:00Z",
+      "p": {
+        "ph": 0.0646,
+        "pd": 0.1452,
+        "pa": 0.7902
+      },
+      "pick_index": 2
+    },
+    {
+      "id": "575403",
+      "h": "Como 1907",
+      "a": "PAE AEK",
+      "comp": "UEFA Champions League",
+      "utc": "2026-11-24T20:00:00Z",
+      "p": {
+        "ph": 0.7563,
+        "pd": 0.1604,
+        "pa": 0.0833
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "575402",
+      "h": "RB Leipzig",
+      "a": "RC Lens",
+      "comp": "UEFA Champions League",
+      "utc": "2026-11-24T20:00:00Z",
+      "p": {
+        "ph": 0.7532,
+        "pd": 0.1531,
+        "pa": 0.0937
+      },
+      "pick_index": 0
+    }
+  ],
   "results": [
     {
       "id": "555083",
@@ -363,6 +403,9 @@
     "559625",
     "555090",
     "559629",
-    "555096"
+    "555096",
+    "555102",
+    "575403",
+    "575402"
   ]
 }
