@@ -15,7 +15,7 @@ permissions:
   actions: write
 concurrency:
   group: pitchiq-live-scores
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   live-scores:
     runs-on: ubuntu-latest

@@ -140,6 +140,7 @@ class PipelineWatchdogTests(unittest.TestCase):
         self.assertIn("cp live.json /tmp/pitchiq-live.json", live)
         self.assertIn("for attempt in 1 2 3", live)
         self.assertIn("git fetch origin main", live)
+        self.assertIn("cancel-in-progress: true", live)
 
 
 if __name__ == "__main__":
