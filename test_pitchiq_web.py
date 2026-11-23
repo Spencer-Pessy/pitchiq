@@ -337,6 +337,7 @@ class OddsFreshnessWebTests(unittest.TestCase):
         self.assertIn("historicalMarketSnapshotValid(r.p)", source)
         self.assertIn("oddsTimingExcluded++", source)
         self.assertIn("Excluded undated or post-forecast odds snapshots", source)
+        self.assertIn("Only snapshots with a known capture timestamp no later than the original forecast are included", source)
 
 class PublishedPicksResultsWebTests(unittest.TestCase):
     def test_results_tab_shows_only_published_picks_and_keeps_pending_separate(self):
