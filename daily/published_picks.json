@@ -2,32 +2,6 @@
   "version": 1,
   "pending": [
     {
-      "id": "565863",
-      "h": "Bremen",
-      "a": "HSV",
-      "comp": "Bundesliga",
-      "utc": "2026-11-22T16:30:00Z",
-      "p": {
-        "ph": 0.6718,
-        "pd": 0.1922,
-        "pa": 0.136
-      },
-      "pick_index": 0
-    },
-    {
-      "id": "555090",
-      "h": "Paranaense",
-      "a": "Clube do Remo",
-      "comp": "Campeonato Brasileiro Série A",
-      "utc": "2026-11-22T19:00:00Z",
-      "p": {
-        "ph": 0.6249,
-        "pd": 0.2316,
-        "pa": 0.1435
-      },
-      "pick_index": 0
-    },
-    {
       "id": "559629",
       "h": "Marseille",
       "a": "Le Mans",
@@ -317,6 +291,44 @@
       "final": [
         4,
         0
+      ],
+      "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "565863",
+      "h": "Bremen",
+      "a": "HSV",
+      "comp": "Bundesliga",
+      "utc": "2026-11-22T16:30:00Z",
+      "p": {
+        "ph": 0.6718,
+        "pd": 0.1922,
+        "pa": 0.136
+      },
+      "pick_index": 0,
+      "final": [
+        4,
+        0
+      ],
+      "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "555090",
+      "h": "Paranaense",
+      "a": "Clube do Remo",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-22T19:00:00Z",
+      "p": {
+        "ph": 0.6249,
+        "pd": 0.2316,
+        "pa": 0.1435
+      },
+      "pick_index": 0,
+      "final": [
+        4,
+        2
       ],
       "actual_index": 0,
       "correct": true
