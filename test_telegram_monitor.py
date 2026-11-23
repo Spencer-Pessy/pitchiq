@@ -85,16 +85,25 @@ class TelegramMonitorTests(unittest.TestCase):
         self.assertIs(snapshot["telegram_delivery_verified"], False)
         self.assertIn("does not prove", snapshot["note"])
 
-    def test_picks_health_matches_three_hour_schedule(self):
+    def test_picks_health_matches_daily_schedule(self):
         snapshot = build_snapshot({
-            "telegram.yml": [self.run_row(5)],
+            "telegram.yml": [self.run_row(25)],
             "telegram-news.yml": [self.run_row(2)],
             "telegram-results.yml": [self.run_row(1)],
         }, self.now)
         picks = next(item for item in snapshot["workflows"] if item["workflow"] == "telegram.yml")
-        self.assertEqual(picks["expected_interval_hours"], 3)
+        self.assertEqual(picks["expected_interval_hours"], 24)
         self.assertEqual(picks["grace_hours"], 2)
         self.assertEqual(picks["status"], "healthy")
+
+    def test_picks_health_becomes_stale_after_daily_grace(self):
+        snapshot = build_snapshot({
+            "telegram.yml": [self.run_row(27)],
+            "telegram-news.yml": [self.run_row(2)],
+            "telegram-results.yml": [self.run_row(1)],
+        }, self.now)
+        picks = next(item for item in snapshot["workflows"] if item["workflow"] == "telegram.yml")
+        self.assertEqual(picks["status"], "stale")
 
     def test_empty_snapshot_is_degraded_not_healthy(self):
         snapshot = build_snapshot({}, self.now)

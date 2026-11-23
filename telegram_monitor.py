@@ -12,7 +12,7 @@ from pathlib import Path
 REPOSITORY = "Spencer-Pessy/pitchiq"
 OUTPUT = Path("daily/telegram_health.json")
 WORKFLOWS = (
-    ("telegram.yml", 3, 2),
+    ("telegram.yml", 24, 2),
     ("telegram-news.yml", 4, 4),
     ("telegram-results.yml", 1, 3),
 )
