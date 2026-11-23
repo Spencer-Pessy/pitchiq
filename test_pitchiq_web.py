@@ -330,6 +330,14 @@ class OddsFreshnessWebTests(unittest.TestCase):
         source = Path("index.html").read_text(encoding="utf-8")
         self.assertIn("Number.isFinite(Number(x))&&Number(x)>1&&Number(x)<1000", source)
 
+    def test_historical_bookmaker_benchmark_requires_pre_forecast_timestamped_odds(self):
+        source = Path("index.html").read_text(encoding="utf-8")
+        self.assertIn("function historicalMarketSnapshotValid(forecast)", source)
+        self.assertIn("oddsAt<=made&&made<=kickoff", source)
+        self.assertIn("historicalMarketSnapshotValid(r.p)", source)
+        self.assertIn("oddsTimingExcluded++", source)
+        self.assertIn("Excluded undated or post-forecast odds snapshots", source)
+
 class PublishedPicksResultsWebTests(unittest.TestCase):
     def test_results_tab_shows_only_published_picks_and_keeps_pending_separate(self):
         source = Path("index.html").read_text(encoding="utf-8")
