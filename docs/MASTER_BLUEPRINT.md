@@ -1,7 +1,7 @@
 # PITCH IQ — Master Product & Technical Blueprint
 
 **Status:** Living blueprint; implementation is active, not declared complete  
-**Last reviewed:** 22 November 2026  
+**Last reviewed:** 23 November 2026  
 **Live website:** https://spencer-pessy.github.io/pitchiq/  
 **Repository:** https://github.com/Spencer-Pessy/pitchiq
 
@@ -108,7 +108,7 @@ The enabled GitHub Actions workflows provide the recurring data and publishing o
 - Odds snapshot: once daily, subject to explicit free-tier confirmation and secret availability.
 - Telegram picks: daily at 08:00 UTC, only when eligible unpublished club fixtures exist within the next 36 hours; the daily publisher may post up to three eligible club forecasts.
 - Telegram news: every four hours, with deduplication and source links.
-- Published-pick results: hourly, results-only.
+- Published-pick results: hourly, results-only, and after each successful club-data refresh as a fallback.
 - Telegram workflow health: every 30 minutes; checks workflow status and age but does not claim that a successful workflow proves message delivery.
 - National-team historical research refresh: weekly.
 - Backup and test workflows: run on their configured triggers; the portable backup remains a separate deliverable.
@@ -128,7 +128,7 @@ The Match Centre should display up to the five most recent finished meetings ava
 - TikTok and Instagram: @pitch.iq04
 - X: @PitchIQ04
 
-The picks bot checks every three hours and posts up to three eligible club forecasts when available, then reports the results for those same saved picks. It must not substitute unrelated results or generate picks for international matches. The news channel posts sourced football headlines with original links; transfer speculation must be labelled unconfirmed. Social content should build conversation and trust rather than turn every post into a sales pitch.
+The picks bot checks daily at 08:00 UTC and posts up to three eligible club forecasts when available, then reports the results for those same saved picks. It must not substitute unrelated results or generate picks for international matches. The news channel posts sourced football headlines with original links; transfer speculation must be labelled unconfirmed. Social content should build conversation and trust rather than turn every post into a sales pitch.
 
 Referral attribution uses the existing GoatCounter integration. Validated `?ref=` labels are recorded as custom referrers on the landing-page view, while the `ref` parameter is removed from the analytics page path. This measures attributed visits only, not registrations or conversions; it does not collect personal identity or add another analytics service.
 
@@ -239,3 +239,20 @@ This snapshot was collected at 05:21 UTC (08:21 Qatar time) against base 6ee8322
 - **Security and privacy:** A static scan of the website found no eval, new Function or document.write; all nine inspected _blank links included noopener. No API-key or Telegram-token-shaped literal was found in the inspected source files. Provider-supplied website text continues to use the shared escaping helper.
 
 **Next actions:** Confirm new scheduled update.yml and live-scores.yml executions before calling either schedule healthy; monitor the next daily odds run without retrying the malformed response; verify offline/model tests and Pages deployment on the commit containing this guard; keep international coverage optional and preserve the free-only and forecast-immutability rules.
+
+
+## 16. Operational review on 23 November 2026
+
+This review was collected at approximately 08:16 UTC (11:16 Qatar time). It is a monitoring snapshot, not a completion declaration.
+
+- **Club data and schedule:** `data.json` was last updated at 06:23:21Z and contains 471 published match rows. Provider metadata covers 3,595 fixtures across 12 configured competitions; 10 standings tables are available and the snapshot reports zero standings failures. The last scheduled club updater in the observed Actions history was run 45101236031 at 02:37Z. The later successful update at 06:19Z was push-triggered by source changes. No scheduled update runs were observed at the expected 07:07Z, 07:37Z or 08:07Z slots. The configured schedule remains in place, but its reliability is unconfirmed.
+- **Live scores:** The latest observed scheduled live-score run was 45096818886 at 01:50Z. The new fallback after successful club-data refresh was exercised successfully by run 45123838499 at 06:24Z; it passed six live-feed tests, made one SportAPI request and published a fresh zero-live-match snapshot. The reported quota then showed 1,997 daily and 13,942 monthly requests remaining. No later 10-minute scheduled run was observed. At review time the live snapshot was over 90 minutes old and must be treated as stale, not as proof there are no live matches.
+- **International fixtures:** The separate feed refreshed successfully at 07:54Z and contains 108 fixtures, including four upcoming women's international friendlies on 27 November. The international test workflow passed 28 tests. International remains fixture-only and optional.
+- **Forecast performance:** The public ledger contains 167 settled forecasts: 96 correct (57.5%), multiclass Brier 0.5590 and log loss 0.9460. The latest forward-only research ledger contains 482 forecasts, 81 completed; its accuracy is 58.0% and Brier 0.5594. Samples remain small and vary by competition; the Premier League sample is 10/21 (47.6%), Ligue 1 is 12/23 (52.2%), and Champions League is 9/18 (50.0%). These results justify continued calibration and data-quality review, not an unvalidated weight change. The controlled ablation on 81 identical matches shows that removing Elo or form worsens Brier slightly, while the scoreline comparison shows no clear advantage for Dixon–Coles over independent Poisson on 166 matches.
+- **Odds comparison:** `odds.json` remains dated 20 November 16:16Z. No settled public forecast currently has an odds snapshot with a capture timestamp that is both no later than its original forecast and before kickoff. The historical bookmaker comparison must therefore remain unavailable/paused until valid contemporaneous snapshots accumulate; do not use the stale snapshot to claim a market benchmark.
+- **Telegram health:** The 08:11Z monitor snapshot is degraded. Picks was within its 24-hour-plus-grace window, and the news workflow succeeded at 08:10Z. The results publisher was stale: its last scheduled run was 00:54Z, 436 minutes before the monitor check, against a one-hour interval plus three-hour grace. The monitor explicitly does not verify Telegram delivery.
+- **Published-pick Results tracker:** Two finished picks were still pending. Their final scores were verified against the saved club data and prediction ledger, then the tracker was settled without changing either original pick or probability: Marseille 2–3 Le Mans (miss) and Fluminense 1–0 Mirassol (correct). The tracker now has 18 settled results, 13 correct, 5 missed and zero pending. This ledger correction updates the website Results view; it does not itself send a Telegram message.
+- **Reliability improvement:** The results workflow now also runs after a successful `Update data` workflow completion, while retaining its hourly schedule. A regression test checks the fallback trigger and success-only condition. This should reduce dependence on the unreliable hourly schedule, but must be verified in a future successful updater run before calling the fallback proven.
+- **Tests and deployment:** The prior source commit 1abf059 passed the model and offline test workflows; its data updater and Pages deployment also succeeded. The latest tracker-only commit 37de45d passed the model tests, offline tests and portable-backup workflow; its Pages deployment was still running at the time of this review. The follow-up results-workflow change must pass its newly triggered tests and Pages deployment before being considered verified.
+
+**Next actions:** Verify the new results-workflow fallback on the next successful club update; investigate missed scheduled club/live-score runs without adding paid services; wait for fresh odds snapshots before market comparisons; continue model calibration with frozen forecasts and larger samples; keep Telegram delivery claims separate from workflow health.

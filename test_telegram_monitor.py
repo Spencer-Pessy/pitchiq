@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from datetime import datetime, timezone
 from telegram_monitor import build_snapshot, evaluate_workflow
 
@@ -109,6 +110,16 @@ class TelegramMonitorTests(unittest.TestCase):
         snapshot = build_snapshot({}, self.now)
         self.assertEqual(snapshot["overall"], "degraded")
         self.assertTrue(all(item["status"] == "no_scheduled_runs" for item in snapshot["workflows"]))
+
+
+    def test_results_publisher_rechecks_after_successful_club_data_refresh(self):
+        source = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
+        self.assertIn("cron: '17 * * * *'", source)
+        self.assertIn("workflow_run:", source)
+        self.assertIn('workflows: ["Update data"]', source)
+        self.assertIn("types: [completed]", source)
+        self.assertIn("branches: [main]", source)
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", source)
 
 
 if __name__ == "__main__":
