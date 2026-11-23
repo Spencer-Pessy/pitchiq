@@ -1,7 +1,8 @@
 """Build a small, public live-score snapshot from SportAPI.
 
 One request per scheduled run. API credentials stay in GitHub Actions and are
-never exposed to the browser or committed to the repository.
+never exposed to the browser or committed to the repository. The scheduled
+workflow also supports a push-triggered refresh for operational recovery.
 """
 import json
 import os
