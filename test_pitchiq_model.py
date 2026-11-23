@@ -147,14 +147,17 @@ class MetricsTests(unittest.TestCase):
 
     def test_baseline_comparison_uses_prior_results_and_de_vigged_odds(self):
         rows = [
-            {"utc": "2026-01-01T12:00:00Z", "final": [1, 0],
+            {"utc": "2026-01-01T12:00:00Z", "made": "2025-12-31T12:00:00Z",
+             "odds_updated": "2025-12-31T11:55:00Z", "final": [1, 0],
              "p": {"ph": 0.7, "pd": 0.2, "pa": 0.1}, "odds": [2.0, 4.0, 5.0]},
-            {"utc": "2026-01-02T12:00:00Z", "final": [0, 1],
+            {"utc": "2026-01-02T12:00:00Z", "made": "2026-01-01T12:00:00Z",
+             "odds_updated": "2026-01-01T11:55:00Z", "final": [0, 1],
              "p": {"ph": 0.1, "pd": 0.2, "pa": 0.7}, "odds": [5.0, 4.0, 2.0]},
-            {"utc": "2026-01-02T12:00:00Z", "final": [1, 1],
+            {"utc": "2026-01-02T12:00:00Z", "made": "2026-01-01T12:00:00Z",
+             "odds_updated": "2026-01-01T11:55:00Z", "final": [1, 1],
              "p": {"ph": 0.2, "pd": 0.7, "pa": 0.1}, "odds": [4.0, 2.0, 5.0]},
-            {"utc": "2026-01-03T12:00:00Z", "final": [0, 0],
-             "p": {"ph": 0.2, "pd": 0.6, "pa": 0.2}, "odds": None},
+            {"utc": "2026-01-03T12:00:00Z", "made": "2026-01-02T12:00:00Z",
+             "final": [0, 0], "p": {"ph": 0.2, "pd": 0.6, "pa": 0.2}, "odds": None},
         ]
         result = baseline_comparison(rows)
         self.assertEqual(result["rolling_prior"]["matches"], 4)
@@ -162,6 +165,9 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result["rolling_prior"]["accuracy"], 0.25)
         self.assertEqual(result["model_on_odds_sample"]["matches"], 3)
         self.assertEqual(result["bookmaker_consensus"]["matches"], 3)
+        self.assertEqual(result["market_snapshot_timing"], {
+            "included": 3, "excluded_undated_or_after_forecast": 0
+        })
         self.assertIsNotNone(result["model_minus_bookmaker_brier"])
         self.assertIsNotNone(result["model_minus_bookmaker_log_loss"])
         self.assertIsNotNone(result["model_minus_bookmaker_brier_ci_95"])

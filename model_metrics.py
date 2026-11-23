@@ -470,6 +470,7 @@ def _probability_scores(rows):
 def baseline_comparison(predictions):
     """Compare forecasts with a no-look-ahead rolling prior and de-vigged odds."""
     records = []
+    market_timing_excluded = 0
     for item in predictions:
         score = _final_score(item)
         if score is None:
@@ -535,7 +536,6 @@ def baseline_comparison(predictions):
 
     prior_rows, competition_prior_rows, model_market_rows, market_rows = [], [], [], []
     model_market_brier_deltas, model_market_log_deltas = [], []
-    market_timing_excluded = 0
     model_prior_brier_deltas, model_prior_log_deltas = [], []
     # Rebuild the information set available at each forecast's creation time.
     # A completed result is conservatively considered available three hours
