@@ -161,7 +161,9 @@ class MetricsTests(unittest.TestCase):
         ]
         result = baseline_comparison(rows)
         self.assertEqual(result["rolling_prior"]["matches"], 4)
-        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.7708, places=4)
+        # These snapshots were made before either later fixture, so the first
+        # result is not in the information set for the second and third rows.
+        self.assertAlmostEqual(result["rolling_prior"]["brier"], 0.7188, places=4)
         self.assertEqual(result["rolling_prior"]["accuracy"], 0.25)
         self.assertEqual(result["model_on_odds_sample"]["matches"], 3)
         self.assertEqual(result["bookmaker_consensus"]["matches"], 3)
