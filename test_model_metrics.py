@@ -14,7 +14,7 @@ from model_metrics import (
 )
 
 
-def forecast(match_id, kickoff, made, final, probabilities=None, odds=None, goals=None):
+def forecast(match_id, kickoff, made, final, probabilities=None, odds=None, goals=None, odds_updated=None):
     probabilities = probabilities or {"ph": 0.6, "pd": 0.2, "pa": 0.2,
                                       "lh": 1.2, "la": 0.8, "o25": 0.55, "bt": 0.5}
     return {
@@ -25,6 +25,7 @@ def forecast(match_id, kickoff, made, final, probabilities=None, odds=None, goal
         "code": "PL",
         "p": probabilities,
         "odds": odds,
+        "odds_updated": odds_updated,
     }
 
 
@@ -111,6 +112,41 @@ class NoLookAheadEvaluationTests(unittest.TestCase):
         result = baseline_comparison([first, second])
         # At 13:00 UTC the first result enters the information set for forecast 2.
         self.assertAlmostEqual(result["rolling_prior"]["brier"], (2 / 3 + 0.875) / 2, places=4)
+
+
+    def test_bookmaker_benchmark_excludes_undated_and_later_backfilled_odds(self):
+        rows = [
+            forecast(
+                20, "2026-01-01T10:00:00Z", "2026-01-01T08:00:00Z", [1, 0],
+                odds=[2.0, 3.5, 4.0], odds_updated="2026-01-01T08:01:00Z",
+            ),
+            forecast(
+                21, "2026-01-02T10:00:00Z", "2026-01-02T08:00:00Z", [0, 1],
+                odds=[4.0, 3.5, 2.0],
+            ),
+        ]
+        result = baseline_comparison(rows)
+        self.assertEqual(result["model_on_odds_sample"]["matches"], 0)
+        self.assertEqual(result["bookmaker_consensus"]["matches"], 0)
+        self.assertEqual(
+            result["market_snapshot_timing"],
+            {"included": 0, "excluded_undated_or_after_forecast": 2},
+        )
+
+    def test_bookmaker_benchmark_accepts_timestamped_odds_at_forecast_time(self):
+        rows = [
+            forecast(
+                22, "2026-01-01T10:00:00Z", "2026-01-01T08:00:00Z", [1, 0],
+                odds=[2.0, 3.5, 4.0], odds_updated="2026-01-01T07:55:00Z",
+            ),
+        ]
+        result = baseline_comparison(rows)
+        self.assertEqual(result["model_on_odds_sample"]["matches"], 1)
+        self.assertEqual(result["bookmaker_consensus"]["matches"], 1)
+        self.assertEqual(
+            result["market_snapshot_timing"],
+            {"included": 1, "excluded_undated_or_after_forecast": 0},
+        )
 
 
 class GoalAndScorelineDiagnosticsTests(unittest.TestCase):

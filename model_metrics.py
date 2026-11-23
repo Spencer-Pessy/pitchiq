@@ -491,7 +491,34 @@ def baseline_comparison(predictions):
             continue
         market = None
         odds = item.get("odds")
-        if isinstance(odds, list) and len(odds) == 3:
+        has_odds_snapshot = isinstance(odds, list) and len(odds) == 3
+        made_at = None
+        made_value = item.get("made")
+        if isinstance(made_value, str) and made_value.strip():
+            try:
+                parsed_made = datetime.fromisoformat(made_value.strip().replace("Z", "+00:00"))
+                if parsed_made.tzinfo is not None and parsed_made.utcoffset() is not None:
+                    made_at = parsed_made.astimezone(timezone.utc)
+            except (ValueError, OverflowError):
+                pass
+        odds_at = None
+        odds_updated = item.get("odds_updated")
+        if isinstance(odds_updated, str) and odds_updated.strip():
+            try:
+                parsed_odds = datetime.fromisoformat(odds_updated.strip().replace("Z", "+00:00"))
+                if parsed_odds.tzinfo is not None and parsed_odds.utcoffset() is not None:
+                    odds_at = parsed_odds.astimezone(timezone.utc)
+            except (ValueError, OverflowError):
+                pass
+        # A bookmaker snapshot is a fair contemporaneous benchmark only when
+        # its timestamp is known and no later than the original pre-match forecast.
+        market_timing_valid = (
+            made_at is not None and odds_at is not None
+            and odds_at <= made_at <= kickoff
+        )
+        if has_odds_snapshot and not market_timing_valid:
+            market_timing_excluded += 1
+        if has_odds_snapshot and market_timing_valid:
             try:
                 prices = [float(value) for value in odds]
                 if all(math.isfinite(value) and value > 1.0 for value in prices):
@@ -508,6 +535,7 @@ def baseline_comparison(predictions):
 
     prior_rows, competition_prior_rows, model_market_rows, market_rows = [], [], [], []
     model_market_brier_deltas, model_market_log_deltas = [], []
+    market_timing_excluded = 0
     model_prior_brier_deltas, model_prior_log_deltas = [], []
     # Rebuild the information set available at each forecast's creation time.
     # A completed result is conservatively considered available three hours
@@ -563,6 +591,10 @@ def baseline_comparison(predictions):
         "competition_rolling_prior": competition_prior_scores,
         "model_on_odds_sample": model_market_scores,
         "bookmaker_consensus": market_scores,
+        "market_snapshot_timing": {
+            "included": len(market_rows),
+            "excluded_undated_or_after_forecast": market_timing_excluded,
+        },
         "model_minus_bookmaker_brier": (
             round(model_market_scores["brier"] - market_scores["brier"], 4)
             if model_market_scores["brier"] is not None and market_scores["brier"] is not None else None
