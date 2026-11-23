@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-23T08:18:18.629693+00:00",
+  "checked_at": "2026-11-23T08:31:14.365966+00:00",
   "overall": "degraded",
   "telegram_delivery_verified": false,
   "note": "GitHub scheduled-run health only; this does not prove a Telegram message was delivered.",
@@ -10,11 +10,20 @@
       "status": "healthy",
       "last_scheduled_run": {
         "id": 45004571311,
+        "event": "schedule",
         "created_at": "2026-11-22T08:49:09Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 1409,
+      "last_refresh_trigger_run": null,
+      "last_execution": {
+        "id": 45004571311,
+        "event": "schedule",
+        "created_at": "2026-11-22T08:49:09Z",
+        "run_status": "completed",
+        "conclusion": "success"
+      },
+      "age_minutes": 1422,
       "expected_interval_hours": 24,
       "grace_hours": 2
     },
@@ -23,11 +32,20 @@
       "status": "healthy",
       "last_scheduled_run": {
         "id": 45136491464,
+        "event": "schedule",
         "created_at": "2026-11-23T08:10:36Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 7,
+      "last_refresh_trigger_run": null,
+      "last_execution": {
+        "id": 45136491464,
+        "event": "schedule",
+        "created_at": "2026-11-23T08:10:36Z",
+        "run_status": "completed",
+        "conclusion": "success"
+      },
+      "age_minutes": 20,
       "expected_interval_hours": 4,
       "grace_hours": 4
     },
@@ -36,11 +54,20 @@
       "status": "stale",
       "last_scheduled_run": {
         "id": 45091456374,
+        "event": "schedule",
         "created_at": "2026-11-23T00:54:07Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 444,
+      "last_refresh_trigger_run": null,
+      "last_execution": {
+        "id": 45091456374,
+        "event": "schedule",
+        "created_at": "2026-11-23T00:54:07Z",
+        "run_status": "completed",
+        "conclusion": "success"
+      },
+      "age_minutes": 457,
       "expected_interval_hours": 1,
       "grace_hours": 3
     }
