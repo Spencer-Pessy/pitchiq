@@ -2,10 +2,6 @@ name: Refresh live scores
 on:
   schedule:
     - cron: "*/10 * * * *"
-  workflow_run:
-    workflows: ["Update data"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
   push:
     branches: [main]
@@ -16,12 +12,12 @@ on:
       - "test_sportapi_live_feed.py"
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: pitchiq-live-scores
   cancel-in-progress: false
 jobs:
   live-scores:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -39,7 +35,7 @@ jobs:
         env:
           SPORTAPI_KEY: ${{ secrets.SPORTAPI_KEY }}
         run: python sportapi_live_feed.py
-      - name: Publish live snapshot
+      - name: Publish live snapshot with safe retry
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -48,10 +44,35 @@ jobs:
           unset GH_TOKEN
           git config user.name "pitchiq-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add live.json
-          if git diff --cached --quiet; then
-            echo "Live snapshot unchanged."
-            exit 0
+          cp live.json /tmp/pitchiq-live.json
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/pitchiq-live.json live.json
+            git add live.json
+            if git diff --cached --quiet; then
+              echo "Live snapshot unchanged."
+              break
+            fi
+            git commit -m "Refresh live scores"
+            if git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push; then
+              echo "Live snapshot published successfully."
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Unable to publish live snapshot after 3 fresh push attempts."
+              exit 1
+            fi
+            echo "Push was rejected; retrying against the latest main branch."
+            sleep 5
+          done
+      - name: Verify feed freshness with pipeline watchdog
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh workflow run pipeline-watchdog.yml --ref main; then
+            echo "Pipeline watchdog queued to verify both published snapshots."
+          else
+            echo "::warning::Could not dispatch the pipeline watchdog; scheduled watchdog remains enabled."
           fi
-          git commit -m "Refresh live scores"
-          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$token" | base64 -w0)" push

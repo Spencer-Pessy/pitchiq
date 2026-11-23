@@ -430,6 +430,13 @@ function livePanel(){
    return sameTeams&&Number.isFinite(gap)&&gap<=6*3600e3;
   })
  );
+ if(!liveFeedFresh()){
+  const updatedAt=Date.parse(LIVE.updated||'');
+  const age=Number.isFinite(updatedAt)?Math.max(0,Math.floor((Date.now()-updatedAt)/60000)):null;
+  const ageLabel=age===null?'No successful snapshot is available':age<60?age+' minutes ago':Math.floor(age/60)+'h '+(age%60)+'m ago';
+  const lastUpdated=Number.isFinite(updatedAt)?'Last verified feed update: '+new Date(updatedAt).toLocaleString()+'.':'';
+  return '<section class="panel live-score-delay" role="status"><div class="hero-kicker">LIVE SCORES DELAYED</div><h2>Live updates are temporarily delayed</h2><p class="note">'+esc(ageLabel)+'. '+esc(lastUpdated)+' Automatic recovery is active. Scores will appear again when a fresh provider snapshot is verified.</p></section>';
+ }
  if(!rows.length)return '';
  const updated=LIVE.updated?' · Updated '+new Date(LIVE.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
  return '<section class="live-score-panel"><div class="live-score-heading"><span><i></i> LIVE NOW</span><small>SportAPI'+esc(updated)+'</small></div><div class="live-score-grid">'+rows.map(item=>{

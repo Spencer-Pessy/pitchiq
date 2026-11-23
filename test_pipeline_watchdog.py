@@ -116,13 +116,30 @@ class PipelineWatchdogTests(unittest.TestCase):
             result = run_watchdog("token", root=root, now=self.now, opener=opener)
             self.assertEqual([x["recovery"] for x in result["feeds"]], ["cooldown", "cooldown"])
 
-    def test_workflow_triggers_watchdog_after_each_refresh_and_on_schedule(self):
+    def test_watchdog_has_its_own_schedule_and_manual_dispatch(self):
         workflow = Path(".github/workflows/pipeline-watchdog.yml").read_text()
         self.assertIn('cron: "*/10 * * * *"', workflow)
-        self.assertIn('workflows: ["Update data", "Refresh live scores"]', workflow)
+        self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("actions: write", workflow)
         self.assertIn("pipeline_watchdog.py", workflow)
         self.assertIn("test_pipeline_watchdog.py", workflow)
+        self.assertNotIn("workflow_run:", workflow)
+
+    def test_refresh_workflows_explicitly_dispatch_watchdog_after_success(self):
+        update = Path(".github/workflows/update.yml").read_text()
+        live = Path(".github/workflows/live-scores.yml").read_text()
+        self.assertIn("actions: write", update)
+        self.assertIn("actions: write", live)
+        self.assertIn("gh workflow run pipeline-watchdog.yml --ref main", update)
+        self.assertIn("gh workflow run pipeline-watchdog.yml --ref main", live)
+        self.assertNotIn("workflow_run:", live)
+
+    def test_live_score_publication_retries_without_spending_extra_provider_requests(self):
+        live = Path(".github/workflows/live-scores.yml").read_text()
+        self.assertIn("python sportapi_live_feed.py", live)
+        self.assertIn("cp live.json /tmp/pitchiq-live.json", live)
+        self.assertIn("for attempt in 1 2 3", live)
+        self.assertIn("git fetch origin main", live)
 
 
 if __name__ == "__main__":

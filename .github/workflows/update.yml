@@ -22,6 +22,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: pitchiq-update-data
   cancel-in-progress: false
@@ -70,3 +71,13 @@ jobs:
           done
           echo "Unable to publish data after 3 fresh attempts."
           exit 1
+      - name: Trigger the pipeline watchdog after publishing data
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh workflow run pipeline-watchdog.yml --ref main; then
+            echo "Pipeline watchdog queued to verify club and live-score freshness."
+          else
+            echo "::warning::Could not dispatch the pipeline watchdog; scheduled watchdog remains enabled."
+          fi

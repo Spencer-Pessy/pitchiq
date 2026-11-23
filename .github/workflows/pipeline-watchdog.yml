@@ -8,10 +8,6 @@ on:
       - "test_pipeline_watchdog.py"
   schedule:
     - cron: "*/10 * * * *"
-  workflow_run:
-    workflows: ["Update data", "Refresh live scores"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 permissions:
   actions: write

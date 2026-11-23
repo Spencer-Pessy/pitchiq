@@ -854,6 +854,11 @@ class SportAPILiveDisplayTests(unittest.TestCase):
         self.assertIn("age<=20*60e3", self.html)
         self.assertIn("liveFeedFresh()&&Array.isArray(LIVE.matches)", self.html)
 
+    def test_stale_live_feed_shows_a_clear_member_facing_delay_notice(self):
+        self.assertIn('class="panel live-score-delay"', self.html)
+        self.assertIn("LIVE SCORES DELAYED", self.html)
+        self.assertIn("Automatic recovery is active.", self.html)
+
     def test_live_snapshot_refresh_restores_original_match_state_before_reapplying(self):
         self.assertIn("const LIVE_BASE=new WeakMap();", self.html)
         self.assertIn("match.status=base.status;", self.html)
