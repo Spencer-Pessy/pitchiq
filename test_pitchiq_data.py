@@ -7,6 +7,7 @@ from pitchiq_data import (
     average_bucket,
     goal_average_keys,
     build_feed_health,
+    merge_standings_tables,
     player_goals_per_appearance,
     player_rate_stats,
     team_venue_stats,
@@ -119,6 +120,25 @@ class ForecastSnapshotTests(unittest.TestCase):
 
 
 class CompetitionDataTests(unittest.TestCase):
+    def test_failed_standings_refresh_preserves_last_good_table_and_marks_it_stale(self):
+        previous = {
+            "PL": {"name": "Premier League", "rows": [{"team": "Arsenal"}]},
+            "DED": {"name": "Eredivisie", "rows": [{"team": "Twente"}]},
+            "RETIRED": {"name": "Retired", "rows": []},
+        }
+        fresh = {"PL": {"name": "Premier League", "rows": [{"team": "Chelsea"}]}}
+        merged = merge_standings_tables(previous, fresh, {"PL", "DED"})
+        self.assertEqual(merged["PL"]["rows"][0]["team"], "Chelsea")
+        self.assertEqual(merged["DED"]["rows"][0]["team"], "Twente")
+        self.assertNotIn("RETIRED", merged)
+        health = build_feed_health({"PL": 10, "DED": 10}, fresh.keys(), 20, {"DED"}, {"DED"})
+        self.assertEqual(health["standings_available"], ["PL"])
+        self.assertEqual(health["standings_failed"], ["DED"])
+        self.assertEqual(health["standings_stale"], ["DED"])
+
+    def test_invalid_previous_standings_are_ignored(self):
+        self.assertEqual(merge_standings_tables([], {"PL": {"rows": []}}), {"PL": {"rows": []}})
+
     def test_world_cup_and_euro_are_international(self):
         self.assertEqual(INTERNATIONAL_COMPETITIONS, frozenset({"WC", "EC"}))
 
