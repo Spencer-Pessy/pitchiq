@@ -81,3 +81,15 @@ jobs:
           else
             echo "::warning::Could not dispatch the pipeline watchdog; scheduled watchdog remains enabled."
           fi
+
+
+      - name: Trigger published-pick results after successful data publication
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh workflow run telegram-results.yml --ref main; then
+            echo "Published-pick results check queued after successful club-data publication."
+          else
+            echo "::warning::Could not dispatch published-pick results; the hourly results schedule remains enabled."
+          fi

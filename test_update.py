@@ -113,6 +113,19 @@ class UpdateRequestPacingTests(unittest.TestCase):
         self.assertIn("gh workflow run pipeline-watchdog.yml --ref main", live_workflow)
         self.assertNotIn("workflow_run:", live_workflow)
 
+    def test_results_publisher_is_dispatched_only_after_successful_data_publication(self):
+        update_workflow = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
+        results_workflow = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
+        marker = "Trigger published-pick results after successful data publication"
+        self.assertIn(marker, update_workflow)
+        dispatch = update_workflow[update_workflow.index(marker):]
+        self.assertIn("if: success()", dispatch[:400])
+        self.assertIn("gh workflow run telegram-results.yml --ref main", dispatch)
+        self.assertIn("workflow_dispatch:", results_workflow)
+        self.assertIn("cron: '17 * * * *'", results_workflow)
+        self.assertNotIn("workflow_run:", results_workflow)
+
+
     def test_telegram_picks_schedule_matches_approved_daily_blueprint(self):
         workflow = Path(".github/workflows/telegram.yml").read_text(encoding="utf-8")
         blueprint = Path("docs/MASTER_BLUEPRINT.md").read_text(encoding="utf-8")

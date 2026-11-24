@@ -2,10 +2,6 @@ name: Telegram published-pick results
 on:
   schedule:
     - cron: '17 * * * *'
-  workflow_run:
-    workflows: ["Update data"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
@@ -14,7 +10,6 @@ concurrency:
   cancel-in-progress: false
 jobs:
   results:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
