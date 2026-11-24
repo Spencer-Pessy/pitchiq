@@ -172,7 +172,24 @@ def average_bucket(code, counts):
     return code
 
 
-def build_feed_health(fixture_counts, standings_codes, published_match_count, standings_failed=()):
+def merge_standings_tables(previous_tables, fresh_tables, expected_codes=None):
+    """Keep the last valid table when a provider refresh fails for a competition."""
+    previous_tables = previous_tables if isinstance(previous_tables, dict) else {}
+    fresh_tables = fresh_tables if isinstance(fresh_tables, dict) else {}
+    allowed = set(expected_codes) if expected_codes is not None else None
+    merged = {
+        code: table for code, table in previous_tables.items()
+        if isinstance(code, str) and isinstance(table, dict)
+        and (allowed is None or code in allowed)
+    }
+    for code, table in fresh_tables.items():
+        if isinstance(code, str) and isinstance(table, dict):
+            if allowed is None or code in allowed:
+                merged[code] = table
+    return merged
+
+
+def build_feed_health(fixture_counts, standings_codes, published_match_count, standings_failed=(), standings_stale=()):
     """Summarize source coverage without exposing credentials or raw responses."""
     fixture_counts = dict(sorted(fixture_counts.items()))
     standings_codes = sorted(set(standings_codes))
@@ -191,6 +208,7 @@ def build_feed_health(fixture_counts, standings_codes, published_match_count, st
         "standings_competitions": len(standings_codes),
         "standings_failed": standings_failed,
         "standings_failures": len(standings_failed),
+        "standings_stale": sorted(set(standings_stale) - INTERNATIONAL_COMPETITIONS),
         "published_match_count": published_match_count,
     }
 
