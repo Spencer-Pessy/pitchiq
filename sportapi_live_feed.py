@@ -23,6 +23,7 @@ def build_live_feed(payload, updated=None):
         raise ValueError("SportAPI fixture response did not contain a data list")
 
     live = []
+    status_counts = {}
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError("SportAPI fixture record must be an object")
@@ -30,6 +31,7 @@ def build_live_feed(payload, updated=None):
         if not isinstance(status, str) or not status.strip():
             raise ValueError("SportAPI fixture record has no status")
         status = status.strip().upper()
+        status_counts[status] = status_counts.get(status, 0) + 1
         minute = row.get("minute")
         if isinstance(minute, str) and minute.strip().upper() == "HT":
             status = "HT"
@@ -73,6 +75,9 @@ def build_live_feed(payload, updated=None):
     return {
         "provider": "SportAPI",
         "updated": (updated or datetime.now(timezone.utc)).isoformat(),
+        "fixtures_returned": len(rows),
+        "status_counts": status_counts,
+        "active_statuses": sorted(ACTIVE_STATUSES),
         "count": len(live),
         "matches": live,
     }
@@ -106,6 +111,8 @@ if __name__ == "__main__":
     print(json.dumps({
         "provider": result["provider"],
         "updated": result["updated"],
+        "fixtures_returned": result["fixtures_returned"],
+        "status_counts": result["status_counts"],
         "live_count": result["count"],
         "requests_used": result["requests_used"],
         "daily_requests_remaining": result.get("daily_requests_remaining"),
