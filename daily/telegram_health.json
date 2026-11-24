@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-24T18:20:11.390357+00:00",
+  "checked_at": "2026-11-24T19:28:15.729577+00:00",
   "overall": "degraded",
   "telegram_delivery_verified": false,
   "note": "GitHub scheduled-run and bot-dispatched refresh health only; this does not prove a Telegram message was delivered.",
@@ -9,21 +9,21 @@
       "workflow": "telegram.yml",
       "status": "healthy",
       "last_scheduled_run": {
-        "id": 45255152082,
+        "id": 45470435095,
         "event": "schedule",
-        "created_at": "2026-11-23T20:02:22Z",
+        "created_at": "2026-11-24T19:27:40Z",
         "run_status": "completed",
         "conclusion": "success"
       },
       "last_refresh_trigger_run": null,
       "last_execution": {
-        "id": 45255152082,
+        "id": 45470435095,
         "event": "schedule",
-        "created_at": "2026-11-23T20:02:22Z",
+        "created_at": "2026-11-24T19:27:40Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 1337,
+      "age_minutes": 0,
       "expected_interval_hours": 24,
       "grace_hours": 2
     },
@@ -45,7 +45,7 @@
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 802,
+      "age_minutes": 870,
       "expected_interval_hours": 4,
       "grace_hours": 4
     },
@@ -73,7 +73,7 @@
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 34,
+      "age_minutes": 102,
       "expected_interval_hours": 1,
       "grace_hours": 3
     }
