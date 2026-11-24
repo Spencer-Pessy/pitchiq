@@ -21,11 +21,27 @@ class SportAPILiveFeedTests(unittest.TestCase):
         result = build_live_feed({"success": True, "data": [self.fixture()]},
                                  datetime(2026, 11, 21, tzinfo=timezone.utc))
         self.assertEqual(result["count"], 1)
+        self.assertEqual(result["fixtures_returned"], 1)
+        self.assertEqual(result["status_counts"], {"LIVE": 1})
+        self.assertEqual(result["active_statuses"], ["HT", "LIVE"])
         match = result["matches"][0]
         self.assertEqual(match["score"], [2, 1])
         self.assertEqual(match["status"], "LIVE")
         self.assertEqual(match["source"], "SportAPI")
         self.assertEqual(match["utc"], "2026-11-21T14:00:00Z")
+
+    def test_provider_status_diagnostics_include_non_live_rows(self):
+        result = build_live_feed({"success": True, "data": [
+            self.fixture(status="SCHEDULED"),
+            self.fixture(id=124, status="FT"),
+            self.fixture(id=125, status="LIVE", minute="HT"),
+        ]})
+        self.assertEqual(result["fixtures_returned"], 3)
+        self.assertEqual(result["status_counts"], {
+            "SCHEDULED": 1, "FT": 1, "LIVE": 1
+        })
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(result["matches"][0]["status"], "HT")
 
     def test_half_time_is_kept_as_active_status(self):
         result = build_live_feed({"success": True, "data": [
