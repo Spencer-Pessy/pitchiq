@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pitchiq_model import predict as model_predict
 from model_metrics import ablation_comparison, scoreline_baseline_comparison
-from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, validate_competition_fixtures, average_bucket, build_feed_health, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, require_prediction_ledger, same_team_name, build_head_to_head
+from pitchiq_data import INTERNATIONAL_COMPETITIONS, is_club_competition, validate_competition_fixtures, average_bucket, build_feed_health, merge_standings_tables, goal_average_keys, player_rate_stats, team_venue_stats, forecast_input_snapshot, record_forward_evaluations, backfill_market_odds, goal_rate_calibration, require_prediction_ledger, same_team_name, build_head_to_head
 from pitchiq_h2h import normalize_h2h_cache, refresh_h2h_cache, cached_h2h_matches
 
 KEY = os.environ["FOOTBALL_DATA_KEY"]
@@ -76,29 +76,39 @@ def goals(m):
     return ft["home"], ft["away"]
 
 
-# League tables
-tables = {}
+# League tables: keep the last good competition table when a provider request fails.
+try:
+    with open("data.json", encoding="utf-8") as previous_data_file:
+        previous_data = json.load(previous_data_file)
+    previous_tables = previous_data.get("tables", {}) if isinstance(previous_data, dict) else {}
+except (OSError, ValueError, TypeError):
+    previous_tables = {}
+fresh_tables = {}
 standings_failed = []
 for c in COMPS:
     d = get(f"/competitions/{c}/standings")
     if not d or not isinstance(d.get("standings"), list):
         standings_failed.append(c)
         continue
-    for st in d.get("standings", []):
-        if st.get("type") == "TOTAL":
-            tables[c] = {"name": d["competition"]["name"], "rows": [
-                {"pos": r["position"], "team": tname(r["team"]), "p": r["playedGames"],
-                 "w": r["won"], "d": r["draw"], "l": r["lost"], "gf": r["goalsFor"],
-                 "ga": r["goalsAgainst"], "gd": r["goalDifference"], "pts": r["points"]}
-                for r in st["table"]]}
-            break
+    total_standing = next((st for st in d["standings"] if isinstance(st, dict) and st.get("type") == "TOTAL"), None)
+    if not isinstance(total_standing, dict) or not isinstance(total_standing.get("table"), list):
+        standings_failed.append(c)
+        continue
+    fresh_tables[c] = {"name": d["competition"]["name"], "rows": [
+        {"pos": r["position"], "team": tname(r["team"]), "p": r["playedGames"],
+         "w": r["won"], "d": r["draw"], "l": r["lost"], "gf": r["goalsFor"],
+         "ga": r["goalsAgainst"], "gd": r["goalDifference"], "pts": r["points"]}
+        for r in total_standing["table"]]}
     sc = get(f"/competitions/{c}/scorers?limit=10")
-    if sc and c in tables:
-        tables[c]["scorers"] = [
+    if sc:
+        fresh_tables[c]["scorers"] = [
             {"name": x["player"]["name"], "team": tname(x["team"]), "g": x.get("goals"),
              "a": x.get("assists"), "pen": x.get("penalties"), "m": x.get("playedMatches"),
              **player_rate_stats(x.get("goals"), x.get("assists"), x.get("playedMatches"))}
             for x in sc.get("scorers", [])]
+
+tables = merge_standings_tables(previous_tables, fresh_tables, COMPS)
+standings_stale = sorted(set(tables) - set(fresh_tables))
 
 
 fin = sorted(
@@ -324,7 +334,7 @@ with open("data.json", "w") as f:
     json.dump({
         "updated": now.isoformat(), "odds_updated": odds_data["updated"],
         "calib": CAL,
-        "data_health": build_feed_health(fixture_counts, tables.keys(), len(out), standings_failed),
+        "data_health": build_feed_health(fixture_counts, fresh_tables.keys(), len(out), standings_failed, standings_stale),
         "matches": out, "tables": tables,
         "model_evaluation": {
             "forecasts": len(evaluation_rows), "completed": evaluation_completed,
