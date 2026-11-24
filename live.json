@@ -1,1 +1,1 @@
-{"provider": "SportAPI", "updated": "2026-11-24T00:23:12.003800+00:00", "count": 1, "matches": [{"id": 18454456, "comp": "Brazilian Serie A", "h": "Santos", "a": "Grêmio", "utc": "2026-11-24T00:00:00Z", "status": "LIVE", "minute": "18'", "score": [0, 1], "source": "SportAPI"}], "requests_used": 1, "daily_requests_remaining": "1999", "monthly_requests_remaining": "13936"}
+{"provider": "SportAPI", "updated": "2026-11-24T04:31:52.443745+00:00", "count": 0, "matches": [], "requests_used": 1, "daily_requests_remaining": "1998", "monthly_requests_remaining": "13935"}
