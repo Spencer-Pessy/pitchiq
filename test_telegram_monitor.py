@@ -29,9 +29,11 @@ class TelegramMonitorTests(unittest.TestCase):
         self.assertEqual(result["status"], "stale")
 
     def test_manual_run_does_not_hide_missing_scheduled_run(self):
+        manual = self.run_row(0, event="workflow_dispatch")
+        manual["actor"] = {"login": "Spencer-Pessy"}
         result = evaluate_workflow(
             "telegram.yml", 3, 2,
-            [self.run_row(0, event="workflow_dispatch")],
+            [manual],
             self.now,
         )
         self.assertEqual(result["status"], "no_scheduled_runs")
@@ -114,36 +116,45 @@ class TelegramMonitorTests(unittest.TestCase):
 
     def test_results_publisher_rechecks_after_successful_club_data_refresh(self):
         source = Path(".github/workflows/telegram-results.yml").read_text(encoding="utf-8")
+        update = Path(".github/workflows/update.yml").read_text(encoding="utf-8")
         self.assertIn("cron: '17 * * * *'", source)
-        self.assertIn("workflow_run:", source)
-        self.assertIn('workflows: ["Update data"]', source)
-        self.assertIn("types: [completed]", source)
-        self.assertIn("branches: [main]", source)
-        self.assertIn("github.event.workflow_run.conclusion == 'success'", source)
+        self.assertIn("workflow_dispatch:", source)
+        self.assertNotIn("workflow_run:", source)
+        marker = "Trigger published-pick results after successful data publication"
+        self.assertIn(marker, update)
+        dispatch = update[update.index(marker):]
+        self.assertIn("if: success()", dispatch[:400])
+        self.assertIn("gh workflow run telegram-results.yml --ref main", dispatch)
 
-    def test_successful_refresh_trigger_prevents_false_stale_results_status(self):
+    def test_successful_bot_dispatch_prevents_false_stale_results_status(self):
+        dispatch = self.run_row(1, event="workflow_dispatch")
+        dispatch["actor"] = {"login": "github-actions[bot]"}
         result = evaluate_workflow(
             "telegram-results.yml", 1, 3,
-            [self.run_row(5), self.run_row(1, event="workflow_run")],
+            [self.run_row(5), dispatch],
             self.now,
         )
         self.assertEqual(result["status"], "healthy")
         self.assertEqual(result["last_scheduled_run"]["event"], "schedule")
-        self.assertEqual(result["last_refresh_trigger_run"]["event"], "workflow_run")
-        self.assertEqual(result["last_execution"]["event"], "workflow_run")
+        self.assertEqual(result["last_refresh_trigger_run"]["event"], "workflow_dispatch")
+        self.assertEqual(result["last_execution"]["event"], "workflow_dispatch")
 
-    def test_failed_refresh_trigger_is_not_counted_as_healthy(self):
+    def test_failed_bot_dispatch_is_not_counted_as_healthy(self):
+        dispatch = self.run_row(1, event="workflow_dispatch", conclusion="failure")
+        dispatch["actor"] = {"login": "github-actions[bot]"}
         result = evaluate_workflow(
             "telegram-results.yml", 1, 3,
-            [self.run_row(1, event="workflow_run", conclusion="failure")],
+            [dispatch],
             self.now,
         )
         self.assertEqual(result["status"], "failed")
 
     def test_manual_dispatch_does_not_mask_stale_qualifying_runs(self):
+        manual = self.run_row(0, event="workflow_dispatch")
+        manual["actor"] = {"login": "Spencer-Pessy"}
         result = evaluate_workflow(
             "telegram-results.yml", 1, 3,
-            [self.run_row(6), self.run_row(0, event="workflow_dispatch")],
+            [self.run_row(6), manual],
             self.now,
         )
         self.assertEqual(result["status"], "stale")

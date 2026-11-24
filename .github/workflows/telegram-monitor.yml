@@ -40,7 +40,7 @@ jobs:
         run: |
           python -m py_compile telegram_monitor.py test_telegram_monitor.py
           python -m unittest -v test_telegram_monitor
-      - name: Record scheduled workflow health (read-only token)
+      - name: Record scheduled and bot-dispatched workflow health (read-only token)
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

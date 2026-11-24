@@ -1,6 +1,6 @@
 """Read-only GitHub Actions health monitor for PitchIQ Telegram publishers.
 
-This records scheduled-run evidence only. It never calls Telegram or sends alerts.
+This records scheduled-run and successful bot-dispatch evidence only. It never calls Telegram or sends alerts.
 """
 import json
 import os
@@ -30,14 +30,26 @@ def parse_timestamp(value):
     return parsed.astimezone(timezone.utc)
 
 
+def is_refresh_trigger(run):
+    """Accept legacy workflow_run events and explicit dispatches made by GitHub Actions."""
+    if not isinstance(run, dict):
+        return False
+    if run.get("event") == "workflow_run":
+        return True
+    if run.get("event") != "workflow_dispatch":
+        return False
+    actor = run.get("actor")
+    return isinstance(actor, dict) and actor.get("login") == "github-actions[bot]"
+
+
 def evaluate_workflow(filename, interval_hours, grace_hours, runs, now=None):
-    """Classify the latest scheduled execution; manual runs do not mask missed schedules."""
+    """Classify scheduled or bot-triggered refreshes; user manual runs do not mask missed schedules."""
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("now must be timezone-aware")
     relevant = [
         run for run in runs
-        if isinstance(run, dict) and run.get("event") in {"schedule", "workflow_run"}
+        if isinstance(run, dict) and (run.get("event") == "schedule" or is_refresh_trigger(run))
     ]
     relevant.sort(
         key=lambda run: parse_timestamp(run.get("created_at")) or datetime.min.replace(tzinfo=timezone.utc),
@@ -85,7 +97,7 @@ def evaluate_workflow(filename, interval_hours, grace_hours, runs, now=None):
             "conclusion": run.get("conclusion"),
         }
 
-    latest_refresh = next((run for run in relevant if run.get("event") == "workflow_run"), None)
+    latest_refresh = next((run for run in relevant if is_refresh_trigger(run)), None)
     return {
         "workflow": filename,
         "status": status,
@@ -134,7 +146,7 @@ def build_snapshot(run_sets, now=None):
         "checked_at": now.astimezone(timezone.utc).isoformat(),
         "overall": overall,
         "telegram_delivery_verified": False,
-        "note": "GitHub scheduled-run health only; this does not prove a Telegram message was delivered.",
+        "note": "GitHub scheduled-run and bot-dispatched refresh health only; this does not prove a Telegram message was delivered.",
         "workflows": workflows,
     }
 
