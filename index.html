@@ -437,7 +437,10 @@ function livePanel(){
   const lastUpdated=Number.isFinite(updatedAt)?'Last verified feed update: '+new Date(updatedAt).toLocaleString()+'.':'';
   return '<section class="panel live-score-delay" role="status"><div class="hero-kicker">LIVE SCORES DELAYED</div><h2>Live updates are temporarily delayed</h2><p class="note">'+esc(ageLabel)+'. '+esc(lastUpdated)+' Automatic recovery is active. Scores will appear again when a fresh provider snapshot is verified.</p></section>';
  }
- if(!rows.length)return '';
+ if(!rows.length){
+  const siteLive=(D.matches||[]).some(match=>live(match));
+  return '<section class="panel live-score-empty" role="status"><div class="hero-kicker">LIVE SCORE CHECK</div><h2>'+(siteLive?'Live fixtures are listed below':'No matches live right now')+'</h2><p class="note">The latest SportAPI snapshot is fresh. This panel will update automatically when a match goes live.</p></section>';
+ }
  const updated=LIVE.updated?' · Updated '+new Date(LIVE.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
  return '<section class="live-score-panel"><div class="live-score-heading"><span><i></i> LIVE NOW</span><small>SportAPI'+esc(updated)+'</small></div><div class="live-score-grid">'+rows.map(item=>{
   const score=Array.isArray(item.score)&&item.score.length===2?esc(item.score[0])+' – '+esc(item.score[1]):'LIVE';
@@ -1080,6 +1083,7 @@ async function shareRecord(){
   }catch(_){}
  }
  setInterval(refreshLiveSnapshot,60000);
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshLiveSnapshot()});
  Promise.all([fetch('data.json?'+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}),fetch('predictions.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('international.json?'+Date.now()).then(r=>r.ok?r.json():{fixtures:[]}).catch(()=>({fixtures:[]})),fetch('international_ratings.json?'+Date.now()).then(r=>r.ok?r.json():{teams:[]}).catch(()=>({teams:[]})),fetch('daily/published_picks.json?'+Date.now()).then(r=>r.ok?r.json():{results:[]}).catch(()=>({results:[]})),fetch('live.json?'+Date.now()).then(r=>r.ok?r.json():{matches:[]}).catch(()=>({matches:[]}))]).then(([d,p,i,ir,q,liveFeed])=>{D=d;P=p;I=i||{fixtures:[]};IR=ir||{teams:[]};Q=q||{results:[]};LIVE=liveFeed||{matches:[]};applyLiveFeed();list()}).catch(()=>{
  $('#app').innerHTML='<header><h1>Pitch<span>IQ</span></h1></header><p>No data yet. In your GitHub repository, open the Actions tab, choose “Update data” and tap Run workflow. Then reload this page in a minute.</p>';
 });
