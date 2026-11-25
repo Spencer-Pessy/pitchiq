@@ -13,6 +13,45 @@
         "pa": 0.134
       },
       "pick_index": 0
+    },
+    {
+      "id": "555108",
+      "h": "São Paulo",
+      "a": "Clube do Remo",
+      "comp": "Campeonato Brasileiro Série A",
+      "utc": "2026-11-26T23:00:00Z",
+      "p": {
+        "ph": 0.638,
+        "pd": 0.2397,
+        "pa": 0.1223
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "575412",
+      "h": "Shaktar",
+      "a": "Fenerbahçe",
+      "comp": "UEFA Champions League",
+      "utc": "2026-11-25T20:00:00Z",
+      "p": {
+        "ph": 0.6093,
+        "pd": 0.2208,
+        "pa": 0.1698
+      },
+      "pick_index": 0
+    },
+    {
+      "id": "575407",
+      "h": "Atleti",
+      "a": "Viking",
+      "comp": "UEFA Champions League",
+      "utc": "2026-11-25T20:00:00Z",
+      "p": {
+        "ph": 0.6073,
+        "pd": 0.2304,
+        "pa": 0.1623
+      },
+      "pick_index": 0
     }
   ],
   "results": [
@@ -478,6 +517,9 @@
     "575402",
     "561953",
     "575397",
-    "561962"
+    "561962",
+    "555108",
+    "575412",
+    "575407"
   ]
 }
