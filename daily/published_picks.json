@@ -2,19 +2,6 @@
   "version": 1,
   "pending": [
     {
-      "id": "561962",
-      "h": "Stoke",
-      "a": "Millwall",
-      "comp": "Championship",
-      "utc": "2026-11-25T20:00:00Z",
-      "p": {
-        "ph": 0.6479,
-        "pd": 0.2181,
-        "pa": 0.134
-      },
-      "pick_index": 0
-    },
-    {
       "id": "555108",
       "h": "São Paulo",
       "a": "Clube do Remo",
@@ -487,6 +474,25 @@
       "pick_index": 0,
       "final": [
         5,
+        1
+      ],
+      "actual_index": 0,
+      "correct": true
+    },
+    {
+      "id": "561962",
+      "h": "Stoke",
+      "a": "Millwall",
+      "comp": "Championship",
+      "utc": "2026-11-25T20:00:00Z",
+      "p": {
+        "ph": 0.6479,
+        "pd": 0.2181,
+        "pa": 0.134
+      },
+      "pick_index": 0,
+      "final": [
+        2,
         1
       ],
       "actual_index": 0,
