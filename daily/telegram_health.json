@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-26T15:18:17.844497+00:00",
-  "overall": "healthy",
+  "checked_at": "2026-11-26T18:19:59.287737+00:00",
+  "overall": "degraded",
   "telegram_delivery_verified": false,
   "note": "GitHub scheduled-run and bot-dispatched refresh health only; this does not prove a Telegram message was delivered.",
   "workflows": [
@@ -9,27 +9,27 @@
       "workflow": "telegram.yml",
       "status": "healthy",
       "last_scheduled_run": {
-        "id": 45676730801,
+        "id": 45875000671,
         "event": "schedule",
-        "created_at": "2026-11-25T18:35:35Z",
+        "created_at": "2026-11-26T18:19:32Z",
         "run_status": "completed",
         "conclusion": "success"
       },
       "last_refresh_trigger_run": null,
       "last_execution": {
-        "id": 45676730801,
+        "id": 45875000671,
         "event": "schedule",
-        "created_at": "2026-11-25T18:35:35Z",
+        "created_at": "2026-11-26T18:19:32Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 1242,
+      "age_minutes": 0,
       "expected_interval_hours": 24,
       "grace_hours": 2
     },
     {
       "workflow": "telegram-news.yml",
-      "status": "healthy",
+      "status": "stale",
       "last_scheduled_run": {
         "id": 45786991637,
         "event": "schedule",
@@ -45,7 +45,7 @@
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 384,
+      "age_minutes": 566,
       "expected_interval_hours": 4,
       "grace_hours": 4
     },
@@ -60,20 +60,20 @@
         "conclusion": "success"
       },
       "last_refresh_trigger_run": {
-        "id": 45810884701,
+        "id": 45854587084,
         "event": "workflow_dispatch",
-        "created_at": "2026-11-26T11:28:22Z",
+        "created_at": "2026-11-26T16:00:14Z",
         "run_status": "completed",
         "conclusion": "success"
       },
       "last_execution": {
-        "id": 45847648635,
-        "event": "schedule",
-        "created_at": "2026-11-26T15:17:46Z",
+        "id": 45854587084,
+        "event": "workflow_dispatch",
+        "created_at": "2026-11-26T16:00:14Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 0,
+      "age_minutes": 139,
       "expected_interval_hours": 1,
       "grace_hours": 3
     }
