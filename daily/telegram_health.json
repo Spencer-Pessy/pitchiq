@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-25T22:33:32.941035+00:00",
+  "checked_at": "2026-11-26T00:39:54.431924+00:00",
   "overall": "healthy",
   "telegram_delivery_verified": false,
   "note": "GitHub scheduled-run and bot-dispatched refresh health only; this does not prove a Telegram message was delivered.",
@@ -23,7 +23,7 @@
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 237,
+      "age_minutes": 364,
       "expected_interval_hours": 24,
       "grace_hours": 2
     },
@@ -31,21 +31,21 @@
       "workflow": "telegram-news.yml",
       "status": "healthy",
       "last_scheduled_run": {
-        "id": 45639310754,
+        "id": 45730286296,
         "event": "schedule",
-        "created_at": "2026-11-25T14:55:08Z",
+        "created_at": "2026-11-26T00:39:29Z",
         "run_status": "completed",
         "conclusion": "success"
       },
       "last_refresh_trigger_run": null,
       "last_execution": {
-        "id": 45639310754,
+        "id": 45730286296,
         "event": "schedule",
-        "created_at": "2026-11-25T14:55:08Z",
+        "created_at": "2026-11-26T00:39:29Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 458,
+      "age_minutes": 0,
       "expected_interval_hours": 4,
       "grace_hours": 4
     },
@@ -60,20 +60,20 @@
         "conclusion": "success"
       },
       "last_refresh_trigger_run": {
-        "id": 45688780553,
+        "id": 45720706515,
         "event": "workflow_dispatch",
-        "created_at": "2026-11-25T19:48:16Z",
+        "created_at": "2026-11-25T23:21:17Z",
         "run_status": "completed",
         "conclusion": "success"
       },
       "last_execution": {
-        "id": 45714202310,
-        "event": "schedule",
-        "created_at": "2026-11-25T22:33:09Z",
+        "id": 45720706515,
+        "event": "workflow_dispatch",
+        "created_at": "2026-11-25T23:21:17Z",
         "run_status": "completed",
         "conclusion": "success"
       },
-      "age_minutes": 0,
+      "age_minutes": 78,
       "expected_interval_hours": 1,
       "grace_hours": 3
     }
