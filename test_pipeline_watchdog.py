@@ -118,7 +118,7 @@ class PipelineWatchdogTests(unittest.TestCase):
 
     def test_watchdog_has_its_own_schedule_and_manual_dispatch(self):
         workflow = Path(".github/workflows/pipeline-watchdog.yml").read_text()
-        self.assertIn('cron: "*/10 * * * *"', workflow)
+        self.assertIn('cron: "3,13,23,33,43,53 * * * *"', workflow)
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("actions: write", workflow)
         self.assertIn("pipeline_watchdog.py", workflow)
