@@ -1,0 +1,6 @@
+name = "pitchiq-watchdog"
+main = "worker.mjs"
+compatibility_date = "2026-11-26"
+
+[triggers]
+crons = ["*/5 * * * *"]
