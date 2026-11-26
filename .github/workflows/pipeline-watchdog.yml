@@ -7,7 +7,7 @@ on:
       - "pipeline_watchdog.py"
       - "test_pipeline_watchdog.py"
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
 permissions:
   actions: write
