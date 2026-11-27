@@ -15,19 +15,6 @@
       "pick_index": 0
     },
     {
-      "id": "558820",
-      "h": "Groningen",
-      "a": "Willem II",
-      "comp": "Eredivisie",
-      "utc": "2026-11-27T19:00:00Z",
-      "p": {
-        "ph": 0.6658,
-        "pd": 0.1703,
-        "pa": 0.1639
-      },
-      "pick_index": 0
-    },
-    {
       "id": "564765",
       "h": "Levante",
       "a": "Santander",
@@ -554,6 +541,25 @@
       ],
       "actual_index": 0,
       "correct": true
+    },
+    {
+      "id": "558820",
+      "h": "Groningen",
+      "a": "Willem II",
+      "comp": "Eredivisie",
+      "utc": "2026-11-27T19:00:00Z",
+      "p": {
+        "ph": 0.6658,
+        "pd": 0.1703,
+        "pa": 0.1639
+      },
+      "pick_index": 0,
+      "final": [
+        1,
+        1
+      ],
+      "actual_index": 1,
+      "correct": false
     }
   ],
   "sent_ids": [
