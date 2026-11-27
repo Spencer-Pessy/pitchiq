@@ -6,18 +6,71 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Update data
+      - Refresh live scores
+      - Update international fixtures
+      - Update national-team historical ratings
+      - Update odds
+      - Telegram picks
+      - Telegram football news
+      - Telegram published-pick results
+      - Telegram workflow health monitor
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+    steps:
+      - name: Decide whether this event needs tests
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISHER_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" != "workflow_run" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          latest_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)"
+          if [ "$latest_sha" = "$PUBLISHER_SHA" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "The completed publisher did not advance main; skipping duplicate tests."
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "main advanced from $PUBLISHER_SHA to $latest_sha; running tests on current main."
+          fi
   test:
+    needs: detect
+    if: needs.detect.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ github.event_name == 'workflow_run' && 'main' || github.sha }}
           persist-credentials: false
+      - name: Verify workflow-run checkout is current main
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)"
+          checked_out_sha="$(git rev-parse HEAD)"
+          if [ "$latest_sha" != "$checked_out_sha" ]; then
+            echo "::error::main advanced during checkout; refusing to report a stale test result."
+            exit 1
+          fi
+          echo "Testing current main commit $checked_out_sha"
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
