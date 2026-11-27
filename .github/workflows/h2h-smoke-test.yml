@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Test one football-data.org H2H request
