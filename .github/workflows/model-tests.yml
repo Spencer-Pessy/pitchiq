@@ -71,7 +71,7 @@ jobs:
             exit 1
           fi
           echo "Testing current main commit $checked_out_sha"
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Check Python syntax
